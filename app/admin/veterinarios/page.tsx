@@ -46,7 +46,7 @@ export default async function VetsPage() {
                   <div className="flex-1">
                     <p className="font-medium">{v.user.name}</p>
                     <p className="text-[13px] text-[var(--color-muted)]">
-                      {v.user.phone} · {v._count.appointments} citas
+                      {v.user.email} · {v._count.appointments} citas
                     </p>
                   </div>
                   <form action={removeVetAction}>
@@ -71,7 +71,11 @@ export default async function VetsPage() {
                 <Input name="name" required placeholder="Ej. Dra. Ana Pérez" />
               </div>
               <div>
-                <Label>Teléfono (usuario)</Label>
+                <Label>Correo electrónico (login)</Label>
+                <Input name="email" type="email" required placeholder="ana@patitasfelices.com" />
+              </div>
+              <div>
+                <Label>Teléfono (contacto)</Label>
                 <Input name="phone" required inputMode="numeric" placeholder="10 dígitos" />
               </div>
               <div>

@@ -101,16 +101,23 @@ export async function updateScheduleAction(formData: FormData) {
 export async function addVetAction(formData: FormData) {
   await ensureAdmin();
   const name = String(formData.get("name") ?? "").trim();
+  const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const phone = String(formData.get("phone") ?? "").replace(/\D+/g, "");
   const password = String(formData.get("password") ?? "");
   const bio = String(formData.get("bio") ?? "").trim() || null;
   if (!name || phone.length < 7 || password.length < 4) throw new Error("Datos inválidos.");
-  const existing = await prisma.user.findUnique({ where: { phone } });
-  if (existing) throw new Error("Teléfono ya registrado.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Correo inválido.");
+  const [byEmail, byPhone] = await Promise.all([
+    prisma.user.findUnique({ where: { email } }),
+    prisma.user.findUnique({ where: { phone } }),
+  ]);
+  if (byEmail) throw new Error("Correo ya registrado.");
+  if (byPhone) throw new Error("Teléfono ya registrado.");
   const hash = await hashPassword(password);
   await prisma.user.create({
     data: {
       name,
+      email,
       phone,
       passwordHash: hash,
       role: "VET",

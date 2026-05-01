@@ -62,9 +62,10 @@ async function main() {
   // Admin
   const adminPass = await bcrypt.hash("admin123", 10);
   await prisma.user.upsert({
-    where: { phone: "0000000000" },
+    where: { email: "admin@patitasfelices.com" },
     update: {},
     create: {
+      email: "admin@patitasfelices.com",
       phone: "0000000000",
       name: "Administrador",
       passwordHash: adminPass,
@@ -72,12 +73,13 @@ async function main() {
     },
   });
 
-  // Two veterinarians
+  // Veterinarians
   const vetPass = await bcrypt.hash("vet123", 10);
   const vet1User = await prisma.user.upsert({
-    where: { phone: "5551110001" },
+    where: { email: "maria.lopez@patitasfelices.com" },
     update: {},
     create: {
+      email: "maria.lopez@patitasfelices.com",
       phone: "5551110001",
       name: "Dra. María López",
       passwordHash: vetPass,
@@ -94,9 +96,10 @@ async function main() {
   });
 
   const vet2User = await prisma.user.upsert({
-    where: { phone: "5551110002" },
+    where: { email: "juan.ramirez@patitasfelices.com" },
     update: {},
     create: {
+      email: "juan.ramirez@patitasfelices.com",
       phone: "5551110002",
       name: "Dr. Juan Ramírez",
       passwordHash: vetPass,
@@ -112,12 +115,34 @@ async function main() {
     },
   });
 
+  // New vet — Julio
+  const julioUser = await prisma.user.upsert({
+    where: { email: "julio.mendoza@patitasfelices.com" },
+    update: {},
+    create: {
+      email: "julio.mendoza@patitasfelices.com",
+      phone: "5551110003",
+      name: "Dr. Julio Mendoza",
+      passwordHash: vetPass,
+      role: "VET",
+    },
+  });
+  await prisma.veterinarian.upsert({
+    where: { userId: julioUser.id },
+    update: {},
+    create: {
+      userId: julioUser.id,
+      bio: "Medicina interna y dermatología veterinaria.",
+    },
+  });
+
   // Demo client
   const clientPass = await bcrypt.hash("cliente123", 10);
   const demoClient = await prisma.user.upsert({
-    where: { phone: "5559998888" },
+    where: { email: "rosa@cliente.com" },
     update: {},
     create: {
+      email: "rosa@cliente.com",
       phone: "5559998888",
       name: "Doña Rosa",
       passwordHash: clientPass,
@@ -138,11 +163,12 @@ async function main() {
   }
 
   console.log("\nSeed complete.\n");
-  console.log("Credenciales demo:");
-  console.log("  Admin  → tel 0000000000 / admin123");
-  console.log("  Vet 1  → tel 5551110001 / vet123");
-  console.log("  Vet 2  → tel 5551110002 / vet123");
-  console.log("  Cliente→ tel 5559998888 / cliente123");
+  console.log("Credenciales demo (login con email):");
+  console.log("  Admin   → admin@patitasfelices.com / admin123");
+  console.log("  Vet 1   → maria.lopez@patitasfelices.com / vet123");
+  console.log("  Vet 2   → juan.ramirez@patitasfelices.com / vet123");
+  console.log("  Vet 3   → julio.mendoza@patitasfelices.com / vet123");
+  console.log("  Cliente → rosa@cliente.com / cliente123");
 }
 
 main()
