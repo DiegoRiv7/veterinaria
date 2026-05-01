@@ -11,6 +11,7 @@ const TITLES: Record<string, string> = {
   "/vet/historial": "Historial Clínico",
   "/vet/inventario": "Inventario",
   "/vet/chat": "Chat",
+  "/vet/perfil": "Mi Perfil",
 };
 
 function titleFor(pathname: string): string {

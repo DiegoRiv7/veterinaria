@@ -112,7 +112,7 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
 
       {/* User */}
       <Link
-        href="/perfil"
+        href="/vet/perfil"
         onClick={onNavigate}
         className="flex items-center gap-2.5 mx-2.5 mt-3 p-3 rounded-[14px] transition-colors"
         style={{ background: "var(--vet-bg-card)", color: "var(--vet-text-1)" }}
