@@ -16,10 +16,22 @@ function startOfNextDay(d = new Date()) {
   return x;
 }
 
-export default async function VetTodayPage() {
+type FilterValue = "todas" | "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+const ALLOWED: FilterValue[] = ["todas", "SCHEDULED", "COMPLETED", "CANCELLED", "NO_SHOW"];
+
+export default async function VetTodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ status?: string }>;
+}) {
   const session = await readSession();
   if (!session) redirect("/login");
   if (session.role === "CLIENT") redirect("/inicio");
+
+  const { status } = await searchParams;
+  const initialFilter: FilterValue = ALLOWED.includes(status as FilterValue)
+    ? (status as FilterValue)
+    : "todas";
 
   const vetProfile = await prisma.veterinarian.findUnique({ where: { userId: session.userId } });
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
@@ -48,6 +60,10 @@ export default async function VetTodayPage() {
   }));
 
   return (
-    <TodayViewClient appts={serializable} headerDate={headerDate} />
+    <TodayViewClient
+      appts={serializable}
+      headerDate={headerDate}
+      initialFilter={initialFilter}
+    />
   );
 }

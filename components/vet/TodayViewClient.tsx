@@ -33,10 +33,11 @@ const DOT_COLOR: Record<string, string> = {
 type Props = {
   appts: ApptLite[];
   headerDate: string;
+  initialFilter?: FilterValue;
 };
 
-export function TodayViewClient({ appts, headerDate }: Props) {
-  const [filter, setFilter] = useState<FilterValue>("todas");
+export function TodayViewClient({ appts, headerDate, initialFilter = "todas" }: Props) {
+  const [filter, setFilter] = useState<FilterValue>(initialFilter);
   const visible = filter === "todas" ? appts : appts.filter((a) => a.status === filter);
 
   return (

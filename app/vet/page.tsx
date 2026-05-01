@@ -5,6 +5,7 @@ import { readSession } from "@/lib/auth";
 import { StatCard } from "@/components/vet/StatCard";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
+import { MonthlySummaryCard } from "@/components/vet/MonthlySummaryCard";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +22,24 @@ function startOfNextDay(d = new Date()) {
 function startOfMonth(d = new Date()) {
   return new Date(d.getFullYear(), d.getMonth(), 1);
 }
-function startOfNextMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth() + 1, 1);
+function addMonths(d: Date, n: number) {
+  return new Date(d.getFullYear(), d.getMonth() + n, 1);
+}
+
+function categoryFor(name: string): "consultas" | "cirugias" | "vacunaciones" | "otros" {
+  const n = name.toLowerCase();
+  if (n.includes("vacun")) return "vacunaciones";
+  if (n.includes("operac") || n.includes("cirug") || n.includes("ester")) return "cirugias";
+  if (
+    n.includes("desparasit") ||
+    n.includes("urgenc") ||
+    n.includes("estét") ||
+    n.includes("estet") ||
+    n.includes("baño") ||
+    n.includes("bano")
+  )
+    return "otros";
+  return "consultas";
 }
 
 export default async function VetDashboardPage() {
@@ -34,11 +51,13 @@ export default async function VetDashboardPage() {
   const today = startOfDay();
   const tomorrow = startOfNextDay();
   const monthStart = startOfMonth();
-  const monthEnd = startOfNextMonth();
+  const monthEnd = addMonths(monthStart, 1);
+  // 12-month window for the summary modal: 11 months back through this month end
+  const last12Start = addMonths(monthStart, -11);
 
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
 
-  const [todayAppts, upcoming, monthAppts, totalPets] = await Promise.all([
+  const [todayAppts, upcoming, monthAppts, totalPets, last12Appts] = await Promise.all([
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: today, lt: tomorrow } },
       include: { pet: true, service: true, client: true },
@@ -52,7 +71,7 @@ export default async function VetDashboardPage() {
       },
       include: { pet: true, service: true, client: true },
       orderBy: { scheduledAt: "asc" },
-      take: 5,
+      take: 6,
     }),
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: monthStart, lt: monthEnd } },
@@ -63,70 +82,118 @@ export default async function VetDashboardPage() {
           .findMany({ where: { vetId: vetProfile.id }, distinct: ["petId"], select: { petId: true } })
           .then((rows) => rows.length)
       : prisma.pet.count(),
+    prisma.appointment.findMany({
+      where: { ...vetFilter, scheduledAt: { gte: last12Start, lt: monthEnd } },
+      select: { scheduledAt: true, service: { select: { name: true } } },
+    }),
   ]);
 
   const completedToday = todayAppts.filter((a) => a.status === "COMPLETED").length;
   const scheduledToday = todayAppts.filter((a) => a.status === "SCHEDULED").length;
 
-  // Group monthly appointments by service category
-  const monthBuckets = { Consultas: 0, Vacunaciones: 0, Cirugías: 0 };
+  // Current month buckets (used to render the small summary on the dashboard)
+  const monthBuckets = { consultas: 0, vacunaciones: 0, cirugias: 0, otros: 0 };
   for (const a of monthAppts) {
-    const n = a.service.name.toLowerCase();
-    if (n.includes("vacun")) monthBuckets.Vacunaciones++;
-    else if (n.includes("operac") || n.includes("cirug") || n.includes("ester"))
-      monthBuckets["Cirugías"]++;
-    else monthBuckets.Consultas++;
+    monthBuckets[categoryFor(a.service.name)]++;
   }
-  const monthTotal = monthAppts.length || 1;
+  const monthTotal = monthAppts.length;
   const monthRows = [
-    { label: "Consultas", val: monthBuckets.Consultas, pct: Math.round((monthBuckets.Consultas / monthTotal) * 100) },
-    { label: "Cirugías", val: monthBuckets["Cirugías"], pct: Math.round((monthBuckets["Cirugías"] / monthTotal) * 100) },
-    { label: "Vacunaciones", val: monthBuckets.Vacunaciones, pct: Math.round((monthBuckets.Vacunaciones / monthTotal) * 100) },
+    { label: "Consultas", val: monthBuckets.consultas, pct: monthTotal ? Math.round((monthBuckets.consultas / monthTotal) * 100) : 0 },
+    { label: "Cirugías", val: monthBuckets.cirugias, pct: monthTotal ? Math.round((monthBuckets.cirugias / monthTotal) * 100) : 0 },
+    { label: "Vacunaciones", val: monthBuckets.vacunaciones, pct: monthTotal ? Math.round((monthBuckets.vacunaciones / monthTotal) * 100) : 0 },
   ];
 
-  // Visual-only stock placeholders (Inventario module not implemented yet)
+  // Build 12-month buckets for the modal
+  const monthlyBuckets: {
+    year: number;
+    month: number;
+    consultas: number;
+    cirugias: number;
+    vacunaciones: number;
+    otros: number;
+    total: number;
+  }[] = [];
+  for (let i = 0; i < 12; i++) {
+    const m = addMonths(last12Start, i);
+    monthlyBuckets.push({
+      year: m.getFullYear(),
+      month: m.getMonth(),
+      consultas: 0,
+      cirugias: 0,
+      vacunaciones: 0,
+      otros: 0,
+      total: 0,
+    });
+  }
+  for (const a of last12Appts) {
+    const y = a.scheduledAt.getFullYear();
+    const m = a.scheduledAt.getMonth();
+    const bucket = monthlyBuckets.find((b) => b.year === y && b.month === m);
+    if (!bucket) continue;
+    bucket[categoryFor(a.service.name)]++;
+    bucket.total++;
+  }
+
   const stockDemo = [
     { name: "Vacuna Antirrábica", current: 3, min: 10, unit: "dosis" },
     { name: "Amoxicilina 500mg", current: 8, min: 20, unit: "comp" },
     { name: "Isoflurano", current: 1, min: 3, unit: "frascos" },
   ];
 
-  const todayStr = new Intl.DateTimeFormat("es-MX", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-  }).format(today);
-
-  const firstName = session.name.split(" ").find((s) => !/^Dr/i.test(s)) ?? session.name.split(" ")[0];
+  const firstName =
+    session.name.split(" ").find((s) => !/^Dr/i.test(s)) ?? session.name.split(" ")[0];
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6 h-full">
       {/* Greeting */}
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <div className="text-[13px] font-bold capitalize" style={{ color: "var(--vet-text-3)" }}>
-            {todayStr}
-          </div>
-          <h1 className="text-[26px] font-black tracking-tight mt-1" style={{ color: "var(--vet-text-1)" }}>
-            Buenos días, {firstName} 👋
-          </h1>
-        </div>
-      </div>
+      <h1
+        className="text-[26px] font-black tracking-tight"
+        style={{ color: "var(--vet-text-1)" }}
+      >
+        Buenos días, {firstName} 👋
+      </h1>
 
-      {/* Stats */}
+      {/* Stats — all clickable */}
       <div className="grid gap-3.5 grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Citas Hoy" value={todayAppts.length} sub={`${scheduledToday} pendientes`} icon="calendar" color="var(--vet-green)" />
-        <StatCard label="Completadas" value={completedToday} sub="del día" icon="today" color="var(--vet-blue)" />
-        <StatCard label="En Espera" value={scheduledToday} sub="por atender" icon="patients" color="var(--vet-amber)" />
-        <StatCard label="Pacientes" value={totalPets} sub="atendidos" icon="paw" color="var(--vet-violet)" />
+        <StatCard
+          label="Citas Hoy"
+          value={todayAppts.length}
+          sub={`${scheduledToday} pendientes`}
+          icon="calendar"
+          color="var(--vet-green)"
+          href="/vet/hoy"
+        />
+        <StatCard
+          label="Completadas"
+          value={completedToday}
+          sub="del día"
+          icon="today"
+          color="var(--vet-blue)"
+          href="/vet/hoy?status=COMPLETED"
+        />
+        <StatCard
+          label="En Espera"
+          value={scheduledToday}
+          sub="por atender"
+          icon="patients"
+          color="var(--vet-amber)"
+          href="/vet/hoy?status=SCHEDULED"
+        />
+        <StatCard
+          label="Pacientes"
+          value={totalPets}
+          sub="atendidos"
+          icon="paw"
+          color="var(--vet-violet)"
+          href="/vet/pacientes"
+        />
       </div>
 
-      {/* Two columns */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
+      {/* Two columns — extended */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr] flex-1 min-h-0">
         {/* Upcoming appointments */}
         <div
-          className="overflow-hidden border"
+          className="overflow-hidden border flex flex-col"
           style={{
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
@@ -134,19 +201,26 @@ export default async function VetDashboardPage() {
           }}
         >
           <div
-            className="flex items-center justify-between px-5 py-4 border-b"
+            className="flex items-center justify-between px-5 py-4 border-b flex-shrink-0"
             style={{ borderBottomColor: "var(--vet-border)" }}
           >
             <span className="font-extrabold text-[15px]" style={{ color: "var(--vet-text-1)" }}>
               Próximas citas
             </span>
-            <Link href="/vet/hoy" className="text-[12px] font-bold no-underline" style={{ color: "var(--vet-green)" }}>
+            <Link
+              href="/vet/hoy"
+              className="text-[12px] font-bold no-underline"
+              style={{ color: "var(--vet-green)" }}
+            >
               Ver todas →
             </Link>
           </div>
-          <div className="p-3 flex flex-col gap-2 max-h-[420px] overflow-y-auto">
+          <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
             {upcoming.length === 0 ? (
-              <div className="py-10 text-center text-[14px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
+              <div
+                className="flex-1 flex items-center justify-center py-10 text-center text-[14px] font-semibold"
+                style={{ color: "var(--vet-text-3)" }}
+              >
                 Sin citas próximas
               </div>
             ) : (
@@ -156,14 +230,16 @@ export default async function VetDashboardPage() {
         </div>
 
         {/* Right column */}
-        <div className="flex flex-col gap-3.5">
-          {/* Inventory alerts (visual-only demo) */}
-          <div
-            className="overflow-hidden border"
+        <div className="flex flex-col gap-3.5 min-h-0">
+          {/* Inventory alerts (visual-only demo, clickable) */}
+          <Link
+            href="/vet/inventario"
+            className="overflow-hidden border no-underline transition-all hover:[border-color:var(--vet-amber)]"
             style={{
               background: "var(--vet-bg-card)",
               borderColor: "var(--vet-border)",
               borderRadius: 22,
+              color: "var(--vet-text-1)",
             }}
           >
             <div
@@ -207,39 +283,15 @@ export default async function VetDashboardPage() {
                 );
               })}
             </div>
-          </div>
+          </Link>
 
-          {/* Monthly summary */}
-          <div
-            className="border p-4"
-            style={{
-              background: "var(--vet-bg-card)",
-              borderColor: "var(--vet-border)",
-              borderRadius: 22,
-            }}
-          >
-            <div className="font-extrabold text-[14px] mb-3" style={{ color: "var(--vet-text-1)" }}>
-              Resumen del Mes
-            </div>
-            {monthRows.map((r) => (
-              <div key={r.label} className="mb-2.5 last:mb-0">
-                <div className="flex justify-between mb-1">
-                  <span className="text-[12px] font-bold" style={{ color: "var(--vet-text-2)" }}>
-                    {r.label}
-                  </span>
-                  <span className="vet-mono text-[12px] font-extrabold" style={{ color: "var(--vet-text-1)" }}>
-                    {r.val}
-                  </span>
-                </div>
-                <div className="h-[5px] rounded-full" style={{ background: "var(--vet-bg-hover)" }}>
-                  <div
-                    className="h-full rounded-full"
-                    style={{ width: `${r.pct}%`, background: "var(--vet-green)" }}
-                  />
-                </div>
-              </div>
-            ))}
-          </div>
+          {/* Monthly summary — opens animated modal on click */}
+          <MonthlySummaryCard
+            monthRows={monthRows}
+            monthlyBuckets={monthlyBuckets}
+            currentMonth={{ year: monthStart.getFullYear(), month: monthStart.getMonth() }}
+            vetName={session.name}
+          />
         </div>
       </div>
     </div>
