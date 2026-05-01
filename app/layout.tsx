@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Toaster } from "sonner";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { BackgroundDecor } from "@/components/BackgroundDecor";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col antialiased">
         <BackgroundDecor />
         {children}
+        <SpeedInsights />
         <Toaster
           position="top-center"
           richColors
