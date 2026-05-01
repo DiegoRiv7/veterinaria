@@ -32,7 +32,7 @@ export function AppointmentChat({
 }) {
   return (
     <div className="bg-[var(--color-surface)]/95 backdrop-blur-sm rounded-[18px] border border-[var(--color-border)] shadow-[var(--shadow-soft-sm)] overflow-hidden">
-      <div className="px-5 py-3 border-b border-[var(--color-divider)] bg-gradient-to-r from-[#dbeafe]/40 via-[#ede9fe]/40 to-[#fce7f3]/40">
+      <div className="px-5 py-3 border-b border-[var(--color-divider)] bg-[var(--color-surface-2)]">
         <p className="text-[15px] font-semibold">Conversación</p>
         <p className="text-[12px] text-[var(--color-muted)]">
           Pregúntale al veterinario sobre la consulta.
@@ -65,7 +65,7 @@ export function AppointmentChat({
                   className={cn(
                     "px-3.5 py-2 rounded-[16px] text-[14px] leading-snug whitespace-pre-line",
                     own
-                      ? "bg-gradient-to-br from-[#38bdf8] via-[#6366f1] to-[#a78bfa] text-white rounded-br-[6px]"
+                      ? "[background-image:var(--chat-bubble-own-bg)] text-[color:var(--chat-bubble-own-text)] rounded-br-[6px]"
                       : "bg-[var(--color-surface-2)] text-[var(--color-foreground)] rounded-bl-[6px]"
                   )}
                 >

@@ -63,7 +63,13 @@ export default async function VetChatList() {
                 <Link key={c.clientId} href={`/vet/chat/${c.clientId}`}>
                   <Card className="hover:border-[var(--color-brand)]/30 hover:shadow-[var(--shadow-soft-md)] transition">
                     <CardBody className="flex items-center gap-3 py-3.5">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-[#fce7f3] flex items-center justify-center text-[15px] font-semibold text-[#4f46e5] shadow-[var(--shadow-soft-sm)]">
+                      <div
+                        className="h-12 w-12 rounded-full flex items-center justify-center text-[15px] font-extrabold text-white shadow-[var(--shadow-soft-sm)]"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, var(--vet-blue), oklch(38% 0.18 280))",
+                        }}
+                      >
                         {initials(c.clientName)}
                       </div>
                       <div className="flex-1 min-w-0">

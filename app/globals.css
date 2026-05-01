@@ -47,6 +47,17 @@
   --shadow-soft-md: 0 6px 20px rgba(180, 100, 150, 0.10), 0 1px 3px rgba(180, 100, 150, 0.05);
   --shadow-soft-lg: 0 18px 40px rgba(180, 100, 150, 0.14), 0 2px 8px rgba(180, 100, 150, 0.06);
   --shadow-glow: 0 14px 40px rgba(236, 72, 153, 0.28), 0 6px 20px rgba(96, 165, 250, 0.24);
+
+  /* Theme-aware tokens for components that are shared between the
+     client (pink) and vet (gray-blue) panels. The vet panel overrides
+     these inside .vet-theme so the same component looks right on both. */
+  --button-primary-bg: linear-gradient(to right, #bae6fd, #c7d2fe, #fbcfe8);
+  --button-primary-text: #4338ca;
+  --button-primary-shadow: 0 8px 24px rgba(124, 92, 240, 0.15);
+  --chat-bubble-own-bg: linear-gradient(to bottom right, #38bdf8, #6366f1, #a78bfa);
+  --chat-bubble-own-text: #ffffff;
+  --chat-send-bg: linear-gradient(to bottom right, #bae6fd, #c7d2fe, #fbcfe8);
+  --chat-send-text: #4338ca;
 }
 
 /* Force light scheme — ignore system dark preference */
@@ -260,6 +271,30 @@ input[type="checkbox"] {
   font-family: var(--font-nunito), 'Nunito', sans-serif;
   letter-spacing: 0;
   min-height: 100dvh;
+
+  /* Override the global pink-theme tokens for any shared component
+     rendered inside the vet panel (Card, Button, Input, Badge, etc.) */
+  --color-surface: var(--vet-bg-card);
+  --color-surface-2: var(--vet-bg-mid);
+  --color-surface-3: var(--vet-bg-hover);
+  --color-foreground: var(--vet-text-1);
+  --color-muted: var(--vet-text-3);
+  --color-muted-2: oklch(65% 0.04 240);
+  --color-border: var(--vet-border);
+  --color-divider: var(--vet-border);
+  --color-brand: var(--vet-green);
+  --color-brand-strong: var(--vet-green-dim);
+  --color-brand-soft: var(--vet-green-glow);
+  --color-brand-glow: var(--vet-green-glow);
+
+  /* Vet versions of the theme-aware tokens */
+  --button-primary-bg: linear-gradient(135deg, var(--vet-green), var(--vet-green-dim));
+  --button-primary-text: #ffffff;
+  --button-primary-shadow: 0 8px 24px var(--vet-green-glow);
+  --chat-bubble-own-bg: linear-gradient(135deg, var(--vet-green), var(--vet-green-dim));
+  --chat-bubble-own-text: #ffffff;
+  --chat-send-bg: linear-gradient(135deg, var(--vet-green), var(--vet-green-dim));
+  --chat-send-text: #ffffff;
 }
 
 .vet-theme .vet-mono {

@@ -52,7 +52,7 @@ export function VetMessageInput({ appointmentId }: { appointmentId: string }) {
         disabled={pending}
         className={cn(
           "h-10 w-10 flex items-center justify-center rounded-full transition disabled:opacity-50",
-          "bg-gradient-to-br from-[#bae6fd] via-[#c7d2fe] to-[#fbcfe8] text-[#4338ca] shadow-[var(--shadow-soft-sm)] hover:brightness-[1.03] active:scale-95"
+          "[background-image:var(--chat-send-bg)] text-[color:var(--chat-send-text)] shadow-[var(--shadow-soft-sm)] hover:brightness-[1.03] active:scale-95"
         )}
         aria-label="Enviar"
       >

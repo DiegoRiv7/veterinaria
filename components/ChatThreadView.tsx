@@ -79,8 +79,8 @@ function Bubble({ m, own }: { m: Msg; own: boolean }) {
         className={cn(
           "px-3.5 py-2 rounded-[18px] text-[14px] leading-snug whitespace-pre-line shadow-[var(--shadow-soft-sm)]",
           own
-            ? "bg-gradient-to-br from-[#38bdf8] via-[#6366f1] to-[#a78bfa] text-white rounded-br-[6px]"
-            : "bg-white text-[var(--color-foreground)] border border-[var(--color-border)] rounded-bl-[6px]"
+            ? "[background-image:var(--chat-bubble-own-bg)] text-[color:var(--chat-bubble-own-text)] rounded-br-[6px]"
+            : "bg-[var(--color-surface)] text-[var(--color-foreground)] border border-[var(--color-border)] rounded-bl-[6px]"
         )}
       >
         {m.body}

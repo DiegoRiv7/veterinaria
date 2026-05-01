@@ -91,7 +91,7 @@ export function PatientsViewClient({ pets }: { pets: PetRow[] }) {
             return (
               <Link
                 key={p.id}
-                href={`/mascotas/${p.id}`}
+                href={`/vet/pacientes/${p.id}`}
                 className="border p-4 transition-transform no-underline hover:-translate-y-0.5 hover:shadow-md"
                 style={{
                   background: "var(--vet-bg-card)",
