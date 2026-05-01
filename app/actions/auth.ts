@@ -91,6 +91,28 @@ export async function logoutAction() {
   redirect("/login");
 }
 
+/**
+ * Acknowledges a password recovery request without revealing whether the
+ * account exists. The clinic handles resets manually by phone — there is
+ * no SMTP configured. If we ever wire up email, this is where it goes.
+ */
+export async function requestPasswordResetAction(
+  _: unknown,
+  formData: FormData
+): Promise<{ ok?: boolean; error?: string }> {
+  const email = normalizeEmail(String(formData.get("email") ?? ""));
+  if (!EMAIL_RE.test(email)) {
+    return { error: "Ingresa un correo válido." };
+  }
+  // Look up exists silently; we never tell the caller whether it does.
+  const user = await prisma.user.findUnique({ where: { email }, select: { id: true } });
+  if (user) {
+    // TODO: when SMTP is set up, send the reset email here.
+    console.log(`[password-reset] request for ${email} (user ${user.id})`);
+  }
+  return { ok: true };
+}
+
 function redirectByRole(role: "CLIENT" | "VET" | "ADMIN"): never {
   if (role === "VET") redirect("/vet");
   if (role === "ADMIN") redirect("/admin");

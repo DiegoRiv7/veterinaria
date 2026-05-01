@@ -1,11 +1,36 @@
 "use client";
-import Link from "next/link";
+
 import { useActionState } from "react";
-import { loginAction } from "@/app/actions/auth";
+import { requestPasswordResetAction } from "@/app/actions/auth";
 import { VetIcon } from "@/components/vet/VetIcon";
 
-export function LoginForm() {
-  const [state, formAction, pending] = useActionState(loginAction, { error: undefined });
+export function RecoverForm() {
+  const [state, formAction, pending] = useActionState(requestPasswordResetAction, {});
+
+  if (state.ok) {
+    return (
+      <div className="flex flex-col items-center text-center gap-3 py-2">
+        <div
+          className="w-14 h-14 rounded-full flex items-center justify-center"
+          style={{ background: "var(--vet-green-glow)" }}
+        >
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--vet-green)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+        </div>
+        <h2 className="text-[18px] font-extrabold" style={{ color: "var(--vet-text-1)" }}>
+          Solicitud recibida
+        </h2>
+        <p
+          className="text-[13px] font-semibold leading-relaxed"
+          style={{ color: "var(--vet-text-2)" }}
+        >
+          Si la cuenta existe, la clínica se comunicará contigo al teléfono que tienes registrado para ayudarte a restablecer tu contraseña.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-4">
       <div>
@@ -14,7 +39,7 @@ export function LoginForm() {
           className="block text-[12px] font-extrabold uppercase tracking-wider mb-1.5"
           style={{ color: "var(--vet-text-3)" }}
         >
-          Correo electrónico
+          Correo de tu cuenta
         </label>
         <input
           id="email"
@@ -23,38 +48,6 @@ export function LoginForm() {
           autoComplete="email"
           required
           placeholder="tu@correo.com"
-          className="w-full h-12 px-4 rounded-[12px] border outline-none text-[15px] font-semibold focus:border-[var(--vet-green)] transition-colors"
-          style={{
-            background: "var(--vet-bg-card)",
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-text-1)",
-          }}
-        />
-      </div>
-      <div>
-        <div className="flex items-baseline justify-between mb-1.5">
-          <label
-            htmlFor="password"
-            className="block text-[12px] font-extrabold uppercase tracking-wider"
-            style={{ color: "var(--vet-text-3)" }}
-          >
-            Contraseña
-          </label>
-          <Link
-            href="/recuperar"
-            className="text-[12px] font-bold no-underline"
-            style={{ color: "var(--vet-green)" }}
-          >
-            ¿Olvidaste tu contraseña?
-          </Link>
-        </div>
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          placeholder="••••••••"
           className="w-full h-12 px-4 rounded-[12px] border outline-none text-[15px] font-semibold focus:border-[var(--vet-green)] transition-colors"
           style={{
             background: "var(--vet-bg-card)",
@@ -84,7 +77,7 @@ export function LoginForm() {
           boxShadow: "0 8px 24px var(--vet-green-glow)",
         }}
       >
-        {pending ? "Entrando..." : "Entrar"}
+        {pending ? "Enviando..." : "Enviar solicitud"}
       </button>
     </form>
   );

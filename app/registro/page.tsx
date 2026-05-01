@@ -16,13 +16,6 @@ export default function SignupPage() {
   return (
     <div className={`${nunito.variable}`}>
       <main className="vet-theme min-h-dvh flex flex-col px-6 py-8">
-        <Link
-          href="/"
-          className="text-[13px] font-semibold no-underline self-start"
-          style={{ color: "var(--vet-text-3)" }}
-        >
-          ← Inicio
-        </Link>
         <div className="mx-auto w-full max-w-sm flex-1 flex flex-col justify-center py-6">
           <div className="flex flex-col items-center mb-6">
             <div
@@ -40,6 +33,12 @@ export default function SignupPage() {
               style={{ color: "var(--vet-text-1)" }}
             >
               Patitas Felices
+            </div>
+            <div
+              className="text-[12px] font-bold mt-0.5"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Tu clínica de confianza
             </div>
           </div>
 

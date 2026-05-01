@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Nunito } from "next/font/google";
-import { LoginForm } from "./login-form";
+import { RecoverForm } from "./recover-form";
 import { VetIcon } from "@/components/vet/VetIcon";
 
 const nunito = Nunito({
@@ -12,9 +12,9 @@ const nunito = Nunito({
 
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default function RecoverPage() {
   return (
-    <div className={`${nunito.variable}`}>
+    <div className={nunito.variable}>
       <main className="vet-theme min-h-dvh flex flex-col px-6 py-8">
         <div className="mx-auto w-full max-w-sm flex-1 flex flex-col justify-center">
           <div className="flex flex-col items-center mb-8">
@@ -55,28 +55,28 @@ export default function LoginPage() {
               className="text-[22px] font-black tracking-tight"
               style={{ color: "var(--vet-text-1)" }}
             >
-              Bienvenido de vuelta
+              Recuperar contraseña
             </h1>
             <p
               className="text-[13px] font-semibold mb-5"
               style={{ color: "var(--vet-text-3)" }}
             >
-              Entra con tu correo y contraseña.
+              Ingresa el correo de tu cuenta y la clínica se pondrá en contacto contigo.
             </p>
-            <LoginForm />
+            <RecoverForm />
           </div>
 
           <p
             className="mt-6 text-center text-[13px] font-semibold"
             style={{ color: "var(--vet-text-3)" }}
           >
-            ¿Aún no tienes cuenta?{" "}
+            ¿Te acordaste?{" "}
             <Link
-              href="/registro"
+              href="/login"
               className="font-extrabold no-underline"
               style={{ color: "var(--vet-green)" }}
             >
-              Crear una
+              Volver a entrar
             </Link>
           </p>
         </div>
