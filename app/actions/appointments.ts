@@ -176,12 +176,14 @@ export async function updatePetAction(formData: FormData) {
   revalidatePath("/agendar");
 }
 
-export async function deletePetAction(formData: FormData) {
+export type DeletePetResult = { ok: true } | { ok: false; error: string };
+
+export async function deletePetAction(formData: FormData): Promise<DeletePetResult> {
   const session = await requireSession();
-  if (session.role !== "CLIENT") throw new Error("FORBIDDEN");
+  if (session.role !== "CLIENT") return { ok: false, error: "No autorizado." };
   const id = String(formData.get("id") ?? "");
   const pet = await prisma.pet.findUnique({ where: { id } });
-  if (!pet || pet.ownerId !== session.userId) throw new Error("FORBIDDEN");
+  if (!pet || pet.ownerId !== session.userId) return { ok: false, error: "No autorizado." };
   const activeAppts = await prisma.appointment.count({
     where: {
       petId: id,
@@ -190,7 +192,7 @@ export async function deletePetAction(formData: FormData) {
     },
   });
   if (activeAppts > 0) {
-    throw new Error("Esta mascota tiene citas próximas. Cancélalas primero.");
+    return { ok: false, error: "Esta mascota tiene citas próximas. Cancélalas primero." };
   }
   await prisma.$transaction([
     prisma.appointment.deleteMany({ where: { petId: id } }),
@@ -198,4 +200,5 @@ export async function deletePetAction(formData: FormData) {
   ]);
   revalidatePath("/mascotas");
   revalidatePath("/inicio");
+  return { ok: true };
 }

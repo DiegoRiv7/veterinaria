@@ -16,17 +16,20 @@ export function DeletePetButton({ id, name }: { id: string; name: string }) {
       try {
         const fd = new FormData();
         fd.set("id", id);
-        await deletePetAction(fd);
+        const result = await deletePetAction(fd);
+        if (!result.ok) {
+          toast.error("No se puede eliminar", { description: result.error });
+          setOpen(false);
+          return;
+        }
         toast.success(`${name} fue eliminada`, {
           description: "Si fue un error, vuelve a agregarla con la misma información.",
         });
         setOpen(false);
         router.push("/mascotas");
         router.refresh();
-      } catch (e) {
-        toast.error("No se puede eliminar", {
-          description: e instanceof Error ? e.message : "Intenta de nuevo.",
-        });
+      } catch {
+        toast.error("No se puede eliminar", { description: "Intenta de nuevo." });
         setOpen(false);
       }
     });
