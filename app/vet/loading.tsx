@@ -1,32 +1,38 @@
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { VetTabBar } from "@/components/VetTabBar";
-import { Skeleton, SkeletonRow, SkeletonCard } from "@/components/Skeleton";
-
 export default function Loading() {
   return (
-    <AppShell>
-      <PageContainer>
-        {/* Header */}
-        <div className="mb-6">
-          <Skeleton className="h-8 w-32 rounded-full" />
-          <Skeleton className="h-4 w-[55%] rounded-full mt-3" />
+    <div className="flex flex-col gap-6">
+      <div>
+        <div
+          className="h-3 w-44 rounded-full mb-2"
+          style={{ background: "var(--vet-bg-hover)" }}
+        />
+        <div className="h-7 w-72 rounded-full" style={{ background: "var(--vet-bg-hover)" }} />
+      </div>
+      <div className="grid gap-3.5 grid-cols-2 lg:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div
+            key={i}
+            className="h-[140px] rounded-[22px] border"
+            style={{ background: "var(--vet-bg-card)", borderColor: "var(--vet-border)" }}
+          />
+        ))}
+      </div>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr]">
+        <div
+          className="h-[420px] rounded-[22px] border"
+          style={{ background: "var(--vet-bg-card)", borderColor: "var(--vet-border)" }}
+        />
+        <div className="flex flex-col gap-3.5">
+          <div
+            className="h-[180px] rounded-[22px] border"
+            style={{ background: "var(--vet-bg-card)", borderColor: "var(--vet-border)" }}
+          />
+          <div
+            className="h-[180px] rounded-[22px] border"
+            style={{ background: "var(--vet-bg-card)", borderColor: "var(--vet-border)" }}
+          />
         </div>
-
-        {/* 3 appt rows */}
-        <div className="flex flex-col gap-3">
-          <SkeletonRow iconSize={44} />
-          <SkeletonRow iconSize={44} />
-          <SkeletonRow iconSize={44} />
-        </div>
-
-        {/* Resumen section */}
-        <Skeleton className="h-3 w-20 rounded-full mt-7 mb-3" />
-        <div className="grid grid-cols-2 gap-3">
-          <SkeletonCard rows={2} />
-          <SkeletonCard rows={2} />
-        </div>
-      </PageContainer>
-      <VetTabBar />
-    </AppShell>
+      </div>
+    </div>
   );
 }

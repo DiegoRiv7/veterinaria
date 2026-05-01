@@ -3,8 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { getMostRecentAppointment, getVetClientThread } from "@/lib/chat";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { VetTabBar } from "@/components/VetTabBar";
 import { ChatThreadView } from "@/components/ChatThreadView";
 import { VetMessageInput } from "@/components/VetMessageInput";
 import { ChevronLeft } from "lucide-react";
@@ -49,36 +47,53 @@ export default async function VetChatThreadPage({
   const messages = await getVetClientThread(session.userId, clientId);
 
   return (
-    <AppShell>
-      <PageContainer className="pb-40">
-        <Link
-          href="/vet/chat"
-          className="text-sm text-[var(--color-brand)] mb-3 inline-flex items-center gap-1"
+    <div className="flex flex-col gap-4 pb-32">
+      <Link
+        href="/vet/chat"
+        className="text-sm font-semibold inline-flex items-center gap-1 no-underline"
+        style={{ color: "var(--vet-green)" }}
+      >
+        <ChevronLeft className="h-4 w-4" /> Conversaciones
+      </Link>
+
+      <header
+        className="flex items-center gap-3 pb-4 border-b"
+        style={{ borderBottomColor: "var(--vet-border)" }}
+      >
+        <div
+          className="h-12 w-12 rounded-full flex items-center justify-center text-[15px] font-extrabold text-white"
+          style={{ background: "linear-gradient(135deg, var(--vet-blue), oklch(38% 0.18 280))" }}
         >
-          <ChevronLeft className="h-4 w-4" /> Conversaciones
-        </Link>
+          {initials(client.name)}
+        </div>
+        <div className="min-w-0">
+          <h1
+            className="text-[20px] font-extrabold tracking-tight truncate"
+            style={{ color: "var(--vet-text-1)" }}
+          >
+            {client.name}
+          </h1>
+          <p className="text-[12px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
+            {client.phone}
+          </p>
+        </div>
+      </header>
 
-        <header className="flex items-center gap-3 mb-5 pb-4 border-b border-[var(--color-border)]">
-          <div className="h-12 w-12 rounded-full bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-[#fce7f3] flex items-center justify-center text-[15px] font-semibold text-[#4f46e5] shadow-[var(--shadow-soft-sm)]">
-            {initials(client.name)}
-          </div>
-          <div className="min-w-0">
-            <h1 className="text-[20px] font-semibold tracking-tight truncate">{client.name}</h1>
-            <p className="text-[12px] text-[var(--color-muted)]">{client.phone}</p>
-          </div>
-        </header>
+      <ChatThreadView messages={messages} currentUserId={session.userId} />
 
-        <ChatThreadView messages={messages} currentUserId={session.userId} />
-
-        <div className="fixed bottom-[88px] inset-x-0 z-30 px-4 pb-2">
-          <div className="mx-auto max-w-[720px]">
-            <div className="bg-[var(--color-surface)]/95 backdrop-blur-xl border border-[var(--color-border)] rounded-[18px] shadow-[var(--shadow-soft-lg)] p-3">
-              <VetMessageInput appointmentId={recent.id} />
-            </div>
+      <div className="fixed bottom-3 inset-x-0 z-30 px-4 lg:left-[220px]">
+        <div className="mx-auto max-w-[720px]">
+          <div
+            className="backdrop-blur-xl border p-3 rounded-[18px]"
+            style={{
+              background: "color-mix(in oklab, var(--vet-bg-card) 92%, transparent)",
+              borderColor: "var(--vet-border)",
+            }}
+          >
+            <VetMessageInput appointmentId={recent.id} />
           </div>
         </div>
-      </PageContainer>
-      <VetTabBar />
-    </AppShell>
+      </div>
+    </div>
   );
 }

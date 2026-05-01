@@ -233,3 +233,45 @@ input[type="checkbox"] {
     animation: none !important;
   }
 }
+
+/* === Vet panel theme — scoped to /vet/* via .vet-theme class === */
+.vet-theme {
+  --vet-bg-deep:    oklch(84% 0.025 240);
+  --vet-bg-mid:     oklch(88% 0.02 240);
+  --vet-bg-card:    oklch(93% 0.012 240);
+  --vet-bg-hover:   oklch(90% 0.018 240);
+  --vet-green:      oklch(48% 0.18 155);
+  --vet-green-dim:  oklch(40% 0.15 155);
+  --vet-green-glow: oklch(48% 0.18 155 / 0.20);
+  --vet-blue:       oklch(52% 0.22 255);
+  --vet-blue-dim:   oklch(42% 0.18 255);
+  --vet-blue-glow:  oklch(52% 0.22 255 / 0.20);
+  --vet-amber:      oklch(62% 0.17 55);
+  --vet-amber-glow: oklch(62% 0.17 55 / 0.20);
+  --vet-red:        oklch(52% 0.20 20);
+  --vet-violet:     oklch(65% 0.18 300);
+  --vet-text-1:     oklch(22% 0.03 240);
+  --vet-text-2:     oklch(38% 0.04 240);
+  --vet-text-3:     oklch(55% 0.03 240);
+  --vet-border:     oklch(78% 0.03 240);
+
+  background: var(--vet-bg-deep);
+  color: var(--vet-text-1);
+  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  letter-spacing: 0;
+  min-height: 100dvh;
+}
+
+.vet-theme .vet-mono {
+  font-family: var(--font-space-grotesk), 'Space Grotesk', sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+.vet-theme ::-webkit-scrollbar { width: 6px; }
+.vet-theme ::-webkit-scrollbar-track { background: transparent; }
+.vet-theme ::-webkit-scrollbar-thumb { background: oklch(72% 0.04 240); border-radius: 99px; }
+.vet-theme ::-webkit-scrollbar-thumb:hover { background: oklch(62% 0.06 240); }
+
+/* Hide the global pink/blue decorative background when inside the vet panel */
+body:has(.vet-theme) .bg-decor { display: none; }
+body:has(.vet-theme) { background: var(--vet-bg-deep, oklch(84% 0.025 240)); }

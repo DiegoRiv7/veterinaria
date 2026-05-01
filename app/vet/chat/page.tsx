@@ -2,9 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth";
 import { listVetConversations } from "@/lib/chat";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
-import { VetTabBar } from "@/components/VetTabBar";
 import { EmptyState } from "@/components/EmptyState";
 import { ChevronRight } from "lucide-react";
 
@@ -37,13 +35,17 @@ export default async function VetChatList() {
   const conversations = await listVetConversations(session.userId);
 
   return (
-    <AppShell>
-      <PageContainer>
-        <PageHeader
-          title="Conversaciones"
-          subtitle="Tus clientes y sus mensajes."
-        />
+    <div className="flex flex-col gap-5">
+      <div>
+        <h2 className="text-[22px] font-black tracking-tight" style={{ color: "var(--vet-text-1)" }}>
+          Conversaciones
+        </h2>
+        <div className="text-[13px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
+          Tus clientes y sus mensajes
+        </div>
+      </div>
 
+      <div>
         {conversations.length === 0 ? (
           <EmptyState
             emoji="💬"
@@ -99,8 +101,7 @@ export default async function VetChatList() {
             })}
           </div>
         )}
-      </PageContainer>
-      <VetTabBar />
-    </AppShell>
+      </div>
+    </div>
   );
 }

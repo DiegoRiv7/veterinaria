@@ -2,11 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody, List, ListItem } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { VetTabBar } from "@/components/VetTabBar";
 import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
 import { AppointmentNotesForm } from "@/components/AppointmentNotesForm";
 import { AppointmentChat } from "@/components/AppointmentChat";
@@ -46,22 +44,40 @@ export default async function VetAppointmentEdit({
   });
 
   return (
-    <AppShell>
-      <PageContainer>
-        <Link href="/vet" className="text-sm text-[var(--color-brand)] mb-3 inline-block">
-          ← Volver
-        </Link>
-        <PageHeader
-          title={appt.service.name}
-          subtitle={`${formatDate(appt.scheduledAt)} · ${formatTime(appt.scheduledAt)}`}
-          right={
-            <Badge variant={appt.status === "COMPLETED" ? "success" : appt.status === "CANCELLED" ? "danger" : "brand"}>
-              {STATUS_LABEL[appt.status]}
-            </Badge>
+    <div className="flex flex-col gap-5 max-w-[860px] mx-auto w-full">
+      <Link
+        href="/vet/hoy"
+        className="text-sm font-semibold no-underline"
+        style={{ color: "var(--vet-green)" }}
+      >
+        ← Volver
+      </Link>
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h1
+            className="text-[24px] font-black tracking-tight"
+            style={{ color: "var(--vet-text-1)" }}
+          >
+            {appt.service.name}
+          </h1>
+          <p className="text-[14px] font-semibold capitalize" style={{ color: "var(--vet-text-3)" }}>
+            {formatDate(appt.scheduledAt)} · {formatTime(appt.scheduledAt)}
+          </p>
+        </div>
+        <Badge
+          variant={
+            appt.status === "COMPLETED"
+              ? "success"
+              : appt.status === "CANCELLED"
+                ? "danger"
+                : "brand"
           }
-        />
+        >
+          {STATUS_LABEL[appt.status]}
+        </Badge>
+      </div>
 
-        <List>
+      <List>
           <ListItem>
             <div className="h-11 w-11 rounded-[14px] bg-[var(--color-brand-soft)] flex items-center justify-center text-2xl">
               {SPECIES_EMOJI[appt.pet.species]}
@@ -131,16 +147,14 @@ export default async function VetAppointmentEdit({
           appointmentId={appt.id}
         />
 
-        {appt.status === "SCHEDULED" && (
-          <form action={cancelAppointmentAction} className="mt-6">
-            <input type="hidden" name="id" value={appt.id} />
-            <Button variant="danger" size="xl" className="w-full" type="submit">
-              Cancelar cita
-            </Button>
-          </form>
-        )}
-      </PageContainer>
-      <VetTabBar />
-    </AppShell>
+      {appt.status === "SCHEDULED" && (
+        <form action={cancelAppointmentAction} className="mt-2">
+          <input type="hidden" name="id" value={appt.id} />
+          <Button variant="danger" size="xl" className="w-full" type="submit">
+            Cancelar cita
+          </Button>
+        </form>
+      )}
+    </div>
   );
 }
