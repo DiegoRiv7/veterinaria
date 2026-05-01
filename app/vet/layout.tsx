@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { Nunito, Space_Grotesk } from "next/font/google";
 import { readSession } from "@/lib/auth";
 import { getVetUnreadCount } from "@/lib/chat";
+import { getVetNotifications } from "@/lib/notifications";
 import { VetShell } from "@/components/vet/VetShell";
 
 const nunito = Nunito({
@@ -29,12 +30,27 @@ export default async function VetLayout({ children }: { children: React.ReactNod
   if (!session) redirect("/login");
   if (session.role === "CLIENT") redirect("/inicio");
 
-  let unread = 0;
-  try {
-    unread = await getVetUnreadCount(session.userId);
-  } catch {
-    unread = 0;
-  }
+  const [unread, notifBundle] = await Promise.all([
+    getVetUnreadCount(session.userId).catch(() => 0),
+    getVetNotifications(session.userId).catch(() => ({
+      notifications: [],
+      unreadMessages: 0,
+      upcomingCount: 0,
+      total: 0,
+    })),
+  ]);
+
+  // Serialize Date objects to strings for the client component
+  const notifProps = {
+    notifications: notifBundle.notifications.map((n) =>
+      n.kind === "message"
+        ? { ...n, lastAt: n.lastAt.toISOString() }
+        : { ...n, scheduledAt: n.scheduledAt.toISOString() }
+    ),
+    unreadMessages: notifBundle.unreadMessages,
+    upcomingCount: notifBundle.upcomingCount,
+    total: notifBundle.total,
+  };
 
   return (
     <div className={`${nunito.variable} ${spaceGrotesk.variable}`}>
@@ -42,6 +58,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
         vetName={session.name}
         vetInitials={initials(session.name)}
         unreadChat={unread}
+        notifications={notifProps}
       >
         {children}
       </VetShell>

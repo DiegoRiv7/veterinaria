@@ -5,15 +5,25 @@ import { usePathname } from "next/navigation";
 import { VetSidebar } from "./VetSidebar";
 import { VetTopbar } from "./VetTopbar";
 import { VetIcon } from "./VetIcon";
+import type { NotificationsButton } from "./NotificationsButton";
+
+type NotifData = React.ComponentProps<typeof NotificationsButton>;
 
 type Props = {
   vetName: string;
   vetInitials: string;
   unreadChat: number;
+  notifications: NotifData;
   children: React.ReactNode;
 };
 
-export function VetShell({ vetName, vetInitials, unreadChat, children }: Props) {
+export function VetShell({
+  vetName,
+  vetInitials,
+  unreadChat,
+  notifications,
+  children,
+}: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const pathname = usePathname();
 
@@ -69,7 +79,7 @@ export function VetShell({ vetName, vetInitials, unreadChat, children }: Props) 
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <VetTopbar unreadChat={unreadChat} onMenuClick={() => setDrawerOpen(true)} />
+        <VetTopbar notifications={notifications} onMenuClick={() => setDrawerOpen(true)} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">{children}</main>
       </div>
     </div>

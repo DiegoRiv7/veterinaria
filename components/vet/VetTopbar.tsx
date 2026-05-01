@@ -2,6 +2,9 @@
 
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
+import { NotificationsButton } from "./NotificationsButton";
+
+type NotifData = React.ComponentProps<typeof NotificationsButton>;
 
 const TITLES: Record<string, string> = {
   "/vet": "Dashboard",
@@ -34,11 +37,11 @@ function todayChip() {
 }
 
 type Props = {
-  unreadChat: number;
+  notifications: NotifData;
   onMenuClick?: () => void;
 };
 
-export function VetTopbar({ unreadChat, onMenuClick }: Props) {
+export function VetTopbar({ notifications, onMenuClick }: Props) {
   const pathname = usePathname();
 
   return (
@@ -67,19 +70,7 @@ export function VetTopbar({ unreadChat, onMenuClick }: Props) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3.5">
-        {/* Notification bell */}
-        <div className="relative cursor-pointer" aria-label={`Mensajes sin leer: ${unreadChat}`}>
-          <VetIcon name="bell" size={20} color="var(--vet-text-2)" />
-          {unreadChat > 0 && (
-            <span
-              className="absolute -top-0.5 -right-0.5 w-2 h-2 rounded-full"
-              style={{
-                background: "var(--vet-red)",
-                border: "2px solid var(--vet-bg-mid)",
-              }}
-            />
-          )}
-        </div>
+        <NotificationsButton {...notifications} />
 
         {/* Date chip — hidden on small mobile */}
         <div
