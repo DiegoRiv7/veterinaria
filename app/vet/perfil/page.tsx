@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { readSession } from "@/lib/auth";
+import { clearSessionCookie, readSession } from "@/lib/auth";
 import { VetProfileEditor } from "@/components/vet/VetProfileEditor";
 
 export const dynamic = "force-dynamic";
@@ -10,10 +10,15 @@ export default async function VetProfilePage() {
   if (!session) redirect("/login");
   if (session.role === "CLIENT") redirect("/inicio");
 
-  const user = await prisma.user.findUniqueOrThrow({
+  const user = await prisma.user.findUnique({
     where: { id: session.userId },
     include: { vetProfile: true },
   });
+  if (!user) {
+    // Stale JWT (e.g. user was deleted/reseeded). Clear cookie and re-login.
+    await clearSessionCookie();
+    redirect("/login");
+  }
 
   const roleLabel =
     user.role === "VET" ? "Veterinario" : user.role === "ADMIN" ? "Administrador" : "Cliente";

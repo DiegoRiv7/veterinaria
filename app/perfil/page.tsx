@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { readSession } from "@/lib/auth";
+import { clearSessionCookie, readSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { logoutAction } from "@/app/actions/auth";
 import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
@@ -15,7 +15,12 @@ export const dynamic = "force-dynamic";
 export default async function PerfilPage() {
   const session = await readSession();
   if (!session) redirect("/login");
-  const user = await prisma.user.findUniqueOrThrow({ where: { id: session.userId } });
+  const user = await prisma.user.findUnique({ where: { id: session.userId } });
+  if (!user) {
+    // Stale JWT (user deleted/reseeded). Clear cookie and re-login.
+    await clearSessionCookie();
+    redirect("/login");
+  }
 
   const vet =
     session.role !== "CLIENT"
