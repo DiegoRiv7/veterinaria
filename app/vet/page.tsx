@@ -64,7 +64,9 @@ export default async function VetDashboardPage() {
         scheduledAt: true,
         status: true,
         priceEstimate: true,
+        durationMinutes: true,
         pet: { select: { name: true, species: true } },
+        client: { select: { name: true } },
         service: { select: { name: true } },
       },
       orderBy: { scheduledAt: "desc" },
@@ -113,8 +115,10 @@ export default async function VetDashboardPage() {
     date: a.scheduledAt.toISOString(),
     status: a.status,
     priceEstimate: a.priceEstimate,
+    durationMinutes: a.durationMinutes,
     petName: a.pet.name,
     petSpecies: a.pet.species,
+    clientName: a.client.name,
     serviceName: a.service.name,
   }));
 
@@ -128,7 +132,7 @@ export default async function VetDashboardPage() {
     session.name.split(" ").find((s) => !/^Dr/i.test(s)) ?? session.name.split(" ")[0];
 
   return (
-    <div className="flex flex-col gap-6 h-full">
+    <div className="flex flex-col gap-6 lg:h-full">
       <h1
         className="text-[26px] font-black tracking-tight"
         style={{ color: "var(--vet-text-1)" }}
@@ -172,11 +176,11 @@ export default async function VetDashboardPage() {
         />
       </div>
 
-      {/* Two columns — extended */}
-      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr] flex-1 min-h-0">
+      {/* Two columns — full-height stretch only on desktop */}
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr] lg:flex-1 lg:min-h-0">
         {/* Upcoming appointments */}
         <div
-          className="overflow-hidden border flex flex-col"
+          className="border flex flex-col lg:overflow-hidden"
           style={{
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
@@ -198,7 +202,7 @@ export default async function VetDashboardPage() {
               Ver todas →
             </Link>
           </div>
-          <div className="flex-1 p-3 flex flex-col gap-2 overflow-y-auto">
+          <div className="p-3 flex flex-col gap-2 lg:flex-1 lg:overflow-y-auto">
             {upcoming.length === 0 ? (
               <div
                 className="flex-1 flex items-center justify-center py-10 text-center text-[14px] font-semibold"
@@ -213,7 +217,7 @@ export default async function VetDashboardPage() {
         </div>
 
         {/* Right column */}
-        <div className="flex flex-col gap-3.5 min-h-0">
+        <div className="flex flex-col gap-3.5 lg:min-h-0">
           {/* Inventory alerts (visual-only demo, clickable) */}
           <Link
             href="/vet/inventario"
