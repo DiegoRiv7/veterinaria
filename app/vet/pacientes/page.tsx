@@ -39,8 +39,7 @@ export default async function VetPatientsPage() {
           appointments: {
             where: { vetId: vetProfile.id },
             orderBy: { scheduledAt: "desc" },
-            take: 1,
-            select: { scheduledAt: true },
+            select: { scheduledAt: true, status: true },
           },
         },
         orderBy: { name: "asc" },
@@ -50,8 +49,7 @@ export default async function VetPatientsPage() {
           owner: { select: { name: true } },
           appointments: {
             orderBy: { scheduledAt: "desc" },
-            take: 1,
-            select: { scheduledAt: true },
+            select: { scheduledAt: true, status: true },
           },
         },
         orderBy: { name: "asc" },
@@ -67,16 +65,25 @@ export default async function VetPatientsPage() {
     return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short" }).format(d);
   };
 
-  const data = pets.map((p) => ({
-    id: p.id,
-    name: p.name,
-    species: p.species,
-    breed: p.breed ?? "Sin raza",
-    age: ageFromBirthDate(p.birthDate) ?? "—",
-    weight: p.weightKg ? `${p.weightKg}kg` : "—",
-    owner: p.owner.name,
-    lastVisit: formatVisit(p.appointments[0]?.scheduledAt),
-  }));
+  const data = pets.map((p) => {
+    const visitCount = p.appointments.filter(
+      (a) => a.status === "COMPLETED"
+    ).length;
+    return {
+      id: p.id,
+      name: p.name,
+      species: p.species,
+      breed: p.breed ?? "Sin raza",
+      age: ageFromBirthDate(p.birthDate) ?? "—",
+      weight: p.weightKg ? `${p.weightKg}kg` : "—",
+      owner: p.owner.name,
+      lastVisit: formatVisit(p.appointments[0]?.scheduledAt),
+      lastVisitAt: p.appointments[0]?.scheduledAt
+        ? p.appointments[0].scheduledAt.toISOString()
+        : null,
+      visitCount,
+    };
+  });
 
   return <PatientsViewClient pets={data} />;
 }

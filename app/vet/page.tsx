@@ -41,7 +41,7 @@ export default async function VetDashboardPage() {
 
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
 
-  const [todayAppts, upcoming, last12Detail] = await Promise.all([
+  const [todayAppts, upcoming, last12Detail, vetMessages] = await Promise.all([
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: today, lt: tomorrow } },
       include: { pet: true, service: true, client: true },
@@ -70,6 +70,10 @@ export default async function VetDashboardPage() {
         service: { select: { name: true } },
       },
       orderBy: { scheduledAt: "desc" },
+    }),
+    prisma.message.findMany({
+      where: { senderId: session.userId, createdAt: { gte: last12Start } },
+      select: { createdAt: true },
     }),
   ]);
 
@@ -276,6 +280,7 @@ export default async function VetDashboardPage() {
           <MonthlySummaryCard
             monthRows={monthRows}
             appointments={appointmentsForModal}
+            messages={vetMessages.map((m) => ({ date: m.createdAt.toISOString() }))}
             currentMonth={{ year: monthStart.getFullYear(), month: monthStart.getMonth() }}
             vetName={session.name}
           />

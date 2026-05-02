@@ -4,7 +4,6 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
-import { MonthStatsCard } from "@/components/vet/MonthStatsCard";
 
 export const dynamic = "force-dynamic";
 
@@ -63,12 +62,7 @@ export default async function VetCalendarPage({
   const [monthAppts, dayAppts] = await Promise.all([
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: monthStart, lt: monthEnd } },
-      select: {
-        scheduledAt: true,
-        status: true,
-        service: { select: { name: true } },
-        pet: { select: { name: true } },
-      },
+      select: { scheduledAt: true },
     }),
     (() => {
       const selectedNext = new Date(selectedDay);
@@ -88,23 +82,6 @@ export default async function VetCalendarPage({
     countByDay.set(key, (countByDay.get(key) ?? 0) + 1);
   }
 
-  // Compute month stats for the side widget
-  const total = monthAppts.length;
-  const completed = monthAppts.filter((a) => a.status === "COMPLETED").length;
-  const scheduled = monthAppts.filter((a) => a.status === "SCHEDULED").length;
-  const cancelled = monthAppts.filter(
-    (a) => a.status === "CANCELLED" || a.status === "NO_SHOW"
-  ).length;
-
-  const serviceCounts = new Map<string, number>();
-  const petCounts = new Map<string, number>();
-  for (const a of monthAppts) {
-    serviceCounts.set(a.service.name, (serviceCounts.get(a.service.name) ?? 0) + 1);
-    petCounts.set(a.pet.name, (petCounts.get(a.pet.name) ?? 0) + 1);
-  }
-  const topServiceEntry = [...serviceCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-  const topPetEntry = [...petCounts.entries()].sort((a, b) => b[1] - a[1])[0];
-
   const prevMonth = new Date(year, month - 1, 1);
   const nextMonth = new Date(year, month + 1, 1);
 
@@ -114,17 +91,15 @@ export default async function VetCalendarPage({
 
   return (
     <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1.2fr_1fr] lg:items-start">
-      {/* Left column: calendar + stats widget (compact, doesn't stretch) */}
-      <div className="flex flex-col gap-5">
-        {/* Calendar */}
-        <div
-          className="border p-4 sm:p-6 flex flex-col gap-5"
-          style={{
-            background: "var(--vet-bg-card)",
-            borderColor: "var(--vet-border)",
-            borderRadius: 22,
-          }}
-        >
+      {/* Calendar */}
+      <div
+        className="border p-4 sm:p-6 flex flex-col gap-5 self-start"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          borderRadius: 22,
+        }}
+      >
           <div className="flex items-center justify-between">
             <Link
               href={`/vet/calendario?day=${toISODate(prevMonth)}`}
@@ -210,23 +185,11 @@ export default async function VetCalendarPage({
               );
             })}
           </div>
-        </div>
-
-        {/* Month stats widget */}
-        <MonthStatsCard
-          monthLabel={MONTH_NAMES[month]}
-          total={total}
-          completed={completed}
-          scheduled={scheduled}
-          cancelled={cancelled}
-          topService={topServiceEntry ? { name: topServiceEntry[0], count: topServiceEntry[1] } : null}
-          topPet={topPetEntry ? { name: topPetEntry[0], count: topPetEntry[1] } : null}
-        />
       </div>
 
-      {/* Right column: selected day appointments — can grow tall */}
+      {/* Right column: selected day appointments */}
       <div
-        className="border overflow-hidden flex flex-col"
+        className="border overflow-hidden flex flex-col self-start max-h-[calc(100dvh-160px)]"
         style={{
           background: "var(--vet-bg-card)",
           borderColor: "var(--vet-border)",
