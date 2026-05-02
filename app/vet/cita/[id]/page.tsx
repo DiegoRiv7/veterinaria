@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { Card, CardBody, List, ListItem } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
 import { AppointmentNotesForm } from "@/components/AppointmentNotesForm";
@@ -150,9 +149,17 @@ export default async function VetAppointmentEdit({
       {appt.status === "SCHEDULED" && (
         <form action={cancelAppointmentAction} className="mt-2">
           <input type="hidden" name="id" value={appt.id} />
-          <Button variant="danger" size="xl" className="w-full" type="submit">
+          <button
+            type="submit"
+            className="w-full h-14 rounded-[16px] text-[15px] font-semibold border transition-colors hover:brightness-105"
+            style={{
+              background: "color-mix(in oklab, var(--vet-red) 10%, transparent)",
+              borderColor: "color-mix(in oklab, var(--vet-red) 28%, transparent)",
+              color: "var(--vet-red)",
+            }}
+          >
             Cancelar cita
-          </Button>
+          </button>
         </form>
       )}
     </div>

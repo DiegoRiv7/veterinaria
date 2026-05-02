@@ -29,9 +29,14 @@ export function AppointmentNotesForm({
         start(async () => {
           try {
             await action(fd);
-            toast.success("Notas guardadas", {
-              description: "El cliente verá esta información en su cita.",
-            });
+            toast.success(
+              defaultCompleted ? "Cambios guardados" : "Cita confirmada",
+              {
+                description: defaultCompleted
+                  ? "Las notas se actualizaron."
+                  : "Las notas quedaron guardadas y la cita se marcó como completada.",
+              }
+            );
             router.refresh();
           } catch (e) {
             toast.error("No pudimos guardar", {
@@ -43,6 +48,8 @@ export function AppointmentNotesForm({
       className="flex flex-col gap-4"
     >
       <input type="hidden" name="id" value={id} />
+      {/* Saving these notes always confirms the appointment as completed */}
+      <input type="hidden" name="markCompleted" value="on" />
       <div>
         <Label htmlFor="vetNotes">Diagnóstico / observaciones</Label>
         <Textarea
@@ -71,18 +78,12 @@ export function AppointmentNotesForm({
         />
       </div>
 
-      <label className="flex items-center gap-3 p-3 rounded-[12px] bg-[var(--color-surface-2)]">
-        <input
-          type="checkbox"
-          name="markCompleted"
-          defaultChecked={defaultCompleted}
-          className="h-5 w-5"
-        />
-        <span className="text-[15px]">Marcar como completada</span>
-      </label>
-
       <Button size="xl" type="submit" disabled={pending}>
-        {pending ? "Guardando..." : "Guardar cambios"}
+        {pending
+          ? "Guardando..."
+          : defaultCompleted
+            ? "Guardar cambios"
+            : "Confirmar"}
       </Button>
     </form>
   );
