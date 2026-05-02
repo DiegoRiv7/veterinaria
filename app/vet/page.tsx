@@ -26,22 +26,6 @@ function addMonths(d: Date, n: number) {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
-function categoryFor(name: string): "consultas" | "cirugias" | "vacunaciones" | "otros" {
-  const n = name.toLowerCase();
-  if (n.includes("vacun")) return "vacunaciones";
-  if (n.includes("operac") || n.includes("cirug") || n.includes("ester")) return "cirugias";
-  if (
-    n.includes("desparasit") ||
-    n.includes("urgenc") ||
-    n.includes("estét") ||
-    n.includes("estet") ||
-    n.includes("baño") ||
-    n.includes("bano")
-  )
-    return "otros";
-  return "consultas";
-}
-
 export default async function VetDashboardPage() {
   const session = await readSession();
   if (!session) redirect("/login");
@@ -52,12 +36,12 @@ export default async function VetDashboardPage() {
   const tomorrow = startOfNextDay();
   const monthStart = startOfMonth();
   const monthEnd = addMonths(monthStart, 1);
-  // 12-month window for the summary modal: 11 months back through this month end
+  // 12-month window for the summary modal
   const last12Start = addMonths(monthStart, -11);
 
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
 
-  const [todayAppts, upcoming, monthAppts, totalPets, last12Appts] = await Promise.all([
+  const [todayAppts, upcoming, last12Detail] = await Promise.all([
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: today, lt: tomorrow } },
       include: { pet: true, service: true, client: true },
@@ -74,65 +58,65 @@ export default async function VetDashboardPage() {
       take: 6,
     }),
     prisma.appointment.findMany({
-      where: { ...vetFilter, scheduledAt: { gte: monthStart, lt: monthEnd } },
-      include: { service: { select: { name: true } } },
-    }),
-    vetProfile
-      ? prisma.appointment
-          .findMany({ where: { vetId: vetProfile.id }, distinct: ["petId"], select: { petId: true } })
-          .then((rows) => rows.length)
-      : prisma.pet.count(),
-    prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: last12Start, lt: monthEnd } },
-      select: { scheduledAt: true, service: { select: { name: true } } },
+      select: {
+        id: true,
+        scheduledAt: true,
+        status: true,
+        priceEstimate: true,
+        pet: { select: { name: true, species: true } },
+        service: { select: { name: true } },
+      },
+      orderBy: { scheduledAt: "desc" },
     }),
   ]);
 
   const completedToday = todayAppts.filter((a) => a.status === "COMPLETED").length;
   const scheduledToday = todayAppts.filter((a) => a.status === "SCHEDULED").length;
+  const cancelledToday = todayAppts.filter(
+    (a) => a.status === "CANCELLED" || a.status === "NO_SHOW"
+  ).length;
 
-  // Current month buckets (used to render the small summary on the dashboard)
+  // Current month buckets for the trigger card display
+  const thisMonth = last12Detail.filter(
+    (a) => a.scheduledAt >= monthStart && a.scheduledAt < monthEnd
+  );
   const monthBuckets = { consultas: 0, vacunaciones: 0, cirugias: 0, otros: 0 };
-  for (const a of monthAppts) {
+  function categoryFor(name: string): "consultas" | "cirugias" | "vacunaciones" | "otros" {
+    const n = name.toLowerCase();
+    if (n.includes("vacun")) return "vacunaciones";
+    if (n.includes("operac") || n.includes("cirug") || n.includes("ester")) return "cirugias";
+    if (
+      n.includes("desparasit") ||
+      n.includes("urgenc") ||
+      n.includes("estét") ||
+      n.includes("estet") ||
+      n.includes("baño") ||
+      n.includes("bano")
+    )
+      return "otros";
+    return "consultas";
+  }
+  for (const a of thisMonth) {
     monthBuckets[categoryFor(a.service.name)]++;
   }
-  const monthTotal = monthAppts.length;
+  const monthTotal = thisMonth.length;
   const monthRows = [
     { label: "Consultas", val: monthBuckets.consultas, pct: monthTotal ? Math.round((monthBuckets.consultas / monthTotal) * 100) : 0 },
     { label: "Cirugías", val: monthBuckets.cirugias, pct: monthTotal ? Math.round((monthBuckets.cirugias / monthTotal) * 100) : 0 },
     { label: "Vacunaciones", val: monthBuckets.vacunaciones, pct: monthTotal ? Math.round((monthBuckets.vacunaciones / monthTotal) * 100) : 0 },
   ];
 
-  // Build 12-month buckets for the modal
-  const monthlyBuckets: {
-    year: number;
-    month: number;
-    consultas: number;
-    cirugias: number;
-    vacunaciones: number;
-    otros: number;
-    total: number;
-  }[] = [];
-  for (let i = 0; i < 12; i++) {
-    const m = addMonths(last12Start, i);
-    monthlyBuckets.push({
-      year: m.getFullYear(),
-      month: m.getMonth(),
-      consultas: 0,
-      cirugias: 0,
-      vacunaciones: 0,
-      otros: 0,
-      total: 0,
-    });
-  }
-  for (const a of last12Appts) {
-    const y = a.scheduledAt.getFullYear();
-    const m = a.scheduledAt.getMonth();
-    const bucket = monthlyBuckets.find((b) => b.year === y && b.month === m);
-    if (!bucket) continue;
-    bucket[categoryFor(a.service.name)]++;
-    bucket.total++;
-  }
+  // Serialize the detailed appointments for the client modal
+  const appointmentsForModal = last12Detail.map((a) => ({
+    id: a.id,
+    date: a.scheduledAt.toISOString(),
+    status: a.status,
+    priceEstimate: a.priceEstimate,
+    petName: a.pet.name,
+    petSpecies: a.pet.species,
+    serviceName: a.service.name,
+  }));
 
   const stockDemo = [
     { name: "Vacuna Antirrábica", current: 3, min: 10, unit: "dosis" },
@@ -145,7 +129,6 @@ export default async function VetDashboardPage() {
 
   return (
     <div className="flex flex-col gap-6 h-full">
-      {/* Greeting */}
       <h1
         className="text-[26px] font-black tracking-tight"
         style={{ color: "var(--vet-text-1)" }}
@@ -164,7 +147,7 @@ export default async function VetDashboardPage() {
           href="/vet/hoy"
         />
         <StatCard
-          label="Completadas"
+          label="Atendidas"
           value={completedToday}
           sub="del día"
           icon="today"
@@ -180,12 +163,12 @@ export default async function VetDashboardPage() {
           href="/vet/hoy?status=SCHEDULED"
         />
         <StatCard
-          label="Pacientes"
-          value={totalPets}
-          sub="atendidos"
-          icon="paw"
-          color="var(--vet-violet)"
-          href="/vet/pacientes"
+          label="Canceladas"
+          value={cancelledToday}
+          sub="del día"
+          icon="warning"
+          color="var(--vet-red)"
+          href="/vet/hoy?status=CANCELLED"
         />
       </div>
 
@@ -285,10 +268,10 @@ export default async function VetDashboardPage() {
             </div>
           </Link>
 
-          {/* Monthly summary — opens animated modal on click */}
+          {/* Resumen — opens animated modal on click */}
           <MonthlySummaryCard
             monthRows={monthRows}
-            monthlyBuckets={monthlyBuckets}
+            appointments={appointmentsForModal}
             currentMonth={{ year: monthStart.getFullYear(), month: monthStart.getMonth() }}
             vetName={session.name}
           />
