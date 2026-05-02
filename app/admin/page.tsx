@@ -5,7 +5,7 @@ import { readSession } from "@/lib/auth";
 import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
 import { AdminTabBar } from "@/components/AdminTabBar";
-import { Stethoscope, Clock, Users, Tag, ChevronRight, CalendarDays } from "lucide-react";
+import { Stethoscope, Clock, Users, Tag, ChevronRight, CalendarDays, BarChart3 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
 
@@ -24,6 +24,7 @@ export default async function AdminHome() {
   ]);
 
   const tiles = [
+    { href: "/admin/reportes", label: "Reportes y estadísticas", icon: BarChart3, hint: "Rendimiento por vet, ingresos, exportación" },
     { href: "/admin/servicios", label: "Servicios", icon: Stethoscope, hint: `${svcCount} activos` },
     { href: "/admin/tarifas", label: "Tarifas por especie", icon: Tag, hint: "Multiplicadores" },
     { href: "/admin/horario", label: "Horario de la clínica", icon: Clock, hint: "Días y horas" },
