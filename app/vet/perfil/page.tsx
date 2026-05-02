@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { clearSessionCookie, readSession } from "@/lib/auth";
+import { readSession } from "@/lib/auth";
 import { VetProfileEditor } from "@/components/vet/VetProfileEditor";
 
 export const dynamic = "force-dynamic";
@@ -15,8 +15,10 @@ export default async function VetProfilePage() {
     include: { vetProfile: true },
   });
   if (!user) {
-    // Stale JWT (e.g. user was deleted/reseeded). Clear cookie and re-login.
-    await clearSessionCookie();
+    // Stale JWT (e.g. user was deleted/reseeded). The next /login submission
+    // overwrites the cookie automatically; we can't clearSessionCookie() from
+    // a Server Component (cookie writes only allowed in Server Actions / Route
+    // Handlers in Next.js 16).
     redirect("/login");
   }
 

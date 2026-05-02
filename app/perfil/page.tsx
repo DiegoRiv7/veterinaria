@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { clearSessionCookie, readSession } from "@/lib/auth";
+import { readSession } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { logoutAction } from "@/app/actions/auth";
 import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
@@ -17,8 +17,9 @@ export default async function PerfilPage() {
   if (!session) redirect("/login");
   const user = await prisma.user.findUnique({ where: { id: session.userId } });
   if (!user) {
-    // Stale JWT (user deleted/reseeded). Clear cookie and re-login.
-    await clearSessionCookie();
+    // Stale JWT (user deleted/reseeded). Cookie writes aren't allowed in
+    // Server Components in Next 16; redirect to /login and let the next
+    // sign-in overwrite the cookie.
     redirect("/login");
   }
 
