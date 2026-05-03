@@ -34,22 +34,30 @@ type Props = {
   appts: ApptLite[];
   headerDate: string;
   initialFilter?: FilterValue;
+  hideHeader?: boolean;
 };
 
-export function TodayViewClient({ appts, headerDate, initialFilter = "todas" }: Props) {
+export function TodayViewClient({
+  appts,
+  headerDate,
+  initialFilter = "todas",
+  hideHeader = false,
+}: Props) {
   const [filter, setFilter] = useState<FilterValue>(initialFilter);
   const visible = filter === "todas" ? appts : appts.filter((a) => a.status === filter);
 
   return (
     <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-[22px] font-black tracking-tight" style={{ color: "var(--vet-text-1)" }}>
-          Citas de Hoy
-        </h2>
-        <div className="text-[13px] font-semibold capitalize" style={{ color: "var(--vet-text-3)" }}>
-          {headerDate} · {appts.length} {appts.length === 1 ? "cita programada" : "citas programadas"}
+      {!hideHeader && (
+        <div>
+          <h2 className="text-[22px] font-black tracking-tight" style={{ color: "var(--vet-text-1)" }}>
+            Citas de Hoy
+          </h2>
+          <div className="text-[13px] font-semibold capitalize" style={{ color: "var(--vet-text-3)" }}>
+            {headerDate} · {appts.length} {appts.length === 1 ? "cita programada" : "citas programadas"}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Filter chips */}
       <div className="flex gap-2 flex-wrap">

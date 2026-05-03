@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
+import { NewAppointmentButton } from "@/components/vet/NewAppointmentButton";
 
 export const dynamic = "force-dynamic";
 
@@ -59,7 +60,7 @@ export default async function VetCalendarPage({
   const vetProfile = await prisma.veterinarian.findUnique({ where: { userId: session.userId } });
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
 
-  const [monthAppts, dayAppts] = await Promise.all([
+  const [monthAppts, dayAppts, clients, services] = await Promise.all([
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: monthStart, lt: monthEnd } },
       select: { scheduledAt: true },
@@ -73,7 +74,29 @@ export default async function VetCalendarPage({
         orderBy: { scheduledAt: "asc" },
       });
     })(),
+    prisma.user.findMany({
+      where: { role: "CLIENT" },
+      select: { id: true, name: true, phone: true, pets: { select: { id: true, name: true, species: true } } },
+      orderBy: { name: "asc" },
+    }),
+    prisma.service.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
+
+  const clientOptions = clients.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone,
+    pets: c.pets,
+  }));
+  const serviceOptions = services.map((s) => ({
+    id: s.id,
+    name: s.name,
+    basePrice: s.basePrice,
+    durationMinutes: s.durationMinutes,
+  }));
 
   // Build per-day count for the calendar dots
   const countByDay = new Map<string, number>();
@@ -197,7 +220,7 @@ export default async function VetCalendarPage({
         }}
       >
         <div
-          className="px-5 py-4 border-b flex items-center justify-between"
+          className="px-5 py-4 border-b flex items-center justify-between gap-3 flex-wrap"
           style={{ borderBottomColor: "var(--vet-border)" }}
         >
           <div>
@@ -210,6 +233,12 @@ export default async function VetCalendarPage({
                 : `${dayAppts.length} ${dayAppts.length === 1 ? "cita" : "citas"}`}
             </div>
           </div>
+          <NewAppointmentButton
+            clients={clientOptions}
+            services={serviceOptions}
+            defaultDate={toISODate(selectedDay)}
+            label="Agendar"
+          />
         </div>
         <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2">
           {dayAppts.length === 0 ? (

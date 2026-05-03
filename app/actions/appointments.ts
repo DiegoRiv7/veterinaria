@@ -1,8 +1,9 @@
 "use server";
+import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { requireSession } from "@/lib/auth";
+import { hashPassword, requireSession } from "@/lib/auth";
 import { estimatePrice } from "@/lib/scheduling";
 
 export async function createAppointmentAction(
@@ -91,6 +92,145 @@ export async function cancelAppointmentAction(formData: FormData) {
   revalidatePath("/inicio");
   revalidatePath("/vet");
   revalidatePath(`/cita/${id}`);
+}
+
+const VALID_SPECIES_VALUES = ["DOG", "CAT", "BIRD", "RABBIT", "HAMSTER", "REPTILE", "OTHER"] as const;
+
+export type CreateAppointmentResult =
+  | { ok: true; id: string }
+  | { ok: false; error: string };
+
+/**
+ * Vet/admin action: create an appointment manually (e.g., when a client
+ * books over the phone). Supports creating a brand-new client (with just
+ * name + phone) and a brand-new pet on the fly. The created client gets a
+ * placeholder email + random password since they aren't logging in.
+ */
+export async function createAppointmentByVetAction(
+  _: unknown,
+  formData: FormData
+): Promise<CreateAppointmentResult> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "No autorizado." };
+  }
+
+  const clientId = String(formData.get("clientId") ?? "").trim();
+  const newClientName = String(formData.get("newClientName") ?? "").trim();
+  const newClientPhone = String(formData.get("newClientPhone") ?? "").replace(/\D+/g, "");
+  const petId = String(formData.get("petId") ?? "").trim();
+  const newPetName = String(formData.get("newPetName") ?? "").trim();
+  const newPetSpecies = String(formData.get("newPetSpecies") ?? "").trim();
+  const newPetBreed = String(formData.get("newPetBreed") ?? "").trim() || null;
+  const serviceId = String(formData.get("serviceId") ?? "").trim();
+  const date = String(formData.get("date") ?? "").trim();
+  const time = String(formData.get("time") ?? "").trim();
+  const clientNotes = String(formData.get("clientNotes") ?? "").trim() || null;
+  const vetIdOverride = String(formData.get("vetId") ?? "").trim();
+
+  if (!serviceId) return { ok: false, error: "Selecciona un servicio." };
+  if (!date || !time) return { ok: false, error: "Falta fecha u hora." };
+
+  // Resolve vet
+  let vetId = vetIdOverride;
+  if (!vetId) {
+    const vet = await prisma.veterinarian.findUnique({
+      where: { userId: session.userId },
+    });
+    if (vet) {
+      vetId = vet.id;
+    } else if (session.role === "ADMIN") {
+      return { ok: false, error: "Selecciona un veterinario." };
+    } else {
+      return { ok: false, error: "Tu cuenta no tiene perfil de veterinario." };
+    }
+  }
+
+  // Resolve client (existing or new)
+  let resolvedClientId = clientId;
+  if (!resolvedClientId) {
+    if (!newClientName) return { ok: false, error: "Ingresa el nombre del cliente." };
+    if (newClientPhone.length < 7)
+      return { ok: false, error: "Ingresa un teléfono válido (mín. 7 dígitos)." };
+    // Reuse existing user with this phone if it exists
+    const byPhone = await prisma.user.findUnique({ where: { phone: newClientPhone } });
+    if (byPhone) {
+      if (byPhone.role !== "CLIENT")
+        return { ok: false, error: "Ese teléfono pertenece a personal de la clínica." };
+      resolvedClientId = byPhone.id;
+    } else {
+      const placeholderEmail = `tel-${newClientPhone}@noemail.patitasfelices.com`;
+      const passwordHash = await hashPassword(randomBytes(24).toString("hex"));
+      const created = await prisma.user.create({
+        data: {
+          name: newClientName,
+          phone: newClientPhone,
+          email: placeholderEmail,
+          passwordHash,
+          role: "CLIENT",
+        },
+      });
+      resolvedClientId = created.id;
+    }
+  }
+
+  // Resolve pet (existing or new)
+  let resolvedPetId = petId;
+  if (!resolvedPetId) {
+    if (!newPetName) return { ok: false, error: "Ingresa el nombre de la mascota." };
+    if (!(VALID_SPECIES_VALUES as readonly string[]).includes(newPetSpecies))
+      return { ok: false, error: "Selecciona la especie." };
+    const pet = await prisma.pet.create({
+      data: {
+        ownerId: resolvedClientId,
+        name: newPetName,
+        species: newPetSpecies as Species,
+        breed: newPetBreed,
+      },
+    });
+    resolvedPetId = pet.id;
+  } else {
+    // Verify ownership
+    const pet = await prisma.pet.findUnique({ where: { id: resolvedPetId } });
+    if (!pet || pet.ownerId !== resolvedClientId) {
+      return { ok: false, error: "La mascota no pertenece al cliente." };
+    }
+  }
+
+  // Service + price
+  const service = await prisma.service.findUnique({ where: { id: serviceId } });
+  if (!service) return { ok: false, error: "Servicio no encontrado." };
+  const pet = await prisma.pet.findUnique({ where: { id: resolvedPetId } });
+  if (!pet) return { ok: false, error: "Mascota no encontrada." };
+  const priceEstimate = await estimatePrice(serviceId, pet.species);
+
+  // Combine date+time into a Date in local timezone
+  const scheduledAt = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(scheduledAt.getTime())) {
+    return { ok: false, error: "Fecha u hora inválida." };
+  }
+
+  const appt = await prisma.appointment.create({
+    data: {
+      vetId,
+      petId: resolvedPetId,
+      clientId: resolvedClientId,
+      serviceId: service.id,
+      scheduledAt,
+      durationMinutes: service.durationMinutes,
+      status: "SCHEDULED",
+      priceEstimate,
+      clientNotes,
+    },
+  });
+
+  revalidatePath("/vet");
+  revalidatePath("/vet/hoy");
+  revalidatePath("/vet/calendario");
+  revalidatePath("/vet/pacientes");
+  revalidatePath("/inicio");
+
+  return { ok: true, id: appt.id };
 }
 
 export async function updateAppointmentNotesAction(formData: FormData) {
