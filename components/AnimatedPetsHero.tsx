@@ -67,8 +67,8 @@ export function AnimatedPetsHero() {
         }}
       />
 
-      {/* Featured pet — crossfade carousel */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      {/* Featured pet — crossfade carousel. Reserve bottom space for dots. */}
+      <div className="absolute inset-0 pb-20 flex items-center justify-center">
         {PETS.map((p, i) => (
           <div
             key={p.label}
@@ -105,8 +105,8 @@ export function AnimatedPetsHero() {
         ))}
       </div>
 
-      {/* Progress dots */}
-      <div className="absolute bottom-8 left-0 right-0 flex justify-center gap-1.5">
+      {/* Progress dots — pinned to bottom with safe gap from the pill above */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
         {PETS.map((_, i) => (
           <span
             key={i}
