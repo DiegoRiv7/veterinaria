@@ -36,13 +36,13 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Animation area — generous 60% of the column */}
-          <div className="basis-[60%] grow-0 shrink-0 relative">
+          {/* Animation area — pushed down a bit so it doesn't sit too high */}
+          <div className="basis-[55%] grow-0 shrink-0 relative pt-12">
             <AnimatedPetsHero />
           </div>
 
-          {/* Welcome copy — centered in its 40%, breathing room */}
-          <div className="basis-[40%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
+          {/* Welcome copy — centered in its 45%, breathing room */}
+          <div className="basis-[45%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
             <Image
               src="/vetsfriend-icon.png"
               alt="Vetsfriend"
@@ -55,20 +55,29 @@ export default function LoginPage() {
                 border: "1px solid rgba(255,255,255,0.2)",
               }}
             />
-            <h1 className="text-white text-[40px] xl:text-[44px] font-black tracking-tight leading-[1.1] flex flex-wrap items-baseline gap-x-3 gap-y-2">
-              <span>Bienvenido a</span>
+            <h1
+              className="text-white text-[40px] xl:text-[44px] font-black tracking-tight"
+              style={{ lineHeight: 1.15 }}
+            >
+              Bienvenido a{" "}
               <Image
                 src="/vetsfriend-wordmark-white.png"
                 alt="Vetsfriend"
                 width={800}
                 height={124}
                 priority
-                className="inline-block h-[44px] xl:h-[48px] w-auto"
-                style={{ transform: "translateY(6px)" }}
+                className="inline-block w-auto"
+                style={{
+                  height: "0.95em",
+                  verticalAlign: "-0.18em",
+                }}
               />
-              <span>.</span>
+              .
             </h1>
-            <p className="text-white/85 text-[16px] xl:text-[17px] font-semibold mt-5 max-w-md leading-relaxed">
+            <p
+              className="text-white/85 text-[16px] xl:text-[17px] font-semibold mt-5 max-w-md leading-relaxed text-justify"
+              style={{ hyphens: "auto" }}
+            >
               La clínica veterinaria al alcance de tu mano. Agenda citas,
               consulta el historial de tu mascota y mantente conectado con
               quienes los cuidan mejor.

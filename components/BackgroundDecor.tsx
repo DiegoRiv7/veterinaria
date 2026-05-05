@@ -49,8 +49,8 @@ type Trail = {
   duration: number;
 };
 
-const TRAIL_COUNT = 6;
-const PAWS_PER_TRAIL = 6;
+const TRAIL_COUNT = 10;
+const PAWS_PER_TRAIL = 7;
 
 const TRAILS: Trail[] = Array.from({ length: TRAIL_COUNT }, (_, i) => {
   const x0 = 8 + rand(i, 1) * 75;
@@ -58,8 +58,9 @@ const TRAILS: Trail[] = Array.from({ length: TRAIL_COUNT }, (_, i) => {
   const angle = rand(i, 3) * Math.PI * 2;
   const length = 22 + rand(i, 4) * 30; // 22..52% of viewport
   const size = 16 + Math.floor(rand(i, 5) * 10); // 16..26px
-  // Bias palette: 6 of 7 picks land on blue/violet, 1 on pink accent
-  const colorIdx = i === 2 ? 6 : i % 6;
+  // Spread across the warm palette; sprinkle the deep-terracotta accent
+  // every few trails for variety.
+  const colorIdx = i % 4 === 3 ? 6 : i % 6;
   return {
     id: i,
     x0,
