@@ -88,46 +88,18 @@ export default function LoginPage() {
         {/* ── Right half / mobile — login form ─────────────────────────── */}
         <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14 relative">
           <div className="w-full max-w-sm lg:max-w-md flex flex-col gap-5 lg:gap-6 relative z-10">
-            <div
-              className="flex items-center gap-4 lg:gap-5 p-5 lg:p-6 rounded-[22px]"
+            <Image
+              src="/vetsfriend-banner.png"
+              alt="Vetsfriend — Clínica & Grooming"
+              width={1200}
+              height={400}
+              priority
+              className="w-full h-auto rounded-[22px]"
               style={{
-                background:
-                  "color-mix(in oklab, var(--vet-bg-card) 96%, transparent)",
                 border: "1px solid var(--vet-border)",
-                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.10)",
+                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
               }}
-            >
-              <Image
-                src="/vetsfriend-icon.png"
-                alt=""
-                width={128}
-                height={128}
-                priority
-                className="rounded-[16px] flex-shrink-0 select-none"
-                style={{
-                  width: 64,
-                  height: 64,
-                  boxShadow: "0 6px 16px rgba(206, 90, 45, 0.18)",
-                }}
-              />
-              <div className="flex flex-col gap-1.5 min-w-0">
-                <Image
-                  src="/vetsfriend-wordmark.png"
-                  alt="Vetsfriend"
-                  width={627}
-                  height={108}
-                  priority
-                  className="w-auto select-none"
-                  style={{ height: 32, maxWidth: "100%" }}
-                />
-                <span
-                  className="text-[11px] lg:text-[12px] font-extrabold uppercase tracking-[0.22em]"
-                  style={{ color: "var(--vet-mustard)" }}
-                >
-                  Clínica &amp; Grooming
-                </span>
-              </div>
-            </div>
+            />
 
             <div
               className="border p-7 lg:p-8 rounded-[24px]"
