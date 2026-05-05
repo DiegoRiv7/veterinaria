@@ -2,177 +2,323 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
-import { Card, CardBody } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { AppShell, PageContainer } from "@/components/ui/page";
 import { ClientTabBar } from "@/components/ClientTabBar";
-import { EmptyState } from "@/components/EmptyState";
-import { PetAvatar } from "@/components/PetAvatar";
-import BirthdayBanner from "@/components/BirthdayBanner";
-import { formatDate, formatTime, SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
-import { getUnreadByAppointment } from "@/lib/chat";
-import { CalendarPlus, ChevronRight, MessageCircle } from "lucide-react";
+import { getClientNotifications } from "@/lib/client-notifications";
+import {
+  formatTime,
+  SPECIES_EMOJI,
+  SPECIES_LABEL,
+  ageFromBirthDate,
+} from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
+
+const STATUS_BADGE: Record<
+  string,
+  { label: string; bg: string; color: string; border: string }
+> = {
+  SCHEDULED: {
+    label: "confirmada",
+    bg: "color-mix(in oklab, var(--vet-green, #2f7d4f) 12%, transparent)",
+    color: "var(--vet-green, #2f7d4f)",
+    border: "color-mix(in oklab, var(--vet-green, #2f7d4f) 28%, transparent)",
+  },
+  COMPLETED: {
+    label: "completada",
+    bg: "color-mix(in oklab, var(--color-brand) 12%, transparent)",
+    color: "var(--color-brand)",
+    border: "color-mix(in oklab, var(--color-brand) 28%, transparent)",
+  },
+  CANCELLED: {
+    label: "cancelada",
+    bg: "color-mix(in oklab, #ef4444 12%, transparent)",
+    color: "#c0392b",
+    border: "color-mix(in oklab, #ef4444 28%, transparent)",
+  },
+};
+
+function dateLabel(d: Date): string {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (same(d, today)) return "Hoy";
+  if (same(d, tomorrow)) return "Mañana";
+  return new Intl.DateTimeFormat("es-MX", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  }).format(d);
+}
+
+const PET_RING_COLORS = [
+  "#e8a061", // peach
+  "#b48cd9", // soft lavender
+  "#a8d8a8", // mint
+  "#f0c95e", // mustard
+  "#f4a472", // peach soft
+  "#9bb8d9", // sky
+];
 
 export default async function ClientHome() {
   const session = await readSession();
   if (!session) redirect("/login");
 
-  const [upcoming, pets] = await Promise.all([
+  const [pets, upcoming, notifs] = await Promise.all([
+    prisma.pet.findMany({
+      where: { ownerId: session.userId },
+      orderBy: { createdAt: "asc" },
+    }),
     prisma.appointment.findMany({
       where: {
         clientId: session.userId,
         status: "SCHEDULED",
         scheduledAt: { gte: new Date() },
       },
-      include: { pet: true, service: true, vet: { include: { user: true } } },
+      include: {
+        pet: true,
+        service: true,
+        vet: { include: { user: true } },
+      },
       orderBy: { scheduledAt: "asc" },
-      take: 5,
+      take: 1,
     }),
-    prisma.pet.findMany({
-      where: { ownerId: session.userId },
-      orderBy: { createdAt: "asc" },
-    }),
+    getClientNotifications(session.userId),
   ]);
 
-  const unreadByAppt = await getUnreadByAppointment(
-    session.userId,
-    upcoming.map((a) => a.id)
-  );
+  const next = upcoming[0];
+  const today = new Date();
+  const dateText = new Intl.DateTimeFormat("es-MX", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(today);
 
   return (
     <AppShell>
       <PageContainer>
-        <PageHeader title={`Hola, ${session.name.split(" ")[0]}`} subtitle="Tus citas de un vistazo." />
+        {/* Greeting */}
+        <div className="mb-5">
+          <p className="text-[13px] font-bold capitalize" style={{ color: "var(--color-muted)" }}>
+            {dateText}
+          </p>
+          <h1
+            className="text-[26px] font-black tracking-tight leading-tight"
+            style={{ color: "var(--color-foreground)" }}
+          >
+            Hola, {session.name.split(" ")[0]} 👋
+          </h1>
+        </div>
 
-        <BirthdayBanner
-          pets={pets.map((p) => ({
-            id: p.id,
-            name: p.name,
-            species: p.species,
-            birthDate: p.birthDate,
-          }))}
-        />
-
-        <Link href="/agendar">
-          <div className="relative mb-6 overflow-hidden rounded-[20px] p-5 bg-gradient-to-br from-[#10b981] via-[#06b6d4] to-[#3b82f6] shadow-[0_14px_40px_rgba(16,185,129,0.28),0_6px_20px_rgba(59,130,246,0.20)] hover:brightness-105 transition flex items-center gap-4">
-            <div className="h-12 w-12 rounded-[14px] bg-white/25 backdrop-blur flex items-center justify-center">
-              <CalendarPlus className="h-6 w-6 text-white" />
+        {/* Hero CTA — Agendar Cita */}
+        <Link
+          href="/agendar"
+          className="block mb-6 hover:brightness-105 active:scale-[.99] transition"
+        >
+          <div
+            className="rounded-[22px] p-5 flex items-center gap-4"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 65%, oklch(38% 0.14 38)))",
+              boxShadow:
+                "0 14px 36px color-mix(in oklab, var(--color-brand) 35%, transparent)",
+            }}
+          >
+            <div
+              className="h-13 w-13 rounded-[16px] flex items-center justify-center text-[26px]"
+              style={{ width: 52, height: 52, background: "rgba(255,255,255,0.22)" }}
+            >
+              📅
             </div>
-            <div className="flex-1 text-white">
-              <p className="font-semibold text-[17px]">Agendar cita</p>
-              <p className="text-sm text-white/85">Reserva en unos segundos</p>
+            <div className="flex-1 min-w-0 text-white">
+              <p className="text-[18px] font-black leading-tight">Agendar cita</p>
+              <p className="text-[13px] font-semibold text-white/85">Rápido y fácil en pocos pasos</p>
             </div>
-            <ChevronRight className="h-5 w-5 text-white/85" />
+            <span className="text-white/80 text-[22px]">→</span>
           </div>
         </Link>
 
-        <SectionTitle>Próximas</SectionTitle>
-        {upcoming.length === 0 ? (
-          <EmptyState
-            emoji={null}
-            title="Todo tranquilo por aquí"
-            description="No tienes citas próximas."
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {upcoming.map((a) => {
-              const unread = unreadByAppt.get(a.id) ?? 0;
-              return (
-                <Link key={a.id} href={`/cita/${a.id}`}>
-                  <Card
-                    className={`hover:shadow-[var(--shadow-ios-md)] transition ${
-                      unread > 0 ? "ring-2 ring-[#ef4444]/30" : ""
-                    }`}
+        {/* Próxima cita */}
+        {next && (
+          <section className="mb-7">
+            <div className="flex items-center justify-between mb-3 px-1">
+              <h2
+                className="text-[16px] font-black"
+                style={{ color: "var(--color-foreground)" }}
+              >
+                Próxima cita
+              </h2>
+              <Link
+                href="/citas"
+                className="text-[13px] font-bold"
+                style={{ color: "var(--color-brand)" }}
+              >
+                Ver todas
+              </Link>
+            </div>
+            <Link href={`/cita/${next.id}`} className="block">
+              <div
+                className="rounded-[20px] p-5"
+                style={{
+                  background:
+                    "linear-gradient(135deg, color-mix(in oklab, var(--vet-blue, #f4c95e) 22%, var(--color-surface)), var(--color-surface))",
+                  border:
+                    "1.5px solid color-mix(in oklab, var(--vet-blue, #f4c95e) 35%, var(--color-border))",
+                  boxShadow: "0 8px 22px rgba(206, 90, 45, 0.06)",
+                }}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <span
+                    className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide"
+                    style={{
+                      background: STATUS_BADGE.SCHEDULED.bg,
+                      color: STATUS_BADGE.SCHEDULED.color,
+                      border: `1px solid ${STATUS_BADGE.SCHEDULED.border}`,
+                    }}
                   >
-                    <CardBody className="flex items-center gap-4">
-                      <div className="relative">
-                        <PetAvatar
-                          size="md"
-                          photoUrl={a.pet.photoUrl}
-                          species={a.pet.species}
-                          name={a.pet.name}
-                        />
-                        {unread > 0 && (
-                          <span className="absolute -top-1 -right-1 h-[18px] min-w-[18px] rounded-full bg-[#ef4444] text-white text-[10px] leading-none font-semibold px-1 flex items-center justify-center shadow-[0_2px_6px_rgba(239,68,68,0.5)] ring-2 ring-[var(--color-surface)]">
-                            {unread > 9 ? "9+" : unread}
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-[16px] truncate">{a.service.name}</p>
-                        <p className="text-[13px] text-[var(--color-muted)] truncate">
-                          {a.pet.name} · {a.vet.user.name}
-                        </p>
-                        {unread > 0 && (
-                          <p className="text-[12px] mt-0.5 text-[#ef4444] font-medium flex items-center gap-1">
-                            <MessageCircle className="h-3 w-3" />
-                            {unread === 1
-                              ? "1 mensaje nuevo del veterinario"
-                              : `${unread} mensajes nuevos del veterinario`}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[13px] font-medium capitalize">{formatDate(a.scheduledAt)}</p>
-                        <p className="text-[13px] text-[var(--color-muted)]">{formatTime(a.scheduledAt)}</p>
-                      </div>
-                    </CardBody>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
+                    {STATUS_BADGE.SCHEDULED.label}
+                  </span>
+                  <span
+                    className="text-[15px] font-black"
+                    style={{
+                      color: "var(--color-foreground)",
+                      fontFamily: "var(--font-space-grotesk), sans-serif",
+                    }}
+                  >
+                    {dateLabel(next.scheduledAt)} · {formatTime(next.scheduledAt)}
+                  </span>
+                </div>
+                <p
+                  className="text-[17px] font-black leading-tight mb-1"
+                  style={{ color: "var(--color-foreground)" }}
+                >
+                  {next.service.name}
+                </p>
+                <p className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: "var(--color-muted)" }}>
+                  <span>{SPECIES_EMOJI[next.pet.species] || "🐾"}</span>
+                  <span>{next.pet.name}</span>
+                  <span>·</span>
+                  <span>{next.vet.user.name.split(" ")[0]}</span>
+                </p>
+              </div>
+            </Link>
+          </section>
         )}
 
-        <SectionTitle>Mis mascotas</SectionTitle>
-        {pets.length === 0 ? (
-          <EmptyState
-            emoji="🐶"
-            title="Aún no tienes mascotas"
-            description="Agrega a tu peludito para empezar a agendar visitas."
-            action={
-              <Link href="/mascotas/nueva">
-                <Button>Agregar mascota</Button>
-              </Link>
-            }
-          />
-        ) : (
-          <div className="flex flex-col gap-3">
-            {pets.map((p) => {
-              const age = ageFromBirthDate(p.birthDate);
-              const sub = [SPECIES_LABEL[p.species], p.breed, age].filter(Boolean).join(" · ");
+        {/* Mis mascotas */}
+        <section className="mb-7">
+          <div className="flex items-center justify-between mb-3 px-1">
+            <h2
+              className="text-[16px] font-black"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              Mis mascotas
+            </h2>
+            <Link
+              href="/mascotas"
+              className="text-[13px] font-bold"
+              style={{ color: "var(--color-brand)" }}
+            >
+              Ver todas
+            </Link>
+          </div>
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+            {pets.slice(0, 6).map((p, i) => {
+              const ring = PET_RING_COLORS[i % PET_RING_COLORS.length];
               return (
-                <Link key={p.id} href={`/mascotas/${p.id}`}>
-                  <Card className="hover:shadow-[var(--shadow-ios-md)] hover:border-[var(--color-brand)]/30 transition">
-                    <CardBody className="flex items-center gap-4">
-                      <PetAvatar
-                        size="md"
-                        photoUrl={p.photoUrl}
-                        species={p.species}
-                        name={p.name}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-[16px] truncate">{p.name}</p>
-                        <p className="text-[13px] text-[var(--color-muted)] truncate">{sub}</p>
-                      </div>
-                      <ChevronRight className="h-5 w-5 text-[var(--color-muted-2)]" />
-                    </CardBody>
-                  </Card>
+                <Link
+                  key={p.id}
+                  href={`/mascotas/${p.id}`}
+                  className="flex-shrink-0 w-[110px] flex flex-col items-center gap-2 p-3 rounded-[18px] hover:brightness-105 transition"
+                  style={{
+                    background: "var(--color-surface)",
+                    border: "1.5px solid var(--color-border)",
+                  }}
+                >
+                  <div
+                    className="rounded-full flex items-center justify-center text-[26px]"
+                    style={{
+                      width: 52,
+                      height: 52,
+                      background: `${ring}28`,
+                      border: `2px solid ${ring}55`,
+                    }}
+                  >
+                    {SPECIES_EMOJI[p.species] || "🐾"}
+                  </div>
+                  <p
+                    className="text-[14px] font-extrabold truncate w-full text-center"
+                    style={{ color: "var(--color-foreground)" }}
+                  >
+                    {p.name}
+                  </p>
+                  <p
+                    className="text-[11px] font-semibold truncate w-full text-center"
+                    style={{ color: "var(--color-muted)" }}
+                  >
+                    {p.breed || SPECIES_LABEL[p.species]}
+                  </p>
                 </Link>
               );
             })}
             <Link
               href="/mascotas/nueva"
-              className="text-center text-[14px] font-medium text-[var(--color-brand)] py-2"
+              className="flex-shrink-0 w-[100px] flex flex-col items-center justify-center gap-2 rounded-[18px] py-4"
+              style={{
+                background: "transparent",
+                border: "1.5px dashed var(--color-border)",
+                color: "var(--color-muted)",
+              }}
             >
-              + Agregar otra mascota
+              <div
+                className="rounded-full flex items-center justify-center text-[24px]"
+                style={{
+                  width: 50,
+                  height: 50,
+                  background: "var(--color-surface-2, var(--color-surface))",
+                }}
+              >
+                +
+              </div>
+              <span className="text-[12px] font-bold">Agregar</span>
             </Link>
           </div>
-        )}
+        </section>
+
+        {/* Tip / Consejo del mes */}
+        <section className="mb-2">
+          <div
+            className="rounded-[20px] p-5 flex items-start gap-3"
+            style={{
+              background:
+                "linear-gradient(135deg, color-mix(in oklab, var(--vet-blue, #f4c95e) 16%, var(--color-surface)), var(--color-surface))",
+              border: "1.5px solid color-mix(in oklab, var(--vet-blue, #f4c95e) 28%, var(--color-border))",
+            }}
+          >
+            <span className="text-[28px]">🌿</span>
+            <div className="min-w-0">
+              <p
+                className="text-[14px] font-black mb-1"
+                style={{ color: "var(--color-foreground)" }}
+              >
+                Consejo del mes
+              </p>
+              <p
+                className="text-[13px] font-semibold leading-snug"
+                style={{ color: "var(--color-muted)" }}
+              >
+                Mayo es temporada de pulgas y garrapatas. Recuerda aplicar la
+                pipeta antiparasitaria a tus peluditos.
+              </p>
+            </div>
+          </div>
+        </section>
       </PageContainer>
-      <ClientTabBar />
+      <ClientTabBar unreadNotifs={notifs.unreadCount} />
     </AppShell>
   );
 }
