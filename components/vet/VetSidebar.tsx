@@ -43,26 +43,22 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
       }}
     >
       {/* Logo */}
-      <div className="px-4 mb-6 flex flex-col items-center gap-2.5">
+      <div className="px-4 mb-6 flex flex-col items-center gap-3">
         <div
           className="relative rounded-[22px] overflow-hidden"
           style={{
-            width: 88,
-            height: 88,
+            width: 92,
+            height: 92,
             background:
               "linear-gradient(160deg, oklch(97% 0.018 60), oklch(93% 0.04 55))",
             boxShadow:
-              "0 12px 28px var(--vet-green-glow), 0 1px 0 rgba(255,255,255,0.55) inset, 0 0 0 1px var(--vet-border)",
+              "0 14px 32px var(--vet-green-glow), 0 1px 0 rgba(255,255,255,0.55) inset, 0 0 0 1px var(--vet-border)",
           }}
         >
-          {/* Soft inner glow ring */}
           <div
             aria-hidden
-            className="absolute inset-0 pointer-events-none"
-            style={{
-              boxShadow: "inset 0 -10px 24px rgba(206, 90, 45, 0.10)",
-              borderRadius: 22,
-            }}
+            className="absolute inset-0 pointer-events-none rounded-[22px]"
+            style={{ boxShadow: "inset 0 -10px 24px rgba(206, 90, 45, 0.10)" }}
           />
           <Image
             src="/vetsfriend-icon.png"
@@ -70,19 +66,21 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
             width={192}
             height={192}
             priority
-            className="absolute inset-1 rounded-[18px]"
-            style={{ width: "calc(100% - 8px)", height: "calc(100% - 8px)" }}
+            className="absolute inset-0 w-full h-full object-cover"
+            style={{ transform: "scale(1.18)" }}
           />
         </div>
-        <div className="text-center leading-tight">
+        <div className="flex flex-col items-center gap-1">
+          <Image
+            src="/vetsfriend-wordmark.png"
+            alt="Vetsfriend"
+            width={800}
+            height={124}
+            priority
+            className="h-[26px] w-auto"
+          />
           <div
-            className="font-black text-[18px] tracking-tight"
-            style={{ color: "var(--vet-green)" }}
-          >
-            Vetsfriend
-          </div>
-          <div
-            className="text-[10px] font-extrabold tracking-[0.12em] mt-0.5"
+            className="text-[10px] font-extrabold tracking-[0.14em]"
             style={{ color: "var(--vet-blue)" }}
           >
             CLÍNICA &amp; GROOMING
