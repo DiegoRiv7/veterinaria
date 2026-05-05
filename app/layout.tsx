@@ -5,12 +5,12 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { BackgroundDecor } from "@/components/BackgroundDecor";
 
 export const metadata: Metadata = {
-  title: "Patitas Felices",
+  title: "Vetsfriend — Clínica & Grooming",
   description: "Agenda la cita de tu mascota en segundos.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf6f9",
+  themeColor: "#fceadb",
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,

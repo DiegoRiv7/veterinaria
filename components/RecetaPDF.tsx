@@ -47,15 +47,15 @@ export type RecetaData = {
 // ----------------------------------------------------------------------------
 
 const COLORS = {
-  pink: "#ec4899",
-  indigo: "#6366f1",
-  sky: "#38bdf8",
-  ink: "#0f172a",
-  text: "#1f2937",
-  muted: "#64748b",
-  soft: "#f1f5f9",
-  border: "#e2e8f0",
-  brandSoft: "#fdf2f8",
+  pink: "#ce5a2d",   // primary terracotta (kept as 'pink' key for legacy refs)
+  indigo: "#a8431a", // deep terracotta
+  sky: "#e6b82d",    // mustard yellow
+  ink: "#3a2a1e",
+  text: "#3a2a1e",
+  muted: "#8a6a55",
+  soft: "#fbe7d4",
+  border: "#f3d7bf",
+  brandSoft: "#fbe1d0",
   white: "#ffffff",
 };
 
@@ -341,7 +341,7 @@ export function RecetaPDF({ data }: { data: RecetaData }) {
             <PawMark />
           </View>
           <View>
-            <Text style={styles.brandTitle}>Patitas Felices</Text>
+            <Text style={styles.brandTitle}>Vetsfriend</Text>
             <Text style={styles.brandSubtitle}>Clínica veterinaria</Text>
           </View>
         </View>
@@ -452,7 +452,7 @@ export function RecetaPDF({ data }: { data: RecetaData }) {
         <Text
           style={styles.footer}
           render={() =>
-            `Receta digital · Patitas Felices · ${formatLongDate(issuedAt)}`
+            `Receta digital · Vetsfriend · ${formatLongDate(issuedAt)}`
           }
           fixed
         />

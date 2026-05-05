@@ -44,7 +44,7 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 mb-8">
         <div
-          className="w-9.5 h-9.5 rounded-[12px] flex items-center justify-center flex-shrink-0"
+          className="rounded-[12px] flex items-center justify-center flex-shrink-0 overflow-hidden"
           style={{
             width: 38,
             height: 38,
@@ -55,11 +55,11 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
           <VetIcon name="paw" size={20} color="white" />
         </div>
         <div>
-          <div className="font-black text-[15px] tracking-tight" style={{ color: "var(--vet-text-1)" }}>
-            VetCare
+          <div className="font-black text-[15px] tracking-tight" style={{ color: "var(--vet-green)" }}>
+            Vetsfriend
           </div>
           <div className="text-[10px] font-bold tracking-wider" style={{ color: "var(--vet-text-3)" }}>
-            PRO PANEL
+            CLÍNICA &amp; GROOMING
           </div>
         </div>
       </div>

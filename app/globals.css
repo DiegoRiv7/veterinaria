@@ -4,38 +4,38 @@
   --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Helvetica Neue", Arial, sans-serif;
   --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Inter", "Helvetica Neue", Arial, sans-serif;
 
-  /* === Summer light palette (pink + sky) === */
-  --color-background: #fef7fb;
+  /* === Vetsfriend palette (cream + terracotta + mustard) === */
+  --color-background: #fceadb;
   --color-surface: #ffffff;
-  --color-surface-2: #faf3f7;
-  --color-surface-3: #f1e8ee;
-  --color-foreground: #2c2434;
-  --color-muted: #6f6478;
-  --color-muted-2: #b9aec3;
-  --color-border: #f0e5ec;
-  --color-divider: #f6ecf2;
+  --color-surface-2: #fbe7d4;
+  --color-surface-3: #f7d7be;
+  --color-foreground: #3a2a1e;
+  --color-muted: #8a6a55;
+  --color-muted-2: #c8a892;
+  --color-border: #f3d7bf;
+  --color-divider: #f7e4d2;
 
-  /* Primary accent: candy pink */
-  --color-brand: #ec4899;
-  --color-brand-strong: #db2777;
-  --color-brand-soft: #fde4ee;
-  --color-brand-glow: rgba(236, 72, 153, 0.30);
+  /* Primary accent: terracotta */
+  --color-brand: #ce5a2d;
+  --color-brand-strong: #a8431a;
+  --color-brand-soft: #fbe1d0;
+  --color-brand-glow: rgba(206, 90, 45, 0.28);
 
-  /* Secondary accent: sky blue */
-  --color-blue: #60a5fa;
-  --color-blue-strong: #38bdf8;
-  --color-blue-soft: #e0f2fe;
+  /* Secondary accent: mustard yellow */
+  --color-blue: #e6b82d;
+  --color-blue-strong: #c89a18;
+  --color-blue-soft: #fcefc7;
 
   /* Tertiary highlights */
-  --color-peach: #fdba74;
-  --color-mint: #6ee7b7;
+  --color-peach: #f4a472;
+  --color-mint: #c8d4a0;
 
-  --color-success: #10b981;
-  --color-success-soft: #d1fae5;
-  --color-warning: #f59e0b;
-  --color-warning-soft: #fef3c7;
-  --color-danger: #f43f5e;
-  --color-danger-soft: #ffe4e6;
+  --color-success: #6f9b46;
+  --color-success-soft: #e3eed1;
+  --color-warning: #e6b82d;
+  --color-warning-soft: #fcefc7;
+  --color-danger: #c44a2c;
+  --color-danger-soft: #fbe1d0;
 
   --radius-sm: 8px;
   --radius-md: 12px;
@@ -43,21 +43,19 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
 
-  --shadow-soft-sm: 0 1px 2px rgba(180, 100, 150, 0.06), 0 2px 8px rgba(180, 100, 150, 0.05);
-  --shadow-soft-md: 0 6px 20px rgba(180, 100, 150, 0.10), 0 1px 3px rgba(180, 100, 150, 0.05);
-  --shadow-soft-lg: 0 18px 40px rgba(180, 100, 150, 0.14), 0 2px 8px rgba(180, 100, 150, 0.06);
-  --shadow-glow: 0 14px 40px rgba(236, 72, 153, 0.28), 0 6px 20px rgba(96, 165, 250, 0.24);
+  --shadow-soft-sm: 0 1px 2px rgba(150, 70, 30, 0.06), 0 2px 8px rgba(150, 70, 30, 0.05);
+  --shadow-soft-md: 0 6px 20px rgba(150, 70, 30, 0.10), 0 1px 3px rgba(150, 70, 30, 0.05);
+  --shadow-soft-lg: 0 18px 40px rgba(150, 70, 30, 0.14), 0 2px 8px rgba(150, 70, 30, 0.06);
+  --shadow-glow: 0 14px 40px rgba(206, 90, 45, 0.28), 0 6px 20px rgba(230, 184, 45, 0.24);
 
-  /* Theme-aware tokens for components that are shared between the
-     client (pink) and vet (gray-blue) panels. The vet panel overrides
-     these inside .vet-theme so the same component looks right on both. */
-  --button-primary-bg: linear-gradient(to right, #bae6fd, #c7d2fe, #fbcfe8);
-  --button-primary-text: #4338ca;
-  --button-primary-shadow: 0 8px 24px rgba(124, 92, 240, 0.15);
-  --chat-bubble-own-bg: linear-gradient(to bottom right, #38bdf8, #6366f1, #a78bfa);
+  /* Theme-aware tokens for components rendered in either panel. */
+  --button-primary-bg: linear-gradient(135deg, #ce5a2d, #a8431a);
+  --button-primary-text: #ffffff;
+  --button-primary-shadow: 0 8px 24px rgba(206, 90, 45, 0.28);
+  --chat-bubble-own-bg: linear-gradient(135deg, #ce5a2d, #a8431a);
   --chat-bubble-own-text: #ffffff;
-  --chat-send-bg: linear-gradient(to bottom right, #bae6fd, #c7d2fe, #fbcfe8);
-  --chat-send-text: #4338ca;
+  --chat-send-bg: linear-gradient(135deg, #ce5a2d, #a8431a);
+  --chat-send-text: #ffffff;
 }
 
 /* Force light scheme — ignore system dark preference */
@@ -73,10 +71,10 @@ body {
   -moz-osx-font-smoothing: grayscale;
   letter-spacing: -0.011em;
   background:
-    radial-gradient(1300px 900px at 88% -10%, #c7daff 0%, transparent 62%),
-    radial-gradient(1100px 800px at -8% 28%, #b6e0fb 0%, transparent 58%),
-    radial-gradient(700px 500px at 92% 92%, #ffd1e8 0%, transparent 65%),
-    linear-gradient(165deg, #eaf2ff 0%, #f0ebff 55%, #fdf2f8 100%);
+    radial-gradient(1300px 900px at 88% -10%, #ffd9b5 0%, transparent 62%),
+    radial-gradient(1100px 800px at -8% 28%, #ffe9c8 0%, transparent 58%),
+    radial-gradient(700px 500px at 92% 92%, #ffc7a3 0%, transparent 65%),
+    linear-gradient(165deg, #fff4e6 0%, #fce5d2 55%, #fbd7c0 100%);
   background-attachment: fixed;
   min-height: 100dvh;
 }
@@ -139,7 +137,7 @@ input[type="checkbox"] {
   width: 42vw;
   max-width: 560px;
   aspect-ratio: 1;
-  background: radial-gradient(circle, #a6c8ff 0%, transparent 70%);
+  background: radial-gradient(circle, #ffd1a3 0%, transparent 70%);
   animation: blobDrift1 28s ease-in-out infinite;
 }
 .bg-blob.b2 {
@@ -148,7 +146,7 @@ input[type="checkbox"] {
   width: 38vw;
   max-width: 520px;
   aspect-ratio: 1;
-  background: radial-gradient(circle, #93d4ff 0%, transparent 70%);
+  background: radial-gradient(circle, #ffe1a8 0%, transparent 70%);
   animation: blobDrift2 32s ease-in-out infinite;
 }
 .bg-blob.b3 {
@@ -157,7 +155,7 @@ input[type="checkbox"] {
   width: 36vw;
   max-width: 480px;
   aspect-ratio: 1;
-  background: radial-gradient(circle, #d8c2ff 0%, transparent 70%);
+  background: radial-gradient(circle, #ffc298 0%, transparent 70%);
   animation: blobDrift3 36s ease-in-out infinite;
 }
 .bg-blob.b4 {
@@ -166,7 +164,7 @@ input[type="checkbox"] {
   width: 22vw;
   max-width: 280px;
   aspect-ratio: 1;
-  background: radial-gradient(circle, #ffc6dd 0%, transparent 70%);
+  background: radial-gradient(circle, #ffce97 0%, transparent 70%);
   opacity: 0.30;
   animation: blobDrift1 40s ease-in-out infinite reverse;
 }
@@ -245,26 +243,33 @@ input[type="checkbox"] {
   }
 }
 
-/* === Vet panel theme — scoped to /vet/* via .vet-theme class === */
+/* === Vet panel theme (Vetsfriend) — scoped to /vet/* via .vet-theme === */
 .vet-theme {
-  --vet-bg-deep:    oklch(84% 0.025 240);
-  --vet-bg-mid:     oklch(88% 0.02 240);
-  --vet-bg-card:    oklch(93% 0.012 240);
-  --vet-bg-hover:   oklch(90% 0.018 240);
-  --vet-green:      oklch(48% 0.18 155);
-  --vet-green-dim:  oklch(40% 0.15 155);
-  --vet-green-glow: oklch(48% 0.18 155 / 0.20);
-  --vet-blue:       oklch(52% 0.22 255);
-  --vet-blue-dim:   oklch(42% 0.18 255);
-  --vet-blue-glow:  oklch(52% 0.22 255 / 0.20);
-  --vet-amber:      oklch(62% 0.17 55);
-  --vet-amber-glow: oklch(62% 0.17 55 / 0.20);
-  --vet-red:        oklch(52% 0.20 20);
-  --vet-violet:     oklch(65% 0.18 300);
-  --vet-text-1:     oklch(22% 0.03 240);
-  --vet-text-2:     oklch(38% 0.04 240);
-  --vet-text-3:     oklch(55% 0.03 240);
-  --vet-border:     oklch(78% 0.03 240);
+  /* Cream/peach surfaces */
+  --vet-bg-deep:    oklch(93% 0.028 60);
+  --vet-bg-mid:     oklch(95% 0.022 60);
+  --vet-bg-card:    oklch(97% 0.018 60);
+  --vet-bg-hover:   oklch(94% 0.025 60);
+
+  /* Primary brand: terracotta — keeps --vet-green name for legacy refs */
+  --vet-green:      oklch(58% 0.16 40);
+  --vet-green-dim:  oklch(48% 0.14 38);
+  --vet-green-glow: oklch(58% 0.16 40 / 0.20);
+
+  /* Secondary brand: mustard yellow — keeps --vet-blue name for legacy refs */
+  --vet-blue:       oklch(78% 0.14 88);
+  --vet-blue-dim:   oklch(68% 0.13 88);
+  --vet-blue-glow:  oklch(78% 0.14 88 / 0.22);
+
+  --vet-amber:      oklch(72% 0.16 70);
+  --vet-amber-glow: oklch(72% 0.16 70 / 0.20);
+  --vet-red:        oklch(55% 0.18 28);
+  --vet-violet:     oklch(50% 0.13 35);
+
+  --vet-text-1:     oklch(28% 0.05 40);
+  --vet-text-2:     oklch(45% 0.05 40);
+  --vet-text-3:     oklch(60% 0.04 40);
+  --vet-border:     oklch(86% 0.03 50);
 
   background: var(--vet-bg-deep);
   color: var(--vet-text-1);
@@ -272,14 +277,13 @@ input[type="checkbox"] {
   letter-spacing: 0;
   min-height: 100dvh;
 
-  /* Override the global pink-theme tokens for any shared component
-     rendered inside the vet panel (Card, Button, Input, Badge, etc.) */
+  /* Override global tokens for shared components rendered inside vet panel */
   --color-surface: var(--vet-bg-card);
   --color-surface-2: var(--vet-bg-mid);
   --color-surface-3: var(--vet-bg-hover);
   --color-foreground: var(--vet-text-1);
   --color-muted: var(--vet-text-3);
-  --color-muted-2: oklch(65% 0.04 240);
+  --color-muted-2: oklch(70% 0.04 40);
   --color-border: var(--vet-border);
   --color-divider: var(--vet-border);
   --color-brand: var(--vet-green);
@@ -287,7 +291,6 @@ input[type="checkbox"] {
   --color-brand-soft: var(--vet-green-glow);
   --color-brand-glow: var(--vet-green-glow);
 
-  /* Vet versions of the theme-aware tokens */
   --button-primary-bg: linear-gradient(135deg, var(--vet-green), var(--vet-green-dim));
   --button-primary-text: #ffffff;
   --button-primary-shadow: 0 8px 24px var(--vet-green-glow);
@@ -304,8 +307,8 @@ input[type="checkbox"] {
 
 .vet-theme ::-webkit-scrollbar { width: 6px; }
 .vet-theme ::-webkit-scrollbar-track { background: transparent; }
-.vet-theme ::-webkit-scrollbar-thumb { background: oklch(72% 0.04 240); border-radius: 99px; }
-.vet-theme ::-webkit-scrollbar-thumb:hover { background: oklch(62% 0.06 240); }
+.vet-theme ::-webkit-scrollbar-thumb { background: oklch(75% 0.06 50); border-radius: 99px; }
+.vet-theme ::-webkit-scrollbar-thumb:hover { background: oklch(65% 0.08 45); }
 
 /* Hide the global pink/blue decorative background when inside the vet panel */
 body:has(.vet-theme) .bg-decor { display: none; }

@@ -33,7 +33,7 @@ export function TabBar({ items }: { items: TabItem[] }) {
                 className={cn(
                   "flex flex-col items-center justify-center gap-0.5 py-2 text-[10.5px] font-medium rounded-[16px] transition-all",
                   active
-                    ? "bg-gradient-to-br from-[#dbeafe] via-[#e0e7ff] to-[#ede9fe] text-[#4f46e5]"
+                    ? "bg-gradient-to-br from-[#ffe5cc] via-[#ffd6b8] to-[#f4b894] text-[#a8431a]"
                     : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
                 )}
               >

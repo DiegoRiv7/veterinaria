@@ -21,15 +21,15 @@ function PawSvg({ size, color }: { size: number; color: string }) {
   );
 }
 
-// Blue-leaning palette — more sky/violet/cyan, sparse pink accent
+// Vetsfriend palette — terracotta + mustard tones for the paw trails
 const PALETTE = [
-  "#60a5fa", // sky-400
-  "#93c5fd", // sky-300
-  "#7dd3fc", // sky-200
-  "#a78bfa", // violet-400
-  "#c4b5fd", // violet-300
-  "#67e8f9", // cyan-300
-  "#f9a8d4", // pink-300 (accent only)
+  "#d97a4a", // terracotta light
+  "#ce5a2d", // terracotta brand
+  "#e8a061", // peach
+  "#e6b82d", // mustard
+  "#f0c95e", // mustard light
+  "#f4a472", // peach soft
+  "#a8431a", // terracotta deep (accent only)
 ];
 
 function rand(i: number, salt: number) {

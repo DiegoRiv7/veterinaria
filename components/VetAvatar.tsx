@@ -73,7 +73,7 @@ export function VetAvatar({
     <div
       style={style}
       className={cn(
-        "flex items-center justify-center rounded-full bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-[#fce7f3] border border-[var(--color-border)] shrink-0 font-semibold text-[var(--color-foreground)]",
+        "flex items-center justify-center rounded-full bg-gradient-to-br from-[#ffe5cc] via-[#fbd5b3] to-[#f4b894] border border-[var(--color-border)] shrink-0 font-semibold text-[var(--color-foreground)]",
         TEXT_SIZE[size],
         className
       )}

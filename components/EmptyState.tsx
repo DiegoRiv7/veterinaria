@@ -23,7 +23,7 @@ export function EmptyState({
     >
       {emoji && (
         <div className="relative">
-          <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-[#fce7f3] blur-xl opacity-70" />
+          <div className="absolute inset-0 -z-10 rounded-full bg-gradient-to-br from-[#ffe5cc] via-[#fbd5b3] to-[#f4b894] blur-xl opacity-70" />
           <div className="text-6xl select-none animate-[bobble_3s_ease-in-out_infinite]">
             {emoji}
           </div>

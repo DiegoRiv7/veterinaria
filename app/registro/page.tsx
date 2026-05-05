@@ -1,7 +1,7 @@
+import Image from "next/image";
 import Link from "next/link";
 import { Nunito } from "next/font/google";
 import { SignupForm } from "./signup-form";
-import { VetIcon } from "@/components/vet/VetIcon";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -17,29 +17,15 @@ export default function SignupPage() {
     <div className={`${nunito.variable}`}>
       <main className="vet-theme min-h-dvh flex flex-col px-6 py-8">
         <div className="mx-auto w-full max-w-sm flex-1 flex flex-col justify-center py-6">
-          <div className="flex flex-col items-center mb-6">
-            <div
-              className="w-14 h-14 rounded-[16px] flex items-center justify-center mb-3"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
-                boxShadow: "0 12px 32px var(--vet-green-glow)",
-              }}
-            >
-              <VetIcon name="paw" size={26} color="white" />
-            </div>
-            <div
-              className="text-[22px] font-black tracking-tight"
-              style={{ color: "var(--vet-text-1)" }}
-            >
-              Patitas Felices
-            </div>
-            <div
-              className="text-[12px] font-bold mt-0.5"
-              style={{ color: "var(--vet-text-3)" }}
-            >
-              Tu clínica de confianza
-            </div>
+          <div className="flex flex-col items-center mb-5">
+            <Image
+              src="/vetsfriend-logo.png"
+              alt="Vetsfriend — Clínica & Grooming"
+              width={240}
+              height={146}
+              priority
+              className="w-[220px] h-auto"
+            />
           </div>
 
           <div

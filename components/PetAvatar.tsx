@@ -70,7 +70,7 @@ export function PetAvatar({
     <div
       style={style}
       className={cn(
-        "flex items-center justify-center bg-gradient-to-br from-[#dbeafe] via-[#ede9fe] to-[#fce7f3] border border-[var(--color-border)] shrink-0",
+        "flex items-center justify-center bg-gradient-to-br from-[#ffe5cc] via-[#fbd5b3] to-[#f4b894] border border-[var(--color-border)] shrink-0",
         EMOJI_TEXT[size],
         className
       )}

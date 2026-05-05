@@ -8,7 +8,7 @@ import { CircleCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatDate, formatTime } from "@/lib/utils";
 
-const BRAND_COLORS = ["#38bdf8", "#6366f1", "#ec4899", "#10b981", "#fbbf24"];
+const BRAND_COLORS = ["#ce5a2d", "#e6b82d", "#f4a472", "#a8431a", "#fbe1d0"];
 
 export function SuccessCelebration({
   scheduledAt,
@@ -62,14 +62,14 @@ export function SuccessCelebration({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gradient-to-br from-[#38bdf8]/30 via-[#6366f1]/30 to-[#ec4899]/30 backdrop-blur-sm animate-in fade-in duration-300"
+      className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gradient-to-br from-[#ce5a2d]/30 via-[#e6b82d]/30 to-[#f4a472]/30 backdrop-blur-sm animate-in fade-in duration-300"
       role="dialog"
       aria-modal="true"
       aria-label="Cita confirmada"
     >
       <div className="relative w-full max-w-sm rounded-[24px] bg-white shadow-[var(--shadow-soft-md)] p-7 flex flex-col items-center text-center">
         <div
-          className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-[#38bdf8] via-[#6366f1] to-[#ec4899] flex items-center justify-center shadow-[var(--shadow-glow)] ring-4 ring-white animate-bounce-in"
+          className="h-24 w-24 rounded-[28px] bg-gradient-to-br from-[#ce5a2d] via-[#a8431a] to-[#e6b82d] flex items-center justify-center shadow-[var(--shadow-glow)] ring-4 ring-white animate-bounce-in"
           style={{
             animation: "vetSuccessPop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both",
           }}

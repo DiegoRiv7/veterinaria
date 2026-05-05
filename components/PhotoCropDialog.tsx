@@ -142,7 +142,7 @@ export function PhotoCropDialog({
             step={0.01}
             value={zoom}
             onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1 accent-[#ec4899]"
+            className="flex-1 accent-[#ce5a2d]"
             aria-label="Zoom"
           />
           <ZoomIn className="h-5 w-5 opacity-70" />
