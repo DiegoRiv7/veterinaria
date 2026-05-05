@@ -68,8 +68,8 @@ const TRAILS: Trail[] = Array.from({ length: TRAIL_COUNT }, (_, i) => {
     length,
     size,
     color: PALETTE[colorIdx],
-    startDelay: i * 2.4, // stagger so trails appear at different times
-    duration: 16, // total cycle: stamps + hold + fade + pause
+    startDelay: i * 1.5, // tighter stagger — trails appear sooner
+    duration: 10, // total cycle: stamps + hold + fade + pause (was 16)
   };
 });
 
@@ -105,7 +105,7 @@ const PAWS: Paw[] = TRAILS.flatMap((trail) => {
       size: trail.size,
       color: trail.color,
       rotate: rotateDeg,
-      delay: trail.startDelay + j * 0.32,
+      delay: trail.startDelay + j * 0.20,
       duration: trail.duration,
       opacity: 0.36 + (j % 3) * 0.04,
     };
@@ -116,9 +116,9 @@ const SPARKS = Array.from({ length: 8 }, (_, i) => ({
   id: i,
   left: 6 + ((i * 13) % 90),
   top: 8 + ((i * 19) % 84),
-  delay: rand(i, 9) * 4,
-  duration: 3.5 + rand(i, 10) * 2,
-  color: i % 2 === 0 ? "#a5d8ff" : "#c4b5fd",
+  delay: rand(i, 9) * 2.5,
+  duration: 2.5 + rand(i, 10) * 1.5,
+  color: i % 2 === 0 ? "#f0c95e" : "#e8a061",
 }));
 
 export function BackgroundDecor() {

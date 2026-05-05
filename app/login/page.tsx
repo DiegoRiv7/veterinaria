@@ -93,7 +93,7 @@ export default function LoginPage() {
             />
 
             <div
-              className="border p-6 lg:p-8 rounded-[24px]"
+              className="border p-7 lg:p-8 rounded-[24px]"
               style={{
                 background:
                   "color-mix(in oklab, var(--vet-bg-card) 92%, transparent)",
@@ -108,7 +108,7 @@ export default function LoginPage() {
                 Iniciar sesión
               </h2>
               <p
-                className="text-[13px] lg:text-[14px] font-semibold mb-5 lg:mb-6"
+                className="text-[13px] lg:text-[14px] font-semibold mb-6 lg:mb-7"
                 style={{ color: "var(--vet-text-3)" }}
               >
                 Ingresa tus credenciales para continuar.
