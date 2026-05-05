@@ -44,17 +44,17 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
     >
       {/* Logo banner — icon + wordmark + tagline composed into one image
           so alignment is set in the asset, not in CSS. */}
-      <div className="px-2 mb-6">
+      <div className="px-1 mb-6">
         <Image
           src="/vetsfriend-banner.png"
           alt="Vetsfriend — Clínica & Grooming"
           width={1200}
-          height={360}
+          height={380}
           priority
-          className="w-full h-auto rounded-[18px]"
+          className="w-full h-auto rounded-[20px]"
           style={{
             border: "1px solid var(--vet-border)",
-            boxShadow: "0 6px 18px rgba(206, 90, 45, 0.12)",
+            boxShadow: "0 8px 22px rgba(206, 90, 45, 0.14)",
           }}
         />
       </div>
