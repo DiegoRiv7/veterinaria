@@ -310,8 +310,10 @@ input[type="checkbox"] {
 .vet-theme ::-webkit-scrollbar-thumb { background: oklch(75% 0.06 50); border-radius: 99px; }
 .vet-theme ::-webkit-scrollbar-thumb:hover { background: oklch(65% 0.08 45); }
 
-/* Hide the global decorative background when inside the vet panel */
-body:has(.vet-theme) .bg-decor { display: none; }
+/* Hide the global decorative bg only on the actual vet panel routes —
+   the auth pages (.vet-theme without .vet-panel) keep the animated
+   paw trails so the login feels alive. */
+body:has(.vet-panel) .bg-decor { display: none; }
 body:has(.vet-theme),
 html:has(.vet-theme) {
   background: var(--vet-bg-deep, oklch(93% 0.028 60));

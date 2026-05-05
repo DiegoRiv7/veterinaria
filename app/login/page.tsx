@@ -19,7 +19,7 @@ export default function LoginPage() {
       <main className="vet-theme lg:flex lg:min-h-dvh">
         {/* ── Left half — animated pets hero (desktop only) ────────────── */}
         <section
-          className="hidden lg:flex lg:w-1/2 lg:min-h-dvh relative overflow-hidden"
+          className="hidden lg:flex lg:flex-col lg:w-1/2 lg:min-h-dvh relative overflow-hidden"
           style={{
             background:
               "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
@@ -35,10 +35,14 @@ export default function LoginPage() {
               backgroundSize: "22px 22px",
             }}
           />
-          <div className="absolute inset-0">
+
+          {/* Animation area — generous 60% of the column */}
+          <div className="basis-[60%] grow-0 shrink-0 relative">
             <AnimatedPetsHero />
           </div>
-          <div className="relative z-10 flex flex-col justify-end p-12 w-full">
+
+          {/* Welcome copy — centered in its 40%, breathing room */}
+          <div className="basis-[40%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
             <Image
               src="/vetsfriend-icon.png"
               alt="Vetsfriend"
@@ -51,10 +55,20 @@ export default function LoginPage() {
                 border: "1px solid rgba(255,255,255,0.2)",
               }}
             />
-            <h1 className="text-white text-[40px] font-black tracking-tight leading-[1.1]">
-              Bienvenido a Vetsfriend.
+            <h1 className="text-white text-[40px] xl:text-[44px] font-black tracking-tight leading-[1.1] flex flex-wrap items-baseline gap-x-3 gap-y-2">
+              <span>Bienvenido a</span>
+              <Image
+                src="/vetsfriend-wordmark-white.png"
+                alt="Vetsfriend"
+                width={800}
+                height={124}
+                priority
+                className="inline-block h-[44px] xl:h-[48px] w-auto"
+                style={{ transform: "translateY(6px)" }}
+              />
+              <span>.</span>
             </h1>
-            <p className="text-white/85 text-[16px] font-semibold mt-4 max-w-md leading-relaxed">
+            <p className="text-white/85 text-[16px] xl:text-[17px] font-semibold mt-5 max-w-md leading-relaxed">
               La clínica veterinaria al alcance de tu mano. Agenda citas,
               consulta el historial de tu mascota y mantente conectado con
               quienes los cuidan mejor.
@@ -63,9 +77,8 @@ export default function LoginPage() {
         </section>
 
         {/* ── Right half / mobile — login form ─────────────────────────── */}
-        <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14">
-          <div className="w-full max-w-sm flex flex-col gap-5">
-            {/* Banner — single rounded card with icon + wordmark + tagline */}
+        <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14 relative">
+          <div className="w-full max-w-sm lg:max-w-md flex flex-col gap-5 lg:gap-6 relative z-10">
             <Image
               src="/vetsfriend-banner.png"
               alt="Vetsfriend — Clínica & Grooming"
@@ -80,22 +93,22 @@ export default function LoginPage() {
             />
 
             <div
-              className="border p-6 lg:p-7 rounded-[22px]"
+              className="border p-6 lg:p-8 rounded-[24px]"
               style={{
                 background:
                   "color-mix(in oklab, var(--vet-bg-card) 92%, transparent)",
                 borderColor: "var(--vet-border)",
-                boxShadow: "0 12px 40px oklch(50% 0.04 40 / 0.10)",
+                boxShadow: "0 14px 44px oklch(50% 0.04 40 / 0.10)",
               }}
             >
               <h2
-                className="text-[22px] lg:text-[24px] font-black tracking-tight"
+                className="text-[24px] lg:text-[28px] font-black tracking-tight"
                 style={{ color: "var(--vet-text-1)" }}
               >
                 Iniciar sesión
               </h2>
               <p
-                className="text-[13px] font-semibold mb-5"
+                className="text-[13px] lg:text-[14px] font-semibold mb-5 lg:mb-6"
                 style={{ color: "var(--vet-text-3)" }}
               >
                 Ingresa tus credenciales para continuar.
@@ -104,7 +117,7 @@ export default function LoginPage() {
             </div>
 
             <p
-              className="text-center text-[13px] font-semibold"
+              className="text-center text-[13px] lg:text-[14px] font-semibold"
               style={{ color: "var(--vet-text-3)" }}
             >
               ¿Aún no tienes cuenta?{" "}

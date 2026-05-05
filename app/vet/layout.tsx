@@ -53,7 +53,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className={`${nunito.variable} ${spaceGrotesk.variable}`}>
+    <div className={`${nunito.variable} ${spaceGrotesk.variable} vet-panel`}>
       <VetShell
         vetName={session.name}
         vetInitials={initials(session.name)}
