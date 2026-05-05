@@ -67,7 +67,7 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
             height={192}
             priority
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ transform: "scale(1.20)" }}
+            style={{ transform: "scale(1.16)" }}
           />
         </div>
         <div className="flex flex-col items-start gap-0.5 min-w-0">
