@@ -310,6 +310,19 @@ input[type="checkbox"] {
 .vet-theme ::-webkit-scrollbar-thumb { background: oklch(75% 0.06 50); border-radius: 99px; }
 .vet-theme ::-webkit-scrollbar-thumb:hover { background: oklch(65% 0.08 45); }
 
-/* Hide the global pink/blue decorative background when inside the vet panel */
+/* Hide the global decorative background when inside the vet panel */
 body:has(.vet-theme) .bg-decor { display: none; }
-body:has(.vet-theme) { background: var(--vet-bg-deep, oklch(84% 0.025 240)); }
+body:has(.vet-theme),
+html:has(.vet-theme) {
+  background: var(--vet-bg-deep, oklch(93% 0.028 60));
+}
+
+/* iOS rubber-band / safe-area background — keeps the warm cream all the way
+   to the device edges, no white flash above status bar or under the home bar. */
+html { background-color: #fceadb; }
+@supports (padding: env(safe-area-inset-top)) {
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
