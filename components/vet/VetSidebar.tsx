@@ -43,15 +43,51 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
       }}
     >
       {/* Logo */}
-      <div className="px-4 mb-6">
-        <Image
-          src="/vetsfriend-logo.png"
-          alt="Vetsfriend — Clínica & Grooming"
-          width={400}
-          height={244}
-          priority
-          className="w-full h-auto"
-        />
+      <div className="px-4 mb-6 flex flex-col items-center gap-2.5">
+        <div
+          className="relative rounded-[22px] overflow-hidden"
+          style={{
+            width: 88,
+            height: 88,
+            background:
+              "linear-gradient(160deg, oklch(97% 0.018 60), oklch(93% 0.04 55))",
+            boxShadow:
+              "0 12px 28px var(--vet-green-glow), 0 1px 0 rgba(255,255,255,0.55) inset, 0 0 0 1px var(--vet-border)",
+          }}
+        >
+          {/* Soft inner glow ring */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              boxShadow: "inset 0 -10px 24px rgba(206, 90, 45, 0.10)",
+              borderRadius: 22,
+            }}
+          />
+          <Image
+            src="/vetsfriend-icon.png"
+            alt="Vetsfriend"
+            width={192}
+            height={192}
+            priority
+            className="absolute inset-1 rounded-[18px]"
+            style={{ width: "calc(100% - 8px)", height: "calc(100% - 8px)" }}
+          />
+        </div>
+        <div className="text-center leading-tight">
+          <div
+            className="font-black text-[18px] tracking-tight"
+            style={{ color: "var(--vet-green)" }}
+          >
+            Vetsfriend
+          </div>
+          <div
+            className="text-[10px] font-extrabold tracking-[0.12em] mt-0.5"
+            style={{ color: "var(--vet-blue)" }}
+          >
+            CLÍNICA &amp; GROOMING
+          </div>
+        </div>
       </div>
 
       {/* Nav */}
