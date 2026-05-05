@@ -49,7 +49,7 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
           src="/vetsfriend-banner.png"
           alt="Vetsfriend — Clínica & Grooming"
           width={1200}
-          height={380}
+          height={400}
           priority
           className="w-full h-auto rounded-[20px]"
           style={{
