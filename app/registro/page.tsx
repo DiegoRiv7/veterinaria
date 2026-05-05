@@ -15,18 +15,20 @@ export const dynamic = "force-dynamic";
 export default function SignupPage() {
   return (
     <div className={`${nunito.variable}`}>
-      <main className="vet-theme min-h-dvh flex flex-col px-6 py-8">
-        <div className="mx-auto w-full max-w-sm flex-1 flex flex-col justify-center py-6">
-          <div className="flex flex-col items-center mb-5">
-            <Image
-              src="/vetsfriend-logo.png"
-              alt="Vetsfriend — Clínica & Grooming"
-              width={240}
-              height={146}
-              priority
-              className="w-[220px] h-auto"
-            />
-          </div>
+      <main className="vet-theme min-h-dvh flex flex-col items-center justify-center px-5 py-8">
+        <div className="w-full max-w-sm flex flex-col gap-5">
+          <Image
+            src="/vetsfriend-banner.png"
+            alt="Vetsfriend — Clínica & Grooming"
+            width={1200}
+            height={400}
+            priority
+            className="w-full h-auto rounded-[22px]"
+            style={{
+              border: "1px solid var(--vet-border)",
+              boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
+            }}
+          />
 
           <div
             className="border p-6 rounded-[22px]"
@@ -34,7 +36,7 @@ export default function SignupPage() {
               background:
                 "color-mix(in oklab, var(--vet-bg-card) 92%, transparent)",
               borderColor: "var(--vet-border)",
-              boxShadow: "0 12px 40px oklch(50% 0.04 240 / 0.08)",
+              boxShadow: "0 12px 40px oklch(50% 0.04 40 / 0.08)",
             }}
           >
             <h1
@@ -53,7 +55,7 @@ export default function SignupPage() {
           </div>
 
           <p
-            className="mt-6 text-center text-[13px] font-semibold"
+            className="text-center text-[13px] font-semibold"
             style={{ color: "var(--vet-text-3)" }}
           >
             ¿Ya tienes cuenta?{" "}

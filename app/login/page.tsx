@@ -16,16 +16,16 @@ export const dynamic = "force-dynamic";
 export default function LoginPage() {
   return (
     <div className={nunito.variable}>
-      <main className="vet-theme min-h-dvh flex flex-col lg:flex-row">
+      <main className="vet-theme lg:flex lg:min-h-dvh">
         {/* ── Left half — animated pets hero (desktop only) ────────────── */}
         <section
-          className="hidden lg:flex lg:w-1/2 relative overflow-hidden"
+          className="hidden lg:flex lg:w-1/2 lg:min-h-dvh relative overflow-hidden"
           style={{
             background:
               "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
           }}
         >
-          {/* Subtle noise/dot pattern overlay */}
+          {/* Subtle dot pattern overlay */}
           <div
             aria-hidden
             className="absolute inset-0 pointer-events-none opacity-[0.07]"
@@ -35,13 +35,9 @@ export default function LoginPage() {
               backgroundSize: "22px 22px",
             }}
           />
-
-          {/* Pets animation — fills the available space */}
           <div className="absolute inset-0">
             <AnimatedPetsHero />
           </div>
-
-          {/* Welcome copy at bottom */}
           <div className="relative z-10 flex flex-col justify-end p-12 w-full">
             <Image
               src="/vetsfriend-icon.png"
@@ -67,18 +63,21 @@ export default function LoginPage() {
         </section>
 
         {/* ── Right half / mobile — login form ─────────────────────────── */}
-        <section className="flex-1 lg:w-1/2 flex flex-col justify-center px-6 py-10 lg:px-14">
-          <div className="mx-auto w-full max-w-sm">
-            <div className="flex flex-col items-center mb-6 lg:mb-8">
-              <Image
-                src="/vetsfriend-logo.png"
-                alt="Vetsfriend — Clínica & Grooming"
-                width={280}
-                height={170}
-                priority
-                className="w-[220px] lg:w-[240px] h-auto"
-              />
-            </div>
+        <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14">
+          <div className="w-full max-w-sm flex flex-col gap-5">
+            {/* Banner — single rounded card with icon + wordmark + tagline */}
+            <Image
+              src="/vetsfriend-banner.png"
+              alt="Vetsfriend — Clínica & Grooming"
+              width={1200}
+              height={400}
+              priority
+              className="w-full h-auto rounded-[22px]"
+              style={{
+                border: "1px solid var(--vet-border)",
+                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
+              }}
+            />
 
             <div
               className="border p-6 lg:p-7 rounded-[22px]"
@@ -105,7 +104,7 @@ export default function LoginPage() {
             </div>
 
             <p
-              className="mt-6 text-center text-[13px] font-semibold"
+              className="text-center text-[13px] font-semibold"
               style={{ color: "var(--vet-text-3)" }}
             >
               ¿Aún no tienes cuenta?{" "}
