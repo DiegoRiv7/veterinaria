@@ -63,13 +63,15 @@ export default function LoginPage() {
               <Image
                 src="/vetsfriend-wordmark-white.png"
                 alt="Vetsfriend"
-                width={800}
-                height={124}
+                width={627}
+                height={108}
                 priority
                 className="inline-block w-auto"
                 style={{
                   height: "0.95em",
                   verticalAlign: "-0.18em",
+                  marginLeft: "-0.18em",
+                  marginRight: "-0.18em",
                 }}
               />
               .
