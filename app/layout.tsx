@@ -7,6 +7,13 @@ import { BackgroundDecor } from "@/components/BackgroundDecor";
 export const metadata: Metadata = {
   title: "Vetsfriend — Clínica & Grooming",
   description: "Agenda la cita de tu mascota en segundos.",
+  icons: {
+    icon: [
+      { url: "/vetsfriend-icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/vetsfriend-icon.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: "/vetsfriend-icon.png",
+  },
 };
 
 export const viewport: Viewport = {

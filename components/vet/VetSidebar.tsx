@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
@@ -42,26 +43,15 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
       }}
     >
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 mb-8">
-        <div
-          className="rounded-[12px] flex items-center justify-center flex-shrink-0 overflow-hidden"
-          style={{
-            width: 38,
-            height: 38,
-            background: "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
-            boxShadow: "0 4px 16px var(--vet-green-glow)",
-          }}
-        >
-          <VetIcon name="paw" size={20} color="white" />
-        </div>
-        <div>
-          <div className="font-black text-[15px] tracking-tight" style={{ color: "var(--vet-green)" }}>
-            Vetsfriend
-          </div>
-          <div className="text-[10px] font-bold tracking-wider" style={{ color: "var(--vet-text-3)" }}>
-            CLÍNICA &amp; GROOMING
-          </div>
-        </div>
+      <div className="px-4 mb-6">
+        <Image
+          src="/vetsfriend-logo.png"
+          alt="Vetsfriend — Clínica & Grooming"
+          width={400}
+          height={244}
+          priority
+          className="w-full h-auto"
+        />
       </div>
 
       {/* Nav */}
