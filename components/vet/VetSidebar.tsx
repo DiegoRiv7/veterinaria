@@ -70,17 +70,20 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
             style={{ objectPosition: "center 38%", transform: "scale(1.18)" }}
           />
         </div>
-        <div className="flex flex-col items-start gap-0.5 min-w-0">
+        <div
+          className="flex flex-col items-start gap-1 min-w-0"
+          style={{ transform: "translateY(6px)" }}
+        >
           <Image
             src="/vetsfriend-wordmark.png"
             alt="Vetsfriend"
             width={800}
             height={124}
             priority
-            className="h-[22px] w-auto"
+            className="h-[24px] w-auto"
           />
           <div
-            className="text-[9px] font-extrabold tracking-[0.14em] whitespace-nowrap"
+            className="text-[10px] font-extrabold tracking-[0.14em] whitespace-nowrap"
             style={{ color: "var(--vet-blue)" }}
           >
             CLÍNICA &amp; GROOMING
