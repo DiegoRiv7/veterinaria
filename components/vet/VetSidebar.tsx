@@ -43,22 +43,22 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
       }}
     >
       {/* Logo */}
-      <div className="px-4 mb-6 flex flex-col items-center gap-3">
+      <div className="px-4 mb-6 flex items-center gap-3">
         <div
-          className="relative rounded-[22px] overflow-hidden"
+          className="relative rounded-[16px] overflow-hidden flex-shrink-0"
           style={{
-            width: 92,
-            height: 92,
+            width: 56,
+            height: 56,
             background:
               "linear-gradient(160deg, oklch(97% 0.018 60), oklch(93% 0.04 55))",
             boxShadow:
-              "0 14px 32px var(--vet-green-glow), 0 1px 0 rgba(255,255,255,0.55) inset, 0 0 0 1px var(--vet-border)",
+              "0 8px 22px var(--vet-green-glow), 0 1px 0 rgba(255,255,255,0.55) inset, 0 0 0 1px var(--vet-border)",
           }}
         >
           <div
             aria-hidden
-            className="absolute inset-0 pointer-events-none rounded-[22px]"
-            style={{ boxShadow: "inset 0 -10px 24px rgba(206, 90, 45, 0.10)" }}
+            className="absolute inset-0 pointer-events-none rounded-[16px]"
+            style={{ boxShadow: "inset 0 -8px 18px rgba(206, 90, 45, 0.10)" }}
           />
           <Image
             src="/vetsfriend-icon.png"
@@ -67,20 +67,20 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
             height={192}
             priority
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ transform: "scale(1.18)" }}
+            style={{ transform: "scale(1.20)" }}
           />
         </div>
-        <div className="flex flex-col items-center gap-1">
+        <div className="flex flex-col items-start gap-0.5 min-w-0">
           <Image
             src="/vetsfriend-wordmark.png"
             alt="Vetsfriend"
             width={800}
             height={124}
             priority
-            className="h-[26px] w-auto"
+            className="h-[22px] w-auto"
           />
           <div
-            className="text-[10px] font-extrabold tracking-[0.14em]"
+            className="text-[9px] font-extrabold tracking-[0.14em] whitespace-nowrap"
             style={{ color: "var(--vet-blue)" }}
           >
             CLÍNICA &amp; GROOMING
