@@ -55,25 +55,25 @@ export default function LoginPage() {
                 border: "1px solid rgba(255,255,255,0.2)",
               }}
             />
-            <h1
-              className="text-white text-[40px] xl:text-[44px] font-black tracking-tight"
-              style={{ lineHeight: 1.15 }}
-            >
-              Bienvenido a{" "}
+            <div className="flex flex-col gap-3">
+              <span
+                className="text-white text-[36px] xl:text-[42px] font-black tracking-tight leading-none"
+              >
+                Bienvenido a
+              </span>
               <Image
                 src="/vetsfriend-wordmark-white.png"
                 alt="Vetsfriend"
-                width={800}
-                height={124}
+                width={627}
+                height={108}
                 priority
-                className="inline-block w-auto"
+                className="w-auto select-none"
                 style={{
-                  height: "0.95em",
-                  verticalAlign: "-0.18em",
+                  height: "clamp(44px, 5.5vw, 60px)",
+                  filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.20))",
                 }}
               />
-              .
-            </h1>
+            </div>
             <p
               className="text-white/85 text-[16px] xl:text-[17px] font-semibold mt-5 max-w-md leading-relaxed text-justify"
               style={{ hyphens: "auto" }}
