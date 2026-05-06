@@ -234,8 +234,10 @@ export default async function ClientHome() {
           </section>
         )}
 
+        <div className="lg:grid lg:grid-cols-2 lg:gap-5">
+
         {/* Mis mascotas */}
-        <section className="mb-7">
+        <section className="mb-7 lg:mb-0">
           <div className="flex items-center justify-between mb-3 px-1">
             <h2
               className="text-[16px] font-black"
@@ -324,9 +326,9 @@ export default async function ClientHome() {
         </section>
 
         {/* Tip / Consejo del mes */}
-        <section className="mb-2">
+        <section className="mb-2 lg:mb-0">
           <div
-            className="rounded-[20px] p-5 flex items-start gap-3"
+            className="rounded-[20px] p-5 flex items-start gap-3 lg:h-full"
             style={{
               background:
                 "linear-gradient(135deg, color-mix(in oklab, var(--vet-blue, #f4c95e) 16%, var(--color-surface)), var(--color-surface))",
@@ -351,6 +353,8 @@ export default async function ClientHome() {
             </div>
           </div>
         </section>
+
+        </div>
       </PageContainer>
     </ClientShellServer>
   );

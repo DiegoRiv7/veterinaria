@@ -13,7 +13,14 @@ export function PageContainer({
   className?: string;
 }) {
   return (
-    <div className={cn("mx-auto w-full max-w-[720px] px-4 pb-32 pt-6 relative z-10", className)}>{children}</div>
+    <div
+      className={cn(
+        "mx-auto w-full max-w-[720px] lg:max-w-[1040px] px-4 lg:px-8 pb-32 pt-6 lg:pt-8 relative z-10",
+        className
+      )}
+    >
+      {children}
+    </div>
   );
 }
 

@@ -76,7 +76,7 @@ export function ClientShellSkeleton({
         >
           <div className="flex items-center gap-2.5">
             <div
-              className="flex items-center justify-center w-10 h-10 -ml-2 rounded-lg"
+              className="lg:hidden flex items-center justify-center w-10 h-10 -ml-2 rounded-lg"
               style={{ color: "var(--color-foreground)" }}
             >
               <Menu className="h-[22px] w-[22px]" />

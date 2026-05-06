@@ -50,7 +50,7 @@ export function ClientTopbar({
           type="button"
           onClick={onMenuClick}
           aria-label="Abrir menú"
-          className="flex items-center justify-center w-10 h-10 -ml-2 rounded-lg transition-colors"
+          className="lg:hidden flex items-center justify-center w-10 h-10 -ml-2 rounded-lg transition-colors"
           style={{ color: "var(--color-foreground)" }}
         >
           <Menu className="h-[22px] w-[22px]" />
