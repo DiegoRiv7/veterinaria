@@ -94,17 +94,39 @@ export default async function PetDetailPage({
     })
     .slice(0, 8);
 
-  const history = pet.appointments
-    .filter((a) => a.status === "COMPLETED")
+  // All appointments for this pet, split into upcoming (asc) + past (desc)
+  // and surfaced together as a single timeline.
+  const upcomingAppts = pet.appointments
+    .filter(
+      (a) =>
+        a.status === "SCHEDULED" && a.scheduledAt.getTime() >= now
+    )
+    .sort((a, b) => a.scheduledAt.getTime() - b.scheduledAt.getTime());
+  const pastAppts = pet.appointments
+    .filter(
+      (a) =>
+        a.status !== "SCHEDULED" ||
+        a.scheduledAt.getTime() < now
+    )
+    .sort((a, b) => b.scheduledAt.getTime() - a.scheduledAt.getTime());
+
+  const apptItems = [...upcomingAppts, ...pastAppts]
+    .slice(0, 30)
     .map((a) => ({
       id: a.id,
       type: a.service.name,
       date: formatLongDate(a.scheduledAt),
+      timestamp: a.scheduledAt.getTime(),
+      status: a.status,
       vet: a.vet.user.name,
       vetPhotoUrl: a.vet.user.photoUrl,
-      notes: a.vetNotes || a.instructions || a.medications || a.clientNotes || "Sin notas registradas.",
-    }))
-    .slice(0, 20);
+      notes:
+        a.vetNotes ||
+        a.instructions ||
+        a.medications ||
+        a.clientNotes ||
+        null,
+    }));
 
   const info = [
     { label: "Fecha de nacimiento", value: formatLongDate(pet.birthDate) },
@@ -154,7 +176,7 @@ export default async function PetDetailPage({
 
         <PetGallery petId={pet.id} petName={pet.name} initialPhotos={pet.photos} />
 
-        <PetDetailTabs info={info} vaccines={vaccines} history={history} />
+        <PetDetailTabs info={info} vaccines={vaccines} appts={apptItems} />
 
         <div className="mt-7 flex flex-col gap-3">
           <Link
