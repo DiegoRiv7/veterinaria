@@ -49,18 +49,36 @@ type Trail = {
   duration: number;
 };
 
-const TRAIL_COUNT = 10;
-const PAWS_PER_TRAIL = 7;
+// Grid-based distribution so paws cover the viewport evenly instead of
+// clustering near the center. Each cell anchors one trail.
+const COLS = 4;
+const ROWS = 4;
+const TRAIL_COUNT = COLS * ROWS;
+const PAWS_PER_TRAIL = 5;
 
 const TRAILS: Trail[] = Array.from({ length: TRAIL_COUNT }, (_, i) => {
-  const x0 = 8 + rand(i, 1) * 75;
-  const y0 = 8 + rand(i, 2) * 78;
-  const angle = rand(i, 3) * Math.PI * 2;
-  const length = 22 + rand(i, 4) * 30; // 22..52% of viewport
-  const size = 16 + Math.floor(rand(i, 5) * 10); // 16..26px
-  // Spread across the warm palette; sprinkle the deep-terracotta accent
-  // every few trails for variety.
-  const colorIdx = i % 4 === 3 ? 6 : i % 6;
+  const col = i % COLS;
+  const row = Math.floor(i / COLS);
+  const cellW = 100 / COLS;
+  const cellH = 100 / ROWS;
+
+  // Anchor near cell center with a small random offset so it doesn't look mechanical.
+  const jitterX = (rand(i, 1) - 0.5) * cellW * 0.5;
+  const jitterY = (rand(i, 2) - 0.5) * cellH * 0.5;
+  const x0 = col * cellW + cellW * 0.5 + jitterX;
+  const y0 = row * cellH + cellH * 0.5 + jitterY;
+
+  // Bias direction outward from viewport center so paws drift toward edges
+  // instead of converging in the middle.
+  const dx = x0 - 50;
+  const dy = y0 - 50;
+  const baseAngle = Math.atan2(dy || 0.01, dx || 0.01);
+  const wobble = (rand(i, 3) - 0.5) * 1.0; // ±0.5 rad
+  const angle = baseAngle + wobble;
+  const length = 10 + rand(i, 4) * 6; // 10..16% — short trails stay inside cell
+
+  const size = 14 + Math.floor(rand(i, 5) * 6); // 14..20px — smaller, softer
+  const colorIdx = i % 5 === 4 ? 6 : i % 6;
   return {
     id: i,
     x0,
@@ -69,8 +87,8 @@ const TRAILS: Trail[] = Array.from({ length: TRAIL_COUNT }, (_, i) => {
     length,
     size,
     color: PALETTE[colorIdx],
-    startDelay: i * 1.5, // tighter stagger — trails appear sooner
-    duration: 10, // total cycle: stamps + hold + fade + pause (was 16)
+    startDelay: rand(i, 7) * 6, // randomize start so trails don't pulse in waves
+    duration: 14, // longer cycle = calmer feel
   };
 });
 
@@ -106,9 +124,9 @@ const PAWS: Paw[] = TRAILS.flatMap((trail) => {
       size: trail.size,
       color: trail.color,
       rotate: rotateDeg,
-      delay: trail.startDelay + j * 0.20,
+      delay: trail.startDelay + j * 0.30,
       duration: trail.duration,
-      opacity: 0.36 + (j % 3) * 0.04,
+      opacity: 0.16 + (j % 3) * 0.03, // softer, more subtle
     };
   });
 });
