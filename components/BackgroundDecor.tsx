@@ -126,7 +126,7 @@ const PAWS: Paw[] = TRAILS.flatMap((trail) => {
       rotate: rotateDeg,
       delay: trail.startDelay + j * 0.30,
       duration: trail.duration,
-      opacity: 0.16 + (j % 3) * 0.03, // softer, more subtle
+      opacity: 0.26 + (j % 3) * 0.04, // visible without being loud
     };
   });
 });

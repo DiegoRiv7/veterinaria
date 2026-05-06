@@ -1,10 +1,10 @@
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellSkeleton } from "@/components/client/ClientShellSkeleton";
 import { Skeleton, SkeletonRow } from "@/components/Skeleton";
 
 export default function Loading() {
   return (
-    <AppShell>
+    <ClientShellSkeleton>
       <PageContainer>
         {/* Header with right button */}
         <div className="flex items-start justify-between mb-6 gap-4">
@@ -22,7 +22,7 @@ export default function Loading() {
           <SkeletonRow iconSize={56} />
         </div>
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+      
+    </ClientShellSkeleton>
   );
 }

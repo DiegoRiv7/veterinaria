@@ -135,19 +135,13 @@ export function PetForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="sex">Sexo</Label>
-          <Select id="sex" name="sex" defaultValue={init.sex ?? "UNKNOWN"}>
-            {(["MALE", "FEMALE", "UNKNOWN"] as const).map((v) => (
-              <option key={v} value={v}>{SEX_LABEL[v]}</option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="microchipId">Microchip</Label>
-          <Input id="microchipId" name="microchipId" defaultValue={init.microchipId ?? ""} placeholder="Si tiene" />
-        </div>
+      <div>
+        <Label htmlFor="sex">Sexo</Label>
+        <Select id="sex" name="sex" defaultValue={init.sex ?? "UNKNOWN"}>
+          {(["MALE", "FEMALE", "UNKNOWN"] as const).map((v) => (
+            <option key={v} value={v}>{SEX_LABEL[v]}</option>
+          ))}
+        </Select>
       </div>
 
       <label className="flex items-center gap-3 p-3 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border)]">

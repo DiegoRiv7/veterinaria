@@ -1,10 +1,10 @@
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellSkeleton } from "@/components/client/ClientShellSkeleton";
 import { Skeleton, SkeletonCard } from "@/components/Skeleton";
 
 export default function Loading() {
   return (
-    <AppShell>
+    <ClientShellSkeleton>
       <PageContainer>
         {/* Back link */}
         <Skeleton className="h-4 w-20 rounded-full mb-3" />
@@ -41,7 +41,7 @@ export default function Loading() {
           <SkeletonCard rows={3} />
         </div>
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+      
+    </ClientShellSkeleton>
   );
 }

@@ -98,7 +98,7 @@ export default async function ClientHome() {
 
   return (
     <ClientShellServer>
-      <PageContainer>
+      <PageContainer className="pb-8">
         {/* Greeting */}
         <div className="mb-5">
           <p className="text-[13px] font-bold capitalize" style={{ color: "var(--color-muted)" }}>
@@ -265,15 +265,24 @@ export default async function ClientHome() {
                   }}
                 >
                   <div
-                    className="rounded-full flex items-center justify-center text-[26px]"
+                    className="rounded-full overflow-hidden flex items-center justify-center text-[26px]"
                     style={{
                       width: 52,
                       height: 52,
-                      background: `${ring}28`,
+                      background: p.photoUrl ? "transparent" : `${ring}28`,
                       border: `2px solid ${ring}55`,
                     }}
                   >
-                    {SPECIES_EMOJI[p.species] || "🐾"}
+                    {p.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.photoUrl}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{SPECIES_EMOJI[p.species] || "🐾"}</span>
+                    )}
                   </div>
                   <p
                     className="text-[14px] font-extrabold truncate w-full text-center"

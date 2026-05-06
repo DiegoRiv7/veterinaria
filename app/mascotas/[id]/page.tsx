@@ -108,7 +108,6 @@ export default async function PetDetailPage({
     { label: "Género", value: SEX_LABEL[pet.sex] },
     { label: "Esterilizado/a", value: pet.sterilized ? "Sí ✓" : "No" },
     { label: "Color", value: pet.color || "—" },
-    { label: "Microchip", value: pet.microchipId || "—" },
   ];
 
   return (
@@ -125,15 +124,24 @@ export default async function PetDetailPage({
         {/* Header */}
         <div className="flex items-center gap-4 mb-5">
           <div
-            className="rounded-full flex items-center justify-center text-[36px] shrink-0"
+            className="rounded-full overflow-hidden flex items-center justify-center text-[36px] shrink-0"
             style={{
               width: 70,
               height: 70,
-              background: `${ring}28`,
+              background: pet.photoUrl ? "transparent" : `${ring}28`,
               border: `3px solid ${ring}55`,
             }}
           >
-            {SPECIES_EMOJI[pet.species] || "🐾"}
+            {pet.photoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={pet.photoUrl}
+                alt={pet.name}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <span>{SPECIES_EMOJI[pet.species] || "🐾"}</span>
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <p

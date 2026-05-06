@@ -91,15 +91,24 @@ export default async function PetsPage() {
                     }}
                   >
                     <div
-                      className="rounded-full flex items-center justify-center text-[28px] shrink-0"
+                      className="rounded-full overflow-hidden flex items-center justify-center text-[28px] shrink-0"
                       style={{
                         width: 60,
                         height: 60,
-                        background: `${ring}28`,
+                        background: p.photoUrl ? "transparent" : `${ring}28`,
                         border: `2.5px solid ${ring}55`,
                       }}
                     >
-                      {SPECIES_EMOJI[p.species] || "🐾"}
+                      {p.photoUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={p.photoUrl}
+                          alt={p.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span>{SPECIES_EMOJI[p.species] || "🐾"}</span>
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
