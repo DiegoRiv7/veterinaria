@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
+import { PetGallery } from "@/components/PetGallery";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -40,6 +41,10 @@ export default async function VetPatientDetailPage({
     where: { id },
     include: {
       owner: { select: { id: true, name: true, phone: true, email: true } },
+      photos: {
+        select: { id: true, url: true },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
   if (!pet) notFound();
@@ -177,6 +182,25 @@ export default async function VetPatientDetailPage({
           </div>
         ))}
       </div>
+
+      {/* Photo gallery (read-only) — owner-uploaded photos */}
+      {pet.photos.length > 0 && (
+        <div
+          className="border p-4 sm:p-5"
+          style={{
+            background: "var(--vet-bg-card)",
+            borderColor: "var(--vet-border)",
+            borderRadius: 18,
+          }}
+        >
+          <PetGallery
+            petId={pet.id}
+            petName={pet.name}
+            initialPhotos={pet.photos}
+            readonly
+          />
+        </div>
+      )}
 
       {/* Notes if any */}
       {pet.notes && (

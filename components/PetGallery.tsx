@@ -12,10 +12,12 @@ export function PetGallery({
   petId,
   petName,
   initialPhotos,
+  readonly = false,
 }: {
   petId: string;
   petName: string;
   initialPhotos: Photo[];
+  readonly?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
@@ -105,30 +107,32 @@ export function PetGallery({
       </div>
 
       <div className="flex gap-2.5 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
-        {/* Add tile */}
-        <button
-          type="button"
-          onClick={openPicker}
-          disabled={uploading}
-          className="flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-[16px] transition disabled:opacity-60"
-          style={{
-            width: 92,
-            height: 92,
-            background: "color-mix(in oklab, var(--color-brand) 8%, transparent)",
-            border: "1.5px dashed var(--color-brand)",
-            color: "var(--color-brand)",
-          }}
-          aria-label={`Agregar foto de ${petName}`}
-        >
-          {uploading ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <>
-              <Camera className="h-5 w-5" />
-              <span className="text-[11px] font-extrabold">Agregar</span>
-            </>
-          )}
-        </button>
+        {/* Add tile (owner only) */}
+        {!readonly && (
+          <button
+            type="button"
+            onClick={openPicker}
+            disabled={uploading}
+            className="flex-shrink-0 flex flex-col items-center justify-center gap-1 rounded-[16px] transition disabled:opacity-60"
+            style={{
+              width: 92,
+              height: 92,
+              background: "color-mix(in oklab, var(--color-brand) 8%, transparent)",
+              border: "1.5px dashed var(--color-brand)",
+              color: "var(--color-brand)",
+            }}
+            aria-label={`Agregar foto de ${petName}`}
+          >
+            {uploading ? (
+              <Loader2 className="h-5 w-5 animate-spin" />
+            ) : (
+              <>
+                <Camera className="h-5 w-5" />
+                <span className="text-[11px] font-extrabold">Agregar</span>
+              </>
+            )}
+          </button>
+        )}
 
         {/* Photos */}
         {photos.map((p) => (
@@ -155,21 +159,23 @@ export function PetGallery({
                 className="w-full h-full object-cover"
               />
             </button>
-            <button
-              type="button"
-              onClick={() => removePhoto(p.id)}
-              disabled={pendingDelete}
-              className="absolute top-1 right-1 rounded-full flex items-center justify-center shadow-md transition disabled:opacity-60"
-              style={{
-                width: 22,
-                height: 22,
-                background: "rgba(0,0,0,0.55)",
-                color: "white",
-              }}
-              aria-label="Quitar foto"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+            {!readonly && (
+              <button
+                type="button"
+                onClick={() => removePhoto(p.id)}
+                disabled={pendingDelete}
+                className="absolute top-1 right-1 rounded-full flex items-center justify-center shadow-md transition disabled:opacity-60"
+                style={{
+                  width: 22,
+                  height: 22,
+                  background: "rgba(0,0,0,0.55)",
+                  color: "white",
+                }}
+                aria-label="Quitar foto"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         ))}
 
@@ -183,8 +189,9 @@ export function PetGallery({
               className="text-[12px] font-semibold leading-snug"
               style={{ color: "var(--color-muted)" }}
             >
-              Sube fotos de {petName} para recordarlas en la nube. Solo tú las
-              ves.
+              {readonly
+                ? `${petName} aún no tiene fotos en la galería.`
+                : `Sube fotos de ${petName} para recordarlas en la nube. Solo tú las ves.`}
             </p>
           </div>
         )}
