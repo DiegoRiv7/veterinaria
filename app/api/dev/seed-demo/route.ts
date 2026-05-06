@@ -58,16 +58,21 @@ export async function GET() {
     );
   }
 
-  const julio = await prisma.veterinarian.findFirst({
-    where: { user: { email: "julio.mendoza@patitasfelices.com" } },
+  // Find any vet — prefer one named "Julio" if it exists, otherwise the
+  // first one we can find. This avoids hardcoding an email that may not
+  // exist in this database.
+  const vetCandidates = await prisma.veterinarian.findMany({
     include: { user: true },
+    take: 20,
   });
-  if (!julio) {
+  if (vetCandidates.length === 0) {
     return NextResponse.json(
-      { error: "Falta el veterinario Julio Mendoza en la base de datos." },
+      { error: "No hay veterinarios registrados en la base de datos." },
       { status: 500 }
     );
   }
+  const julio =
+    vetCandidates.find((v) => /julio/i.test(v.user.name)) ?? vetCandidates[0];
 
   // Idempotency
   const existing = await prisma.appointment.findFirst({
