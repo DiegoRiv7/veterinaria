@@ -44,6 +44,12 @@ export async function signupAction(
   const password = String(formData.get("password") ?? "");
   const petName = String(formData.get("petName") ?? "").trim();
   const petSpecies = String(formData.get("petSpecies") ?? "DOG");
+  const petPhotoUrlRaw = String(formData.get("petPhotoUrl") ?? "").trim();
+  const petPhotoUrl =
+    petPhotoUrlRaw.startsWith("data:image/") &&
+    petPhotoUrlRaw.length < 1_500_000
+      ? petPhotoUrlRaw
+      : null;
   if (!name) return { error: "Falta tu nombre." };
   if (!EMAIL_RE.test(email)) return { error: "El correo no es válido." };
   if (phone.length < 7) return { error: "Ingresa un teléfono de 10 dígitos." };
@@ -76,6 +82,7 @@ export async function signupAction(
                 | "HAMSTER"
                 | "REPTILE"
                 | "OTHER",
+              photoUrl: petPhotoUrl,
             },
           }
         : undefined,
