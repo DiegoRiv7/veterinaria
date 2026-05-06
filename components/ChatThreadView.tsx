@@ -25,7 +25,13 @@ function formatDayHeader(d: Date) {
 }
 
 function formatTimeOnly(d: Date) {
-  return new Intl.DateTimeFormat("es-MX", { hour: "numeric", minute: "2-digit", hour12: true }).format(d);
+  // Manual AM/PM — Intl.DateTimeFormat with es-MX + hour12:true silently
+  // emits "a.m." for every hour on iOS Safari.
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const period = h >= 12 ? "p.m." : "a.m.";
+  const hh = ((h + 11) % 12) + 1;
+  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 export function ChatThreadView({

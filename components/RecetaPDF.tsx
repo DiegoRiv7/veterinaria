@@ -280,11 +280,12 @@ function formatLongDate(date: Date) {
 }
 
 function formatTime(date: Date) {
-  return new Intl.DateTimeFormat("es-MX", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(date);
+  // Manual AM/PM — keeps the receta consistent with the rest of the app.
+  const h = date.getHours();
+  const m = date.getMinutes();
+  const period = h >= 12 ? "p.m." : "a.m.";
+  const hh = ((h + 11) % 12) + 1;
+  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 function shortId(id: string) {
