@@ -5,19 +5,13 @@ import { logoutAction } from "@/app/actions/auth";
 import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
 import { Card, CardBody, List, ListItem } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ClientTabBar } from "@/components/ClientTabBar";
 import { VetTabBar } from "@/components/VetTabBar";
 import { AdminTabBar } from "@/components/AdminTabBar";
 import { VetPhotoPicker } from "@/components/VetPhotoPicker";
-import { getClientNotifications } from "@/lib/client-notifications";
+import { ClientPhotoPicker } from "@/components/ClientPhotoPicker";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 
 export const dynamic = "force-dynamic";
-
-function initials(name: string): string {
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
 
 export default async function PerfilPage() {
   const session = await readSession();
@@ -36,14 +30,11 @@ export default async function PerfilPage() {
       : null;
 
   if (session.role === "CLIENT") {
-    const [petsCount, notifs] = await Promise.all([
-      prisma.pet.count({ where: { ownerId: session.userId } }),
-      getClientNotifications(session.userId),
-    ]);
+    const petsCount = await prisma.pet.count({ where: { ownerId: session.userId } });
     const createdYear = new Date(user.createdAt).getFullYear();
 
     return (
-      <AppShell>
+      <ClientShellServer>
         <PageContainer>
           <h1
             className="text-[26px] font-black tracking-tight mb-6"
@@ -52,23 +43,15 @@ export default async function PerfilPage() {
             Mi perfil
           </h1>
 
-          {/* Avatar */}
+          {/* Avatar + photo picker */}
           <div className="flex flex-col items-center mb-7">
-            <div
-              className="rounded-full flex items-center justify-center text-white text-[28px] font-black mb-3"
-              style={{
-                width: 88,
-                height: 88,
-                background:
-                  "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))",
-                boxShadow:
-                  "0 14px 32px color-mix(in oklab, var(--color-brand) 35%, transparent)",
-              }}
-            >
-              {initials(user.name)}
-            </div>
+            <ClientPhotoPicker
+              userId={user.id}
+              defaultPhotoUrl={user.photoUrl}
+              name={user.name}
+            />
             <p
-              className="text-[20px] font-black"
+              className="text-[20px] font-black mt-3"
               style={{ color: "var(--color-foreground)" }}
             >
               {user.name}
@@ -136,8 +119,7 @@ export default async function PerfilPage() {
             </button>
           </form>
         </PageContainer>
-        <ClientTabBar unreadNotifs={notifs.unreadCount} />
-      </AppShell>
+      </ClientShellServer>
     );
   }
 

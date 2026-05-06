@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
-import { getClientNotifications } from "@/lib/client-notifications";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { ClientCitasView } from "./citas-view";
 
 export const dynamic = "force-dynamic";
@@ -13,19 +12,16 @@ export default async function ClientCitasPage() {
   const session = await readSession();
   if (!session) redirect("/login");
 
-  const [appts, notifs] = await Promise.all([
-    prisma.appointment.findMany({
-      where: { clientId: session.userId },
-      include: {
-        pet: { select: { id: true, name: true, species: true } },
-        service: { select: { name: true, durationMinutes: true } },
-        vet: { include: { user: { select: { name: true } } } },
-      },
-      orderBy: { scheduledAt: "desc" },
-      take: 80,
-    }),
-    getClientNotifications(session.userId),
-  ]);
+  const appts = await prisma.appointment.findMany({
+    where: { clientId: session.userId },
+    include: {
+      pet: { select: { id: true, name: true, species: true } },
+      service: { select: { name: true, durationMinutes: true } },
+      vet: { include: { user: { select: { name: true, photoUrl: true } } } },
+    },
+    orderBy: { scheduledAt: "desc" },
+    take: 80,
+  });
 
   const now = Date.now();
   const proximas = appts
@@ -41,6 +37,7 @@ export default async function ClientCitasPage() {
       species: a.pet.species,
       serviceName: a.service.name,
       vetName: a.vet.user.name,
+      vetPhotoUrl: a.vet.user.photoUrl,
       scheduledAt: a.scheduledAt.toISOString(),
       status: a.status,
     }));
@@ -57,12 +54,13 @@ export default async function ClientCitasPage() {
       species: a.pet.species,
       serviceName: a.service.name,
       vetName: a.vet.user.name,
+      vetPhotoUrl: a.vet.user.photoUrl,
       scheduledAt: a.scheduledAt.toISOString(),
       status: a.status,
     }));
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <h1
           className="text-[26px] font-black tracking-tight mb-4"
@@ -89,7 +87,6 @@ export default async function ClientCitasPage() {
 
         <ClientCitasView proximas={proximas} historial={historial} />
       </PageContainer>
-      <ClientTabBar unreadNotifs={notifs.unreadCount} />
-    </AppShell>
+    </ClientShellServer>
   );
 }

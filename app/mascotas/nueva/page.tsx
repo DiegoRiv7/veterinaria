@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
+import { PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { PetForm } from "@/components/PetForm";
 import { addPetAction } from "@/app/actions/appointments";
 
@@ -14,7 +14,7 @@ export default async function NewPetPage() {
   if (!session) redirect("/login");
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <Link href="/mascotas" className="text-sm text-[var(--color-brand)] mb-3 inline-block">
           ← Volver
@@ -26,7 +26,6 @@ export default async function NewPetPage() {
           </CardBody>
         </Card>
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+    </ClientShellServer>
   );
 }

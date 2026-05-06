@@ -2,11 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { DeletePetButton } from "@/components/DeletePetButton";
 import { PetDetailTabs } from "./pet-detail-tabs";
-import { getClientNotifications } from "@/lib/client-notifications";
 import {
   SPECIES_LABEL,
   SEX_LABEL,
@@ -49,18 +48,18 @@ export default async function PetDetailPage({
   const session = await readSession();
   if (!session) redirect("/login");
 
-  const [pet, notifs] = await Promise.all([
-    prisma.pet.findUnique({
-      where: { id },
-      include: {
-        appointments: {
-          include: { service: true, vet: { include: { user: true } } },
-          orderBy: { scheduledAt: "desc" },
+  const pet = await prisma.pet.findUnique({
+    where: { id },
+    include: {
+      appointments: {
+        include: {
+          service: true,
+          vet: { include: { user: { select: { name: true, photoUrl: true } } } },
         },
+        orderBy: { scheduledAt: "desc" },
       },
-    }),
-    getClientNotifications(session.userId),
-  ]);
+    },
+  });
   if (!pet) notFound();
   if (pet.ownerId !== session.userId) redirect("/mascotas");
 
@@ -96,7 +95,8 @@ export default async function PetDetailPage({
       id: a.id,
       type: a.service.name,
       date: formatLongDate(a.scheduledAt),
-      vet: `Dr. ${a.vet.user.name.split(" ")[0]}`,
+      vet: a.vet.user.name,
+      vetPhotoUrl: a.vet.user.photoUrl,
       notes: a.vetNotes || a.instructions || a.medications || a.clientNotes || "Sin notas registradas.",
     }))
     .slice(0, 20);
@@ -112,7 +112,7 @@ export default async function PetDetailPage({
   ];
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <Link
           href="/mascotas"
@@ -169,7 +169,6 @@ export default async function PetDetailPage({
           <DeletePetButton id={pet.id} name={pet.name} />
         </div>
       </PageContainer>
-      <ClientTabBar unreadNotifs={notifs.unreadCount} />
-    </AppShell>
+    </ClientShellServer>
   );
 }

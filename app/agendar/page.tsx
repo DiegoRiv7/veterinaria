@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { PageContainer, PageHeader } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { BookingWizard } from "./booking-wizard";
 
 export const dynamic = "force-dynamic";
@@ -48,7 +48,7 @@ export default async function AgendarPage({
       : null;
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <PageHeader
           title={prefill ? "Reagendar cita" : "Agendar cita"}
@@ -73,7 +73,6 @@ export default async function AgendarPage({
           prefill={prefill}
         />
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+    </ClientShellServer>
   );
 }

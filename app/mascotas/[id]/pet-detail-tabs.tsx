@@ -14,6 +14,7 @@ type HistoryItem = {
   type: string;
   date: string;
   vet: string;
+  vetPhotoUrl?: string | null;
   notes: string;
 };
 
@@ -274,12 +275,36 @@ export function PetDetailTabs({
                 >
                   {h.notes}
                 </p>
-                <p
-                  className="text-[11px] font-semibold mt-1.5"
-                  style={{ color: "var(--color-muted)" }}
-                >
-                  {h.vet}
-                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <div
+                    className="rounded-full overflow-hidden flex items-center justify-center text-white text-[10px] font-extrabold shrink-0"
+                    style={{
+                      width: 22,
+                      height: 22,
+                      background: h.vetPhotoUrl
+                        ? "var(--color-surface-2, var(--color-surface))"
+                        : "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))",
+                      border: "1px solid var(--color-border)",
+                    }}
+                  >
+                    {h.vetPhotoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={h.vetPhotoUrl}
+                        alt={h.vet}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{h.vet.replace(/^Dr[a]?\.\s*/i, "").charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <p
+                    className="text-[11px] font-semibold"
+                    style={{ color: "var(--color-muted)" }}
+                  >
+                    {h.vet}
+                  </p>
+                </div>
               </div>
             ))
           )}

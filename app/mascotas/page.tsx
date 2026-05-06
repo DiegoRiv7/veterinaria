@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
-import { getClientNotifications } from "@/lib/client-notifications";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -25,24 +24,21 @@ const PET_RING_COLORS = [
 export default async function PetsPage() {
   const session = await readSession();
   if (!session) redirect("/login");
-  const [pets, notifs] = await Promise.all([
-    prisma.pet.findMany({
-      where: { ownerId: session.userId },
-      include: {
-        appointments: {
-          where: { status: "SCHEDULED", scheduledAt: { gte: new Date() } },
-          select: { id: true, scheduledAt: true, service: { select: { name: true } } },
-          orderBy: { scheduledAt: "asc" },
-          take: 1,
-        },
+  const pets = await prisma.pet.findMany({
+    where: { ownerId: session.userId },
+    include: {
+      appointments: {
+        where: { status: "SCHEDULED", scheduledAt: { gte: new Date() } },
+        select: { id: true, scheduledAt: true, service: { select: { name: true } } },
+        orderBy: { scheduledAt: "asc" },
+        take: 1,
       },
-      orderBy: { createdAt: "asc" },
-    }),
-    getClientNotifications(session.userId),
-  ]);
+    },
+    orderBy: { createdAt: "asc" },
+  });
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <h1
           className="text-[26px] font-black tracking-tight mb-5"
@@ -149,7 +145,6 @@ export default async function PetsPage() {
           </div>
         )}
       </PageContainer>
-      <ClientTabBar unreadNotifs={notifs.unreadCount} />
-    </AppShell>
+    </ClientShellServer>
   );
 }

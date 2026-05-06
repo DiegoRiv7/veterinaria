@@ -2,9 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
+import { PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { PetForm } from "@/components/PetForm";
 import { updatePetAction } from "@/app/actions/appointments";
 
@@ -24,7 +24,7 @@ export default async function EditPetPage({
   if (pet.ownerId !== session.userId) redirect("/mascotas");
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <Link
           href={`/mascotas/${pet.id}`}
@@ -57,7 +57,6 @@ export default async function EditPetPage({
           </CardBody>
         </Card>
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+    </ClientShellServer>
   );
 }

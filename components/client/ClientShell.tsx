@@ -2,28 +2,21 @@
 
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { VetSidebar } from "./VetSidebar";
-import { VetTopbar } from "./VetTopbar";
-import { VetIcon } from "./VetIcon";
-import type { NotificationsButton } from "./NotificationsButton";
-
-type NotifData = React.ComponentProps<typeof NotificationsButton>;
+import { X } from "lucide-react";
+import { ClientSidebar } from "./ClientSidebar";
+import { ClientTopbar } from "./ClientTopbar";
 
 type Props = {
-  vetName: string;
-  vetInitials: string;
-  vetPhotoUrl?: string | null;
-  unreadChat: number;
-  notifications: NotifData;
+  userName: string;
+  userPhotoUrl?: string | null;
+  unreadNotifs: number;
   children: React.ReactNode;
 };
 
-export function VetShell({
-  vetName,
-  vetInitials,
-  vetPhotoUrl,
-  unreadChat,
-  notifications,
+export function ClientShell({
+  userName,
+  userPhotoUrl,
+  unreadNotifs,
   children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -45,14 +38,13 @@ export function VetShell({
   }, [drawerOpen]);
 
   return (
-    <div className="vet-theme flex h-[100dvh] overflow-hidden">
+    <div className="flex h-[100dvh] overflow-hidden">
       {/* Desktop sidebar */}
       <div className="hidden lg:block">
-        <VetSidebar
-          vetName={vetName}
-          vetInitials={vetInitials}
-          vetPhotoUrl={vetPhotoUrl}
-          unreadChat={unreadChat}
+        <ClientSidebar
+          userName={userName}
+          userPhotoUrl={userPhotoUrl}
+          unreadNotifs={unreadNotifs}
         />
       </div>
 
@@ -65,11 +57,10 @@ export function VetShell({
             aria-hidden
           />
           <div className="lg:hidden fixed left-0 top-0 bottom-0 z-50 w-[260px] flex">
-            <VetSidebar
-              vetName={vetName}
-              vetInitials={vetInitials}
-              vetPhotoUrl={vetPhotoUrl}
-              unreadChat={unreadChat}
+            <ClientSidebar
+              userName={userName}
+              userPhotoUrl={userPhotoUrl}
+              unreadNotifs={unreadNotifs}
               onNavigate={() => setDrawerOpen(false)}
             />
             <button
@@ -77,9 +68,9 @@ export function VetShell({
               onClick={() => setDrawerOpen(false)}
               aria-label="Cerrar menú"
               className="absolute top-3 right-2 w-8 h-8 flex items-center justify-center rounded-lg"
-              style={{ color: "var(--vet-text-2)", background: "transparent" }}
+              style={{ color: "var(--color-foreground)", background: "transparent" }}
             >
-              <VetIcon name="close" size={20} />
+              <X className="h-5 w-5" />
             </button>
           </div>
         </>
@@ -87,8 +78,11 @@ export function VetShell({
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <VetTopbar notifications={notifications} onMenuClick={() => setDrawerOpen(true)} />
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">{children}</main>
+        <ClientTopbar
+          unreadNotifs={unreadNotifs}
+          onMenuClick={() => setDrawerOpen(true)}
+        />
+        <main className="flex-1 overflow-y-auto">{children}</main>
       </div>
     </div>
   );

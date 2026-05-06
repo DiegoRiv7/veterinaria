@@ -36,11 +36,15 @@ export default async function VetAppointmentEdit({
   });
   if (!appt) notFound();
 
-  const messages = await prisma.message.findMany({
+  const messagesRaw = await prisma.message.findMany({
     where: { appointmentId: appt.id },
-    include: { sender: { select: { name: true, role: true } } },
+    include: { sender: { select: { id: true, name: true, role: true, photoUrl: true } } },
     orderBy: { createdAt: "asc" },
   });
+  const messages = messagesRaw.map((m) => ({
+    ...m,
+    vetPhotoUrl: appt.vet.photoUrl,
+  }));
 
   return (
     <div className="flex flex-col gap-5 max-w-[860px] mx-auto w-full">

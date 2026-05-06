@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { Nunito, Space_Grotesk } from "next/font/google";
 import { readSession } from "@/lib/auth";
+import { prisma } from "@/lib/db";
 import { getVetUnreadCount } from "@/lib/chat";
 import { getVetNotifications } from "@/lib/notifications";
 import { VetShell } from "@/components/vet/VetShell";
@@ -30,7 +31,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
   if (!session) redirect("/login");
   if (session.role === "CLIENT") redirect("/inicio");
 
-  const [unread, notifBundle] = await Promise.all([
+  const [unread, notifBundle, vetProfile] = await Promise.all([
     getVetUnreadCount(session.userId).catch(() => 0),
     getVetNotifications(session.userId).catch(() => ({
       notifications: [],
@@ -38,6 +39,12 @@ export default async function VetLayout({ children }: { children: React.ReactNod
       upcomingCount: 0,
       total: 0,
     })),
+    prisma.veterinarian
+      .findUnique({
+        where: { userId: session.userId },
+        select: { photoUrl: true },
+      })
+      .catch(() => null),
   ]);
 
   // Serialize Date objects to strings for the client component
@@ -57,6 +64,7 @@ export default async function VetLayout({ children }: { children: React.ReactNod
       <VetShell
         vetName={session.name}
         vetInitials={initials(session.name)}
+        vetPhotoUrl={vetProfile?.photoUrl ?? null}
         unreadChat={unread}
         notifications={notifProps}
       >

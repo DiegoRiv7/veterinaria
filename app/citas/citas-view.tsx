@@ -9,6 +9,7 @@ type ApptCard = {
   species: string;
   serviceName: string;
   vetName: string;
+  vetPhotoUrl: string | null;
   scheduledAt: string;
   status: string;
 };
@@ -138,20 +139,43 @@ export function ClientCitasView({
                   }}
                 >
                   <div className="flex items-start justify-between gap-3 mb-2">
-                    <div className="min-w-0">
-                      <p
-                        className="text-[15px] font-black truncate"
-                        style={{ color: "var(--color-foreground)" }}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <div
+                        className="rounded-full overflow-hidden flex items-center justify-center text-white text-[12px] font-extrabold shrink-0"
+                        style={{
+                          width: 32,
+                          height: 32,
+                          background: a.vetPhotoUrl
+                            ? "var(--color-surface-2, var(--color-surface))"
+                            : "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))",
+                          border: "1.5px solid var(--color-border)",
+                        }}
                       >
-                        {a.serviceName}
-                      </p>
-                      <p
-                        className="text-[12px] font-semibold mt-0.5 truncate"
-                        style={{ color: "var(--color-muted)" }}
-                      >
-                        {SPECIES_EMOJI[a.species] || "🐾"} {a.petName} ·{" "}
-                        {a.vetName.split(" ")[0]}
-                      </p>
+                        {a.vetPhotoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={a.vetPhotoUrl}
+                            alt={a.vetName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <span>{a.vetName.replace(/^Dr[a]?\.\s*/i, "").charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p
+                          className="text-[15px] font-black truncate"
+                          style={{ color: "var(--color-foreground)" }}
+                        >
+                          {a.serviceName}
+                        </p>
+                        <p
+                          className="text-[12px] font-semibold mt-0.5 truncate"
+                          style={{ color: "var(--color-muted)" }}
+                        >
+                          {SPECIES_EMOJI[a.species] || "🐾"} {a.petName} · {a.vetName}
+                        </p>
+                      </div>
                     </div>
                     <span
                       className="px-2 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0"

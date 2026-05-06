@@ -26,11 +26,12 @@ const NAV_ITEMS: NavItem[] = [
 type Props = {
   vetName: string;
   vetInitials: string;
+  vetPhotoUrl?: string | null;
   unreadChat: number;
   onNavigate?: () => void;
 };
 
-export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Props) {
+export function VetSidebar({ vetName, vetInitials, vetPhotoUrl, unreadChat, onNavigate }: Props) {
   const pathname = usePathname();
 
   return (
@@ -113,12 +114,23 @@ export function VetSidebar({ vetName, vetInitials, unreadChat, onNavigate }: Pro
         style={{ background: "var(--vet-bg-card)", color: "var(--vet-text-1)" }}
       >
         <div
-          className="w-9 h-9 rounded-full flex items-center justify-center font-extrabold text-[14px] text-white flex-shrink-0"
+          className="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center font-extrabold text-[14px] text-white flex-shrink-0"
           style={{
-            background: "linear-gradient(135deg, var(--vet-blue), oklch(38% 0.18 280))",
+            background: vetPhotoUrl
+              ? "var(--vet-bg-mid)"
+              : "linear-gradient(135deg, var(--vet-blue), oklch(38% 0.18 280))",
           }}
         >
-          {vetInitials}
+          {vetPhotoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={vetPhotoUrl}
+              alt={vetName}
+              className="w-full h-full object-cover"
+            />
+          ) : (
+            <span>{vetInitials}</span>
+          )}
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-bold truncate" style={{ color: "var(--vet-text-1)" }}>

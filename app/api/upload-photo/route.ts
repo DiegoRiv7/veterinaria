@@ -49,6 +49,8 @@ export async function POST(req: NextRequest) {
   const petId = typeof petIdRaw === "string" && petIdRaw.trim() ? petIdRaw.trim() : null;
   const vetIdRaw = formData.get("vetId");
   const vetId = typeof vetIdRaw === "string" && vetIdRaw.trim() ? vetIdRaw.trim() : null;
+  const userIdRaw = formData.get("userId");
+  const userIdParam = typeof userIdRaw === "string" && userIdRaw.trim() ? userIdRaw.trim() : null;
 
   if (petId) {
     const pet = await prisma.pet.findUnique({ where: { id: petId } });
@@ -64,6 +66,12 @@ export async function POST(req: NextRequest) {
     const isOwner = vet.userId === session.userId;
     const isAdmin = session.role === "ADMIN";
     if (!isOwner && !isAdmin) {
+      return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+    }
+  }
+
+  if (userIdParam) {
+    if (userIdParam !== session.userId && session.role !== "ADMIN") {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
   }
@@ -91,6 +99,21 @@ export async function POST(req: NextRequest) {
       });
     } catch (err) {
       console.error("upload-photo vet db update failed", err);
+      return NextResponse.json(
+        { error: "No se pudo guardar la foto." },
+        { status: 500 }
+      );
+    }
+  }
+
+  if (userIdParam) {
+    try {
+      await prisma.user.update({
+        where: { id: userIdParam },
+        data: { photoUrl: dataUrl },
+      });
+    } catch (err) {
+      console.error("upload-photo user db update failed", err);
       return NextResponse.json(
         { error: "No se pudo guardar la foto." },
         { status: 500 }

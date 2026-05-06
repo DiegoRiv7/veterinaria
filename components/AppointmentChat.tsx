@@ -6,8 +6,15 @@ type ChatMessage = {
   body: string;
   createdAt: Date;
   senderId: string;
-  sender: { name: string; role: string };
+  sender: { name: string; role: string; photoUrl?: string | null };
+  vetPhotoUrl?: string | null;
 };
+
+function avatarInitial(name: string): string {
+  const honorific = /^Dr[a]?\.?\s*/i;
+  const cleaned = name.replace(honorific, "").trim();
+  return (cleaned.charAt(0) || name.charAt(0) || "?").toUpperCase();
+}
 
 function formatTimeAgo(d: Date) {
   const diff = Date.now() - d.getTime();
@@ -47,33 +54,65 @@ export function AppointmentChat({
         ) : (
           messages.map((m) => {
             const own = m.senderId === currentUserId;
+            const photo =
+              m.sender.role === "VET"
+                ? m.vetPhotoUrl ?? m.sender.photoUrl ?? null
+                : m.sender.photoUrl ?? null;
             return (
               <div
                 key={m.id}
                 className={cn(
-                  "flex flex-col max-w-[75%]",
-                  own ? "self-end items-end" : "self-start items-start"
+                  "flex gap-2 max-w-[78%]",
+                  own ? "self-end flex-row-reverse" : "self-start"
                 )}
               >
                 {!own && (
-                  <span className="text-[11px] text-[var(--color-muted)] mb-0.5 px-2">
-                    {m.sender.name}
-                    {m.sender.role === "VET" && " · 🩺"}
-                  </span>
+                  <div
+                    className="rounded-full overflow-hidden flex items-center justify-center text-[12px] font-extrabold text-white shrink-0"
+                    style={{
+                      width: 30,
+                      height: 30,
+                      background: photo
+                        ? "var(--color-surface-2)"
+                        : m.sender.role === "VET"
+                        ? "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))"
+                        : "linear-gradient(135deg, var(--color-brand) 60%, oklch(60% 0.10 60))",
+                      border: "1px solid var(--color-border)",
+                    }}
+                  >
+                    {photo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={photo}
+                        alt={m.sender.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{avatarInitial(m.sender.name)}</span>
+                    )}
+                  </div>
                 )}
-                <div
-                  className={cn(
-                    "px-3.5 py-2 rounded-[16px] text-[14px] leading-snug whitespace-pre-line",
-                    own
-                      ? "[background-image:var(--chat-bubble-own-bg)] text-[color:var(--chat-bubble-own-text)] rounded-br-[6px]"
-                      : "bg-[var(--color-surface-2)] text-[var(--color-foreground)] rounded-bl-[6px]"
+                <div className={cn("flex flex-col", own ? "items-end" : "items-start")}>
+                  {!own && (
+                    <span className="text-[11px] text-[var(--color-muted)] mb-0.5 px-2">
+                      {m.sender.name}
+                      {m.sender.role === "VET" && " · 🩺"}
+                    </span>
                   )}
-                >
-                  {m.body}
+                  <div
+                    className={cn(
+                      "px-3.5 py-2 rounded-[16px] text-[14px] leading-snug whitespace-pre-line",
+                      own
+                        ? "[background-image:var(--chat-bubble-own-bg)] text-[color:var(--chat-bubble-own-text)] rounded-br-[6px]"
+                        : "bg-[var(--color-surface-2)] text-[var(--color-foreground)] rounded-bl-[6px]"
+                    )}
+                  >
+                    {m.body}
+                  </div>
+                  <span className={cn("text-[10px] text-[var(--color-muted)] mt-0.5 px-1", own && "text-right")}>
+                    {formatTimeAgo(m.createdAt)}
+                  </span>
                 </div>
-                <span className={cn("text-[10px] text-[var(--color-muted)] mt-0.5 px-1", own && "text-right")}>
-                  {formatTimeAgo(m.createdAt)}
-                </span>
               </div>
             );
           })

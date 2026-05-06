@@ -1,8 +1,8 @@
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { getClientNotifications } from "@/lib/client-notifications";
 
 export const dynamic = "force-dynamic";
@@ -32,7 +32,7 @@ export default async function NotificacionesPage() {
   const { notifications, unreadCount } = await getClientNotifications(session.userId);
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <div className="flex items-center justify-between mb-5">
           <h1
@@ -151,7 +151,6 @@ export default async function NotificacionesPage() {
           </div>
         )}
       </PageContainer>
-      <ClientTabBar unreadNotifs={unreadCount} />
-    </AppShell>
+    </ClientShellServer>
   );
 }

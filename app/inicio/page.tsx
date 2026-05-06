@@ -2,9 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer } from "@/components/ui/page";
-import { ClientTabBar } from "@/components/ClientTabBar";
-import { getClientNotifications } from "@/lib/client-notifications";
+import { PageContainer } from "@/components/ui/page";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import {
   formatTime,
   SPECIES_EMOJI,
@@ -68,7 +67,7 @@ export default async function ClientHome() {
   const session = await readSession();
   if (!session) redirect("/login");
 
-  const [pets, upcoming, notifs] = await Promise.all([
+  const [pets, upcoming] = await Promise.all([
     prisma.pet.findMany({
       where: { ownerId: session.userId },
       orderBy: { createdAt: "asc" },
@@ -82,12 +81,11 @@ export default async function ClientHome() {
       include: {
         pet: true,
         service: true,
-        vet: { include: { user: true } },
+        vet: { include: { user: { select: { name: true, photoUrl: true } } } },
       },
       orderBy: { scheduledAt: "asc" },
       take: 1,
     }),
-    getClientNotifications(session.userId),
   ]);
 
   const next = upcoming[0];
@@ -99,7 +97,7 @@ export default async function ClientHome() {
   }).format(today);
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         {/* Greeting */}
         <div className="mb-5">
@@ -193,17 +191,44 @@ export default async function ClientHome() {
                   </span>
                 </div>
                 <p
-                  className="text-[17px] font-black leading-tight mb-1"
+                  className="text-[17px] font-black leading-tight mb-2"
                   style={{ color: "var(--color-foreground)" }}
                 >
                   {next.service.name}
                 </p>
-                <p className="text-[13px] font-semibold flex items-center gap-1.5" style={{ color: "var(--color-muted)" }}>
-                  <span>{SPECIES_EMOJI[next.pet.species] || "🐾"}</span>
-                  <span>{next.pet.name}</span>
-                  <span>·</span>
-                  <span>{next.vet.user.name.split(" ")[0]}</span>
-                </p>
+                <div className="flex items-center gap-2.5">
+                  <div
+                    className="rounded-full overflow-hidden flex items-center justify-center text-[13px] font-extrabold text-white shrink-0"
+                    style={{
+                      width: 28,
+                      height: 28,
+                      background: next.vet.user.photoUrl
+                        ? "var(--color-surface-2, var(--color-surface))"
+                        : "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))",
+                      border: "1.5px solid var(--color-border)",
+                    }}
+                  >
+                    {next.vet.user.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={next.vet.user.photoUrl}
+                        alt={next.vet.user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <span>{next.vet.user.name.replace(/^Dr[a]?\.\s*/i, "").charAt(0).toUpperCase()}</span>
+                    )}
+                  </div>
+                  <p
+                    className="text-[13px] font-semibold flex items-center gap-1.5"
+                    style={{ color: "var(--color-muted)" }}
+                  >
+                    <span>{SPECIES_EMOJI[next.pet.species] || "🐾"}</span>
+                    <span>{next.pet.name}</span>
+                    <span>·</span>
+                    <span>{next.vet.user.name}</span>
+                  </p>
+                </div>
               </div>
             </Link>
           </section>
@@ -318,7 +343,6 @@ export default async function ClientHome() {
           </div>
         </section>
       </PageContainer>
-      <ClientTabBar unreadNotifs={notifs.unreadCount} />
-    </AppShell>
+    </ClientShellServer>
   );
 }

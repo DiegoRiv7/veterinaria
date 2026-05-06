@@ -43,6 +43,7 @@ model User {
   name         String
   passwordHash String
   role         Role     @default(CLIENT)
+  photoUrl     String?
   createdAt    DateTime @default(now())
 
   pets          Pet[]

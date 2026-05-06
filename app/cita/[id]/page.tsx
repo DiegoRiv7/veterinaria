@@ -6,7 +6,7 @@ import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody, List, ListItem } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { VetTabBar } from "@/components/VetTabBar";
 import { AdminTabBar } from "@/components/AdminTabBar";
 import { AppointmentChat } from "@/components/AppointmentChat";
@@ -59,11 +59,15 @@ export default async function AppointmentDetailPage({
     data: { readAt: new Date() },
   });
 
-  const messages = await prisma.message.findMany({
+  const messagesRaw = await prisma.message.findMany({
     where: { appointmentId: appt.id },
-    include: { sender: { select: { id: true, name: true, role: true } } },
+    include: { sender: { select: { id: true, name: true, role: true, photoUrl: true } } },
     orderBy: { createdAt: "asc" },
   });
+  const messages = messagesRaw.map((m) => ({
+    ...m,
+    vetPhotoUrl: appt.vet.photoUrl,
+  }));
 
   const statusVariant =
     appt.status === "COMPLETED"
@@ -74,8 +78,14 @@ export default async function AppointmentDetailPage({
 
   const isFuture = appt.scheduledAt.getTime() > Date.now();
 
+  const Shell = isClient
+    ? ({ children: c }: { children: React.ReactNode }) => (
+        <ClientShellServer>{c}</ClientShellServer>
+      )
+    : ({ children: c }: { children: React.ReactNode }) => <AppShell>{c}</AppShell>;
+
   return (
-    <AppShell>
+    <Shell>
       <PageContainer>
         <Link href={isClient ? "/inicio" : "/vet"} className="text-sm text-[var(--color-brand)] mb-3 inline-block">
           ← Volver
@@ -210,9 +220,8 @@ export default async function AppointmentDetailPage({
           </div>
         )}
       </PageContainer>
-      {session.role === "CLIENT" && <ClientTabBar />}
       {session.role === "VET" && <VetTabBar />}
       {session.role === "ADMIN" && <AdminTabBar />}
-    </AppShell>
+    </Shell>
   );
 }

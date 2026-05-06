@@ -2,10 +2,10 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader } from "@/components/ui/page";
+import { PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { ClientTabBar } from "@/components/ClientTabBar";
+import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { PetAvatar } from "@/components/PetAvatar";
 import { EmptyState } from "@/components/EmptyState";
 import { STATUS_LABEL, formatDate, formatTime, formatCurrency } from "@/lib/utils";
@@ -34,7 +34,7 @@ export default async function PetAllAppointmentsPage({
   if (pet.ownerId !== session.userId) redirect("/mascotas");
 
   return (
-    <AppShell>
+    <ClientShellServer>
       <PageContainer>
         <Link
           href={`/mascotas/${pet.id}`}
@@ -94,7 +94,6 @@ export default async function PetAllAppointmentsPage({
           </div>
         )}
       </PageContainer>
-      <ClientTabBar />
-    </AppShell>
+    </ClientShellServer>
   );
 }
