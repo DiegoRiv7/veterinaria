@@ -198,7 +198,7 @@ export default async function ClientHome() {
 
                 {/* Info column */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3 mb-2">
+                  <div className="flex items-center justify-between gap-3 mb-1.5">
                     <span
                       className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap"
                       style={{
@@ -209,8 +209,9 @@ export default async function ClientHome() {
                     >
                       {STATUS_BADGE.SCHEDULED.label}
                     </span>
+                    {/* Date pinned right — only on lg+ where there's room */}
                     <span
-                      className="text-[14px] lg:text-[15px] font-black whitespace-nowrap"
+                      className="hidden lg:inline text-[15px] font-black whitespace-nowrap"
                       style={{
                         color: "var(--color-foreground)",
                         fontFamily: "var(--font-space-grotesk), sans-serif",
@@ -231,6 +232,23 @@ export default async function ClientHome() {
                   >
                     {next.pet.name} · {next.vet.user.name}
                   </p>
+                  {/* Date on its own row on mobile */}
+                  <div
+                    className="lg:hidden mt-2.5 flex items-center gap-1.5 text-[13px] font-extrabold"
+                    style={{ color: "var(--color-foreground)" }}
+                  >
+                    <span style={{ color: "var(--color-muted)" }}>📅</span>
+                    <span>{dateLabel(next.scheduledAt)}</span>
+                    <span style={{ color: "var(--color-muted)" }}>·</span>
+                    <span
+                      style={{
+                        color: "var(--color-brand)",
+                        fontFamily: "var(--font-space-grotesk), sans-serif",
+                      }}
+                    >
+                      {formatTime(next.scheduledAt)}
+                    </span>
+                  </div>
                 </div>
               </div>
             </Link>
