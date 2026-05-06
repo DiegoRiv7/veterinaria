@@ -95,12 +95,15 @@ export function PhotoCropDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-black/85 backdrop-blur-sm">
-      <header className="flex items-center justify-between px-4 py-3 text-white">
+    <div
+      className="fixed inset-0 z-[60] flex flex-col bg-black backdrop-blur-sm"
+      style={{ height: "100dvh" }}
+    >
+      <header className="flex items-center justify-between gap-2 px-3 py-2 text-white shrink-0">
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 rounded-[10px] hover:bg-white/10"
+          className="flex items-center gap-1.5 text-sm font-medium px-2.5 py-1.5 rounded-[10px] hover:bg-white/10"
         >
           <X className="h-4 w-4" /> Cancelar
         </button>
@@ -115,53 +118,44 @@ export function PhotoCropDialog({
         </Button>
       </header>
 
-      <div className="relative flex-1 bg-black flex items-center justify-center min-h-0 px-4 py-3">
-        <div className="relative aspect-square w-full max-w-md max-h-full">
-          <Cropper
-            image={imageSrc}
-            crop={crop}
-            zoom={zoom}
-            rotation={rotation}
-            aspect={1}
-            cropShape="rect"
-            showGrid
-            objectFit="horizontal-cover"
-            onCropChange={setCrop}
-            onZoomChange={setZoom}
-            onRotationChange={setRotation}
-            onCropComplete={onComplete}
-          />
-        </div>
+      <div className="relative flex-1 bg-black min-h-0">
+        <Cropper
+          image={imageSrc}
+          crop={crop}
+          zoom={zoom}
+          rotation={rotation}
+          aspect={1}
+          cropShape="rect"
+          showGrid
+          objectFit="cover"
+          onCropChange={setCrop}
+          onZoomChange={setZoom}
+          onRotationChange={setRotation}
+          onCropComplete={onComplete}
+        />
       </div>
 
-      <footer className="px-5 py-4 bg-black/80 text-white flex flex-col gap-3">
-        <div className="flex items-center gap-3">
-          <ZoomOut className="h-5 w-5 opacity-70" />
-          <input
-            type="range"
-            min={1}
-            max={4}
-            step={0.01}
-            value={zoom}
-            onChange={(e) => setZoom(Number(e.target.value))}
-            className="flex-1 accent-[#ce5a2d]"
-            aria-label="Zoom"
-          />
-          <ZoomIn className="h-5 w-5 opacity-70" />
-        </div>
-        <div className="flex items-center justify-between">
-          <p className="text-[12px] text-white/70">
-            Arrastra para mover · Pellizca o usa la barra para acercar
-          </p>
-          <button
-            type="button"
-            onClick={() => setRotation((r) => (r + 90) % 360)}
-            className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-[10px] bg-white/10 hover:bg-white/20"
-            aria-label="Rotar 90°"
-          >
-            <RotateCw className="h-4 w-4" /> Rotar
-          </button>
-        </div>
+      <footer className="px-4 py-2.5 bg-black text-white flex items-center gap-3 shrink-0">
+        <ZoomOut className="h-4 w-4 opacity-70 shrink-0" />
+        <input
+          type="range"
+          min={1}
+          max={4}
+          step={0.01}
+          value={zoom}
+          onChange={(e) => setZoom(Number(e.target.value))}
+          className="flex-1 accent-[#ce5a2d]"
+          aria-label="Zoom"
+        />
+        <ZoomIn className="h-4 w-4 opacity-70 shrink-0" />
+        <button
+          type="button"
+          onClick={() => setRotation((r) => (r + 90) % 360)}
+          className="flex items-center justify-center w-9 h-9 rounded-[10px] bg-white/10 hover:bg-white/20 shrink-0"
+          aria-label="Rotar 90°"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
       </footer>
     </div>
   );
