@@ -191,7 +191,7 @@ export function PetGallery({
             >
               {readonly
                 ? `${petName} aún no tiene fotos en la galería.`
-                : `Sube fotos de ${petName} para recordarlas en la nube. Solo tú las ves.`}
+                : `Sube fotos de ${petName} — tu veterinario también puede verlas.`}
             </p>
           </div>
         )}

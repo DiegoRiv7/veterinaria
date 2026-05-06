@@ -1,5 +1,6 @@
 "use client";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import Cropper, { type Area, type MediaSize } from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { X, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
@@ -77,6 +78,17 @@ export function PhotoCropDialog({
   const [rotation, setRotation] = useState(0);
   const [areaPixels, setAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Portal target — only mount client-side so SSR doesn't choke.
+  useEffect(() => {
+    setMounted(true);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
 
   const onComplete = useCallback((_: Area, pixels: Area) => {
     setAreaPixels(pixels);
@@ -107,10 +119,16 @@ export function PhotoCropDialog({
     }
   }
 
-  return (
+  if (!mounted) return null;
+
+  const dialog = (
     <div
-      className="fixed inset-0 z-[60] flex flex-col bg-black backdrop-blur-sm"
-      style={{ height: "100dvh" }}
+      className="fixed inset-0 z-[2147483646] flex flex-col bg-black"
+      style={{
+        height: "100dvh",
+        paddingTop: "env(safe-area-inset-top)",
+        paddingBottom: "env(safe-area-inset-bottom)",
+      }}
     >
       <header className="flex items-center justify-between gap-2 px-3 py-2 text-white shrink-0">
         <button
@@ -179,4 +197,6 @@ export function PhotoCropDialog({
       </footer>
     </div>
   );
+
+  return createPortal(dialog, document.body);
 }

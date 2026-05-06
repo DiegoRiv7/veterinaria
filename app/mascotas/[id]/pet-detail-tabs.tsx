@@ -1,15 +1,9 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { PetVaccinesTab, type VaccineEntry } from "@/components/PetVaccinesTab";
 
 type InfoRow = { label: string; value: string };
-type Vaccine = {
-  id: string;
-  name: string;
-  applied: string;
-  next: string;
-  status: "al día" | "próxima" | "vencida";
-};
 type ApptItem = {
   id: string;
   type: string;
@@ -51,34 +45,15 @@ const APPT_BADGE: Record<
   },
 };
 
-const STATUS_BADGE: Record<
-  Vaccine["status"],
-  { bg: string; color: string; border: string }
-> = {
-  "al día": {
-    bg: "color-mix(in oklab, var(--vet-green, #2f7d4f) 12%, transparent)",
-    color: "var(--vet-green, #2f7d4f)",
-    border: "color-mix(in oklab, var(--vet-green, #2f7d4f) 28%, transparent)",
-  },
-  próxima: {
-    bg: "color-mix(in oklab, var(--vet-amber, #d49247) 14%, transparent)",
-    color: "var(--vet-amber, #b46e3e)",
-    border: "color-mix(in oklab, var(--vet-amber, #d49247) 32%, transparent)",
-  },
-  vencida: {
-    bg: "color-mix(in oklab, #ef4444 12%, transparent)",
-    color: "#c0392b",
-    border: "color-mix(in oklab, #ef4444 28%, transparent)",
-  },
-};
-
 export function PetDetailTabs({
+  petId,
   info,
   vaccines,
   appts,
 }: {
+  petId: string;
   info: InfoRow[];
-  vaccines: Vaccine[];
+  vaccines: VaccineEntry[];
   appts: ApptItem[];
 }) {
   const [tab, setTab] = useState<"info" | "vacunas" | "citas">("info");
@@ -151,101 +126,7 @@ export function PetDetailTabs({
       )}
 
       {tab === "vacunas" && (
-        <div className="flex flex-col gap-3">
-          {vaccines.length === 0 ? (
-            <div
-              className="rounded-[18px] py-12 px-6 text-center"
-              style={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-              }}
-            >
-              <p className="text-[36px] mb-2">💉</p>
-              <p
-                className="text-[14px] font-bold"
-                style={{ color: "var(--color-foreground)" }}
-              >
-                Sin vacunas registradas
-              </p>
-              <p
-                className="text-[12px] font-semibold mt-1"
-                style={{ color: "var(--color-muted)" }}
-              >
-                Las vacunas aplicadas aparecerán aquí.
-              </p>
-            </div>
-          ) : (
-            vaccines.map((v) => {
-              const s = STATUS_BADGE[v.status];
-              return (
-                <div
-                  key={v.id}
-                  className="rounded-[16px] p-4"
-                  style={{
-                    background: "var(--color-surface)",
-                    border: "1px solid var(--color-border)",
-                  }}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-2.5">
-                    <p
-                      className="text-[15px] font-extrabold"
-                      style={{ color: "var(--color-foreground)" }}
-                    >
-                      💉 {v.name}
-                    </p>
-                    <span
-                      className="px-2 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide whitespace-nowrap shrink-0"
-                      style={{
-                        background: s.bg,
-                        color: s.color,
-                        border: `1px solid ${s.border}`,
-                      }}
-                    >
-                      {v.status}
-                    </span>
-                  </div>
-                  <div className="flex gap-5">
-                    <div>
-                      <p
-                        className="text-[10px] font-extrabold uppercase tracking-wide"
-                        style={{ color: "var(--color-muted)" }}
-                      >
-                        Aplicada
-                      </p>
-                      <p
-                        className="text-[13px] font-extrabold"
-                        style={{ color: "var(--color-foreground)" }}
-                      >
-                        {v.applied}
-                      </p>
-                    </div>
-                    <div>
-                      <p
-                        className="text-[10px] font-extrabold uppercase tracking-wide"
-                        style={{ color: "var(--color-muted)" }}
-                      >
-                        Próxima
-                      </p>
-                      <p
-                        className="text-[13px] font-extrabold"
-                        style={{
-                          color:
-                            v.status === "al día"
-                              ? "var(--vet-green, #2f7d4f)"
-                              : v.status === "próxima"
-                              ? "var(--vet-amber, #b46e3e)"
-                              : "#c0392b",
-                        }}
-                      >
-                        {v.next}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
+        <PetVaccinesTab petId={petId} vaccines={vaccines} />
       )}
 
       {tab === "citas" && <CitasTab appts={appts} />}

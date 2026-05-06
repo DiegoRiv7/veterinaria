@@ -63,6 +63,10 @@ export default async function PetDetailPage({
         select: { id: true, url: true },
         orderBy: { createdAt: "desc" },
       },
+      vaccines: {
+        include: { addedBy: { select: { name: true, role: true } } },
+        orderBy: { appliedAt: "desc" },
+      },
     },
   });
   if (!pet) notFound();
@@ -71,28 +75,26 @@ export default async function PetDetailPage({
   const ring = ringColorFor(pet.id);
   const age = ageFromBirthDate(pet.birthDate);
 
-  // Vaccines: appointments whose service name includes "vacuna"
-  const vaccineAppts = pet.appointments.filter((a) =>
-    /vacun/i.test(a.service.name)
-  );
+  // Vaccines registered by owner or vet
   const now = Date.now();
-  const ONE_YEAR_MS = 365 * 24 * 60 * 60 * 1000;
-  const vaccines = vaccineAppts
-    .filter((a) => a.status === "COMPLETED")
-    .map((a) => {
-      const next = new Date(a.scheduledAt.getTime() + ONE_YEAR_MS);
-      const daysToNext = Math.ceil((next.getTime() - now) / 86400000);
-      const status: "al día" | "próxima" | "vencida" =
-        daysToNext > 60 ? "al día" : daysToNext >= 0 ? "próxima" : "vencida";
-      return {
-        id: a.id,
-        name: a.service.name,
-        applied: formatLongDate(a.scheduledAt),
-        next: formatLongDate(next),
-        status,
-      };
-    })
-    .slice(0, 8);
+  const vaccines = pet.vaccines.map((v) => {
+    let status: "al día" | "próxima" | "vencida" | "—" = "—";
+    if (v.nextAt) {
+      const days = Math.ceil((v.nextAt.getTime() - now) / 86400000);
+      status = days > 60 ? "al día" : days >= 0 ? "próxima" : "vencida";
+    } else {
+      status = "al día";
+    }
+    return {
+      id: v.id,
+      name: v.name,
+      appliedAt: v.appliedAt.toISOString(),
+      nextAt: v.nextAt ? v.nextAt.toISOString() : null,
+      notes: v.notes,
+      addedByName: v.addedBy.name,
+      status,
+    };
+  });
 
   // All appointments for this pet, split into upcoming (asc) + past (desc)
   // and surfaced together as a single timeline.
@@ -176,7 +178,12 @@ export default async function PetDetailPage({
 
         <PetGallery petId={pet.id} petName={pet.name} initialPhotos={pet.photos} />
 
-        <PetDetailTabs info={info} vaccines={vaccines} appts={apptItems} />
+        <PetDetailTabs
+          petId={pet.id}
+          info={info}
+          vaccines={vaccines}
+          appts={apptItems}
+        />
 
         <div className="mt-7 flex flex-col gap-3">
           <Link

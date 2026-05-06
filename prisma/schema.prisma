@@ -50,6 +50,7 @@ model User {
   vetProfile    Veterinarian?
   appointments  Appointment[] @relation("ClientAppointments")
   messages      Message[]
+  vaccinesAdded Vaccine[]
 }
 
 model Pet {
@@ -71,6 +72,22 @@ model Pet {
 
   appointments Appointment[]
   photos       PetPhoto[]
+  vaccines     Vaccine[]
+}
+
+model Vaccine {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  name          String
+  appliedAt     DateTime
+  nextAt        DateTime?
+  notes         String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id])
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, appliedAt])
 }
 
 model PetPhoto {
