@@ -118,6 +118,9 @@ export function PhotoCropDialog({
         </Button>
       </header>
 
+      {/* Cropper fills the full middle area — the photo is shown entirely
+          (objectFit=contain) and a 1:1 crop frame is overlaid in the
+          center, like Instagram. User pinches/drags to adjust. */}
       <div className="relative flex-1 bg-black min-h-0">
         <Cropper
           image={imageSrc}
@@ -127,7 +130,8 @@ export function PhotoCropDialog({
           aspect={1}
           cropShape="rect"
           showGrid
-          objectFit="cover"
+          objectFit="contain"
+          restrictPosition={false}
           onCropChange={setCrop}
           onZoomChange={setZoom}
           onRotationChange={setRotation}
