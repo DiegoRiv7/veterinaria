@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Svg,
   Path,
-  Rect,
+  Image,
 } from "@react-pdf/renderer";
 import { SPECIES_LABEL, SEX_LABEL, ageFromBirthDate } from "@/lib/utils";
 
@@ -77,24 +77,32 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   brandMark: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 14,
     marginRight: 14,
     backgroundColor: COLORS.brandSoft,
     alignItems: "center",
     justifyContent: "center",
+    overflow: "hidden",
+  },
+  brandLogo: {
+    width: 52,
+    height: 52,
   },
   brandTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontFamily: "Helvetica-Bold",
     color: COLORS.ink,
     letterSpacing: 0.2,
   },
   brandSubtitle: {
     fontSize: 10,
-    color: COLORS.muted,
-    marginTop: 2,
+    color: COLORS.sky,
+    marginTop: 3,
+    fontFamily: "Helvetica-Bold",
+    letterSpacing: 1.2,
+    textTransform: "uppercase",
   },
 
   // Gradient strip (faked with three colored rects side by side)
@@ -314,7 +322,13 @@ function Field({ label, value }: { label: string; value: string | null | undefin
   );
 }
 
-export function RecetaPDF({ data }: { data: RecetaData }) {
+export function RecetaPDF({
+  data,
+  logo,
+}: {
+  data: RecetaData;
+  logo?: Buffer | null;
+}) {
   const issuedAt = new Date();
   const age = ageFromBirthDate(data.pet.birthDate);
   const speciesLabel = SPECIES_LABEL[data.pet.species] ?? data.pet.species;
@@ -338,19 +352,23 @@ export function RecetaPDF({ data }: { data: RecetaData }) {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.brandMark}>
-            <PawMark />
+            {logo ? (
+              <Image src={logo} style={styles.brandLogo} />
+            ) : (
+              <PawMark />
+            )}
           </View>
           <View>
             <Text style={styles.brandTitle}>Vetsfriend</Text>
-            <Text style={styles.brandSubtitle}>Clínica veterinaria</Text>
+            <Text style={styles.brandSubtitle}>Clínica & Grooming</Text>
           </View>
         </View>
 
-        {/* Gradient bar */}
+        {/* Gradient bar — Vetsfriend palette: mustard → terracotta → deep terracotta */}
         <View style={styles.gradientBar}>
           <View style={styles.gradSky} />
-          <View style={styles.gradIndigo} />
           <View style={styles.gradPink} />
+          <View style={styles.gradIndigo} />
         </View>
 
         {/* Receta heading row */}

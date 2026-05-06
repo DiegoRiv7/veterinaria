@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { VetTabBar } from "@/components/VetTabBar";
 import { AdminTabBar } from "@/components/AdminTabBar";
+import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
 import { AppointmentChat } from "@/components/AppointmentChat";
 import { PetAvatar } from "@/components/PetAvatar";
 import { VetAvatar } from "@/components/VetAvatar";
@@ -192,6 +193,14 @@ export default async function AppointmentDetailPage({
             </div>
           </>
         )}
+
+        {/* Receta médica — disponible cuando la consulta tiene notas */}
+        {appt.status === "COMPLETED" &&
+          (appt.vetNotes || appt.instructions || appt.medications) && (
+            <div className="mt-6">
+              <DownloadRecetaButton id={appt.id} />
+            </div>
+          )}
 
         <h3 className="text-[13px] uppercase tracking-wide text-[var(--color-muted)] px-1 mb-2 mt-6">
           Mensajes

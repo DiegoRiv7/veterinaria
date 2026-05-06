@@ -1,5 +1,7 @@
 import { createElement, type ReactElement } from "react";
 import { Readable } from "node:stream";
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { renderToStream, type DocumentProps } from "@react-pdf/renderer";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
@@ -7,6 +9,19 @@ import { RecetaPDF } from "@/components/RecetaPDF";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+// Cache the logo bytes for the lifetime of the lambda — they never change.
+let cachedLogo: Buffer | null = null;
+async function loadBrandLogo(): Promise<Buffer | null> {
+  if (cachedLogo) return cachedLogo;
+  try {
+    const file = path.join(process.cwd(), "public", "vetsfriend-icon-192.png");
+    cachedLogo = await readFile(file);
+    return cachedLogo;
+  } catch {
+    return null;
+  }
+}
 
 export async function GET(
   _req: Request,
@@ -44,7 +59,10 @@ export async function GET(
     return new Response("FORBIDDEN", { status: 403 });
   }
 
+  const logo = await loadBrandLogo();
+
   const element = createElement(RecetaPDF, {
+    logo,
     data: {
       id: appt.id,
       scheduledAt: appt.scheduledAt,
