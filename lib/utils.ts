@@ -23,12 +23,15 @@ export function formatDate(date: Date | string) {
 }
 
 export function formatTime(date: Date | string) {
+  // Compute the AM/PM marker manually instead of using Intl.DateTimeFormat
+  // with hour12:true. iOS Safari (notably older versions) can render every
+  // hour as "a.m." under es-MX locale, which is what shipped to /agendar.
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("es-MX", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: true,
-  }).format(d);
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const period = h >= 12 ? "p.m." : "a.m.";
+  const hh = ((h + 11) % 12) + 1;
+  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
 }
 
 export function minutesToTime(m: number): string {
