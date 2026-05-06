@@ -357,29 +357,50 @@ export default async function ClientHome() {
         {/* Tip / Consejo del mes */}
         <section className="mb-2 lg:mb-0">
           <div
-            className="rounded-[20px] p-5 flex items-start gap-3 lg:h-full"
+            className="rounded-[20px] p-5 lg:p-6 flex flex-col gap-3 lg:gap-4 lg:h-full lg:justify-center"
             style={{
               background:
                 "linear-gradient(135deg, color-mix(in oklab, var(--vet-blue, #f4c95e) 16%, var(--color-surface)), var(--color-surface))",
               border: "1.5px solid color-mix(in oklab, var(--vet-blue, #f4c95e) 28%, var(--color-border))",
             }}
           >
-            <span className="text-[28px]">🌿</span>
-            <div className="min-w-0">
-              <p
-                className="text-[14px] font-black mb-1"
-                style={{ color: "var(--color-foreground)" }}
+            <div className="flex items-center gap-3">
+              <div
+                className="rounded-[14px] flex items-center justify-center text-[24px] lg:text-[28px] shrink-0"
+                style={{
+                  width: 48,
+                  height: 48,
+                  background:
+                    "color-mix(in oklab, var(--vet-blue, #f4c95e) 24%, var(--color-surface))",
+                  border:
+                    "1px solid color-mix(in oklab, var(--vet-blue, #f4c95e) 32%, var(--color-border))",
+                }}
               >
-                Consejo del mes
-              </p>
-              <p
-                className="text-[13px] font-semibold leading-snug"
-                style={{ color: "var(--color-muted)" }}
-              >
-                Mayo es temporada de pulgas y garrapatas. Recuerda aplicar la
-                pipeta antiparasitaria a tus peluditos.
-              </p>
+                🌿
+              </div>
+              <div className="flex-1 min-w-0">
+                <p
+                  className="text-[11px] font-extrabold uppercase tracking-wide"
+                  style={{ color: "var(--vet-amber, #b46e3e)" }}
+                >
+                  Consejo del mes
+                </p>
+                <p
+                  className="text-[15px] lg:text-[17px] font-black"
+                  style={{ color: "var(--color-foreground)" }}
+                >
+                  Pulgas y garrapatas
+                </p>
+              </div>
             </div>
+            <p
+              className="text-[13px] lg:text-[14px] font-semibold leading-relaxed"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Mayo es temporada de pulgas y garrapatas. Recuerda aplicar la
+              pipeta antiparasitaria a tus peluditos para mantenerlos
+              protegidos.
+            </p>
           </div>
         </section>
 
