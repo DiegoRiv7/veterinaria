@@ -5,11 +5,13 @@ import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
 import { ClientSidebar } from "./ClientSidebar";
 import { ClientTopbar } from "./ClientTopbar";
+import type { ClientNotifPreview } from "./ClientNotificationsButton";
 
 type Props = {
   userName: string;
   userPhotoUrl?: string | null;
   unreadNotifs: number;
+  notifPreviews: ClientNotifPreview[];
   children: React.ReactNode;
 };
 
@@ -17,6 +19,7 @@ export function ClientShell({
   userName,
   userPhotoUrl,
   unreadNotifs,
+  notifPreviews,
   children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -80,6 +83,7 @@ export function ClientShell({
       <div className="flex-1 flex flex-col overflow-hidden">
         <ClientTopbar
           unreadNotifs={unreadNotifs}
+          notifPreviews={notifPreviews}
           onMenuClick={() => setDrawerOpen(true)}
         />
         <main className="flex-1 overflow-y-auto">{children}</main>

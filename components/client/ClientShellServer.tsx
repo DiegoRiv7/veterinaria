@@ -22,11 +22,22 @@ export async function ClientShellServer({
 
   if (!user) redirect("/login");
 
+  const notifPreviews = notifs.notifications.slice(0, 8).map((n) => ({
+    id: n.id,
+    kind: n.kind,
+    title: n.title,
+    body: n.body,
+    icon: n.icon,
+    href: n.href,
+    at: n.at.toISOString(),
+  }));
+
   return (
     <ClientShell
       userName={user.name}
       userPhotoUrl={user.photoUrl}
       unreadNotifs={notifs.unreadCount}
+      notifPreviews={notifPreviews}
     >
       {children}
     </ClientShell>

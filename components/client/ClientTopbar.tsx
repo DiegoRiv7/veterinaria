@@ -1,8 +1,11 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, Bell } from "lucide-react";
+import { Menu } from "lucide-react";
+import {
+  ClientNotificationsButton,
+  type ClientNotifPreview,
+} from "./ClientNotificationsButton";
 
 const TITLES: Record<string, string> = {
   "/inicio": "Inicio",
@@ -25,9 +28,11 @@ function titleFor(pathname: string): string {
 
 export function ClientTopbar({
   unreadNotifs,
+  notifPreviews,
   onMenuClick,
 }: {
   unreadNotifs: number;
+  notifPreviews: ClientNotifPreview[];
   onMenuClick?: () => void;
 }) {
   const pathname = usePathname();
@@ -59,25 +64,10 @@ export function ClientTopbar({
       </div>
 
       <div className="flex items-center gap-1">
-        <Link
-          href="/notificaciones"
-          aria-label="Avisos"
-          className="relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
-          style={{ color: "var(--color-foreground)" }}
-        >
-          <Bell className="h-[22px] w-[22px]" />
-          {unreadNotifs > 0 && (
-            <span
-              className="absolute top-1 right-1 min-w-[16px] h-[16px] rounded-full text-white text-[10px] font-extrabold flex items-center justify-center px-1"
-              style={{
-                background: "#ef4444",
-                boxShadow: "0 2px 6px rgba(239,68,68,0.5)",
-              }}
-            >
-              {unreadNotifs > 9 ? "9+" : unreadNotifs}
-            </span>
-          )}
-        </Link>
+        <ClientNotificationsButton
+          notifications={notifPreviews}
+          unreadCount={unreadNotifs}
+        />
       </div>
     </header>
   );

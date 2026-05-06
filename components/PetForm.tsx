@@ -123,7 +123,7 @@ export function PetForm({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <Label htmlFor="birthDate">Fecha de nacimiento</Label>
+          <Label htmlFor="birthDate">Nacimiento</Label>
           <Input
             id="birthDate"
             name="birthDate"
