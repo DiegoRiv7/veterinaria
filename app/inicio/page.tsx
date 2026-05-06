@@ -54,6 +54,22 @@ function dateLabel(d: Date): string {
   }).format(d);
 }
 
+function dateLabelCompact(d: Date): string {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  const same = (a: Date, b: Date) =>
+    a.getFullYear() === b.getFullYear() &&
+    a.getMonth() === b.getMonth() &&
+    a.getDate() === b.getDate();
+  if (same(d, today)) return "Hoy";
+  if (same(d, tomorrow)) return "Mañana";
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+  }).format(d);
+}
+
 const PET_RING_COLORS = [
   "#e8a061", // peach
   "#b48cd9", // soft lavender
@@ -198,9 +214,9 @@ export default async function ClientHome() {
 
                 {/* Info column */}
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-3 mb-1.5">
+                  <div className="flex items-start justify-between gap-2 mb-1.5">
                     <span
-                      className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap"
+                      className="px-2.5 py-1 rounded-full text-[10px] lg:text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap"
                       style={{
                         background: STATUS_BADGE.SCHEDULED.bg,
                         color: STATUS_BADGE.SCHEDULED.color,
@@ -209,15 +225,24 @@ export default async function ClientHome() {
                     >
                       {STATUS_BADGE.SCHEDULED.label}
                     </span>
-                    {/* Date pinned right — only on lg+ where there's room */}
+                    {/* Date pinned top-right. Compact on mobile, full on desktop. */}
                     <span
-                      className="hidden lg:inline text-[15px] font-black whitespace-nowrap"
+                      className="text-right text-[12px] lg:text-[15px] font-black leading-tight whitespace-nowrap shrink-0"
                       style={{
                         color: "var(--color-foreground)",
                         fontFamily: "var(--font-space-grotesk), sans-serif",
                       }}
                     >
-                      {dateLabel(next.scheduledAt)} · {formatTime(next.scheduledAt)}
+                      <span className="lg:hidden">
+                        {dateLabelCompact(next.scheduledAt)}
+                        <span style={{ color: "var(--color-muted)" }}> · </span>
+                        <span style={{ color: "var(--color-brand)" }}>
+                          {formatTime(next.scheduledAt)}
+                        </span>
+                      </span>
+                      <span className="hidden lg:inline">
+                        {dateLabel(next.scheduledAt)} · {formatTime(next.scheduledAt)}
+                      </span>
                     </span>
                   </div>
                   <p
@@ -232,23 +257,6 @@ export default async function ClientHome() {
                   >
                     {next.pet.name} · {next.vet.user.name}
                   </p>
-                  {/* Date on its own row on mobile */}
-                  <div
-                    className="lg:hidden mt-2.5 flex items-center gap-1.5 text-[13px] font-extrabold"
-                    style={{ color: "var(--color-foreground)" }}
-                  >
-                    <span style={{ color: "var(--color-muted)" }}>📅</span>
-                    <span>{dateLabel(next.scheduledAt)}</span>
-                    <span style={{ color: "var(--color-muted)" }}>·</span>
-                    <span
-                      style={{
-                        color: "var(--color-brand)",
-                        fontFamily: "var(--font-space-grotesk), sans-serif",
-                      }}
-                    >
-                      {formatTime(next.scheduledAt)}
-                    </span>
-                  </div>
                 </div>
               </div>
             </Link>
