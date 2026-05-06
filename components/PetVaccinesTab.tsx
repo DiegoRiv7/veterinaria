@@ -114,24 +114,28 @@ export function PetVaccinesTab({
       {!readonly && adding && (
         <form
           action={formAction}
-          className="rounded-[16px] p-4 flex flex-col gap-3"
+          className="rounded-[20px] p-5 flex flex-col gap-4"
           style={{
             background: "var(--color-surface)",
-            border: "1.5px solid var(--color-brand)",
+            border: "1px solid var(--color-border)",
+            boxShadow: "0 12px 32px rgba(206, 90, 45, 0.10)",
           }}
         >
           <div className="flex items-center justify-between">
-            <p
-              className="text-[14px] font-extrabold"
-              style={{ color: "var(--color-foreground)" }}
-            >
-              Nueva vacuna
-            </p>
+            <div className="flex items-center gap-2">
+              <span className="text-[20px]">💉</span>
+              <p
+                className="text-[15px] font-black"
+                style={{ color: "var(--color-foreground)" }}
+              >
+                Nueva vacuna
+              </p>
+            </div>
             <button
               type="button"
               onClick={() => setAdding(false)}
               aria-label="Cancelar"
-              className="w-7 h-7 rounded-full flex items-center justify-center"
+              className="w-8 h-8 rounded-full flex items-center justify-center transition"
               style={{
                 background: "var(--color-surface-2, var(--color-surface))",
                 color: "var(--color-muted)",
@@ -141,7 +145,7 @@ export function PetVaccinesTab({
             </button>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="vaccine-name"
               className="text-[11px] font-extrabold uppercase tracking-wide"
@@ -155,10 +159,13 @@ export function PetVaccinesTab({
               type="text"
               required
               placeholder="Antirrábica, Pentavalente…"
-              className="w-full px-4 rounded-[12px] border text-[14px] outline-none"
+              className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
               style={{
-                height: 44,
-                background: "var(--color-surface)",
+                height: 48,
+                minHeight: 48,
+                boxSizing: "border-box",
+                WebkitAppearance: "none",
+                background: "var(--color-surface-2, var(--color-surface))",
                 borderColor: "var(--color-border)",
                 color: "var(--color-foreground)",
               }}
@@ -166,7 +173,7 @@ export function PetVaccinesTab({
           </div>
 
           <div className="flex gap-2">
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
               <label
                 htmlFor="vaccine-applied"
                 className="text-[11px] font-extrabold uppercase tracking-wide"
@@ -179,31 +186,37 @@ export function PetVaccinesTab({
                 name="appliedAt"
                 type="date"
                 required
-                className="w-full px-4 rounded-[12px] border text-[14px] outline-none"
+                className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
                 style={{
-                  height: 44,
-                  background: "var(--color-surface)",
+                  height: 48,
+                  minHeight: 48,
+                  boxSizing: "border-box",
+                  WebkitAppearance: "none",
+                  background: "var(--color-surface-2, var(--color-surface))",
                   borderColor: "var(--color-border)",
                   color: "var(--color-foreground)",
                 }}
               />
             </div>
-            <div className="flex-1 min-w-0 flex flex-col gap-1">
+            <div className="flex-1 min-w-0 flex flex-col gap-1.5">
               <label
                 htmlFor="vaccine-next"
-                className="text-[11px] font-extrabold uppercase tracking-wide"
+                className="text-[11px] font-extrabold uppercase tracking-wide truncate"
                 style={{ color: "var(--color-muted)" }}
               >
-                Próxima (opcional)
+                Próxima · opcional
               </label>
               <input
                 id="vaccine-next"
                 name="nextAt"
                 type="date"
-                className="w-full px-4 rounded-[12px] border text-[14px] outline-none"
+                className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
                 style={{
-                  height: 44,
-                  background: "var(--color-surface)",
+                  height: 48,
+                  minHeight: 48,
+                  boxSizing: "border-box",
+                  WebkitAppearance: "none",
+                  background: "var(--color-surface-2, var(--color-surface))",
                   borderColor: "var(--color-border)",
                   color: "var(--color-foreground)",
                 }}
@@ -211,22 +224,22 @@ export function PetVaccinesTab({
             </div>
           </div>
 
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1.5">
             <label
               htmlFor="vaccine-notes"
               className="text-[11px] font-extrabold uppercase tracking-wide"
               style={{ color: "var(--color-muted)" }}
             >
-              Notas (opcional)
+              Notas · opcional
             </label>
             <textarea
               id="vaccine-notes"
               name="notes"
-              rows={2}
+              rows={3}
               placeholder="Marca, lote, reacciones…"
-              className="w-full px-4 py-2 rounded-[12px] border text-[14px] outline-none resize-y"
+              className="w-full px-4 py-3 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition resize-none"
               style={{
-                background: "var(--color-surface)",
+                background: "var(--color-surface-2, var(--color-surface))",
                 borderColor: "var(--color-border)",
                 color: "var(--color-foreground)",
               }}
@@ -234,22 +247,44 @@ export function PetVaccinesTab({
           </div>
 
           {state && !state.ok && state.error && (
-            <p className="text-[12px] font-bold" style={{ color: "#c0392b" }}>
-              {state.error}
+            <p
+              className="text-[12px] font-bold flex items-center gap-2 px-3 py-2 rounded-[10px]"
+              style={{
+                background: "color-mix(in oklab, #ef4444 10%, transparent)",
+                color: "#c0392b",
+              }}
+            >
+              ⚠ {state.error}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full py-3 rounded-[12px] text-white text-[14px] font-extrabold transition disabled:opacity-60"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 65%, oklch(45% 0.12 38)))",
-            }}
-          >
-            {pending ? "Guardando…" : "Guardar vacuna"}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setAdding(false)}
+              className="flex-1 py-3 rounded-[14px] text-[14px] font-bold transition"
+              style={{
+                background: "var(--color-surface-2, var(--color-surface))",
+                border: "1px solid var(--color-border)",
+                color: "var(--color-muted)",
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={pending}
+              className="flex-[2] py-3 rounded-[14px] text-white text-[14px] font-extrabold transition disabled:opacity-60 hover:brightness-105 active:scale-[.99]"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 65%, oklch(45% 0.12 38)))",
+                boxShadow:
+                  "0 8px 22px color-mix(in oklab, var(--color-brand) 30%, transparent)",
+              }}
+            >
+              {pending ? "Guardando…" : "Guardar vacuna"}
+            </button>
+          </div>
         </form>
       )}
 
