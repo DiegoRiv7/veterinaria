@@ -110,19 +110,19 @@ export function PetForm({
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="flex gap-3">
+        <div className="flex-1 min-w-0">
           <Label htmlFor="breed">Raza</Label>
           <Input id="breed" name="breed" defaultValue={init.breed ?? ""} placeholder="Mestizo, Persa..." />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <Label htmlFor="color">Color / pelaje</Label>
           <Input id="color" name="color" defaultValue={init.color ?? ""} placeholder="Negro, atigrado..." />
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
+      <div className="flex gap-3">
+        <div className="flex-1 min-w-0">
           <Label htmlFor="birthDate">Nacimiento</Label>
           <Input
             id="birthDate"
@@ -131,12 +131,13 @@ export function PetForm({
             defaultValue={dateToInputValue(init.birthDate ?? null)}
           />
         </div>
-        <div>
+        <div className="flex-1 min-w-0">
           <Label htmlFor="weightKg">Peso (kg)</Label>
           <Input
             id="weightKg"
             name="weightKg"
             type="number"
+            inputMode="decimal"
             step="0.1"
             min="0"
             defaultValue={init.weightKg ?? ""}

@@ -115,21 +115,23 @@ export function PhotoCropDialog({
         </Button>
       </header>
 
-      <div className="relative flex-1 bg-black">
-        <Cropper
-          image={imageSrc}
-          crop={crop}
-          zoom={zoom}
-          rotation={rotation}
-          aspect={1}
-          cropShape="rect"
-          showGrid
-          objectFit="contain"
-          onCropChange={setCrop}
-          onZoomChange={setZoom}
-          onRotationChange={setRotation}
-          onCropComplete={onComplete}
-        />
+      <div className="relative flex-1 bg-black flex items-center justify-center min-h-0 px-4 py-3">
+        <div className="relative aspect-square w-full max-w-md max-h-full">
+          <Cropper
+            image={imageSrc}
+            crop={crop}
+            zoom={zoom}
+            rotation={rotation}
+            aspect={1}
+            cropShape="rect"
+            showGrid
+            objectFit="horizontal-cover"
+            onCropChange={setCrop}
+            onZoomChange={setZoom}
+            onRotationChange={setRotation}
+            onCropComplete={onComplete}
+          />
+        </div>
       </div>
 
       <footer className="px-5 py-4 bg-black/80 text-white flex flex-col gap-3">
