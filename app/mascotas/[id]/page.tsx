@@ -5,11 +5,11 @@ import { readSession } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { DeletePetButton } from "@/components/DeletePetButton";
+import { PetAvatarUpload } from "@/components/PetAvatarUpload";
 import { PetDetailTabs } from "./pet-detail-tabs";
 import {
   SPECIES_LABEL,
   SEX_LABEL,
-  SPECIES_EMOJI,
   ageFromBirthDate,
 } from "@/lib/utils";
 
@@ -123,26 +123,13 @@ export default async function PetDetailPage({
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-5">
-          <div
-            className="rounded-full overflow-hidden flex items-center justify-center text-[36px] shrink-0"
-            style={{
-              width: 70,
-              height: 70,
-              background: pet.photoUrl ? "transparent" : `${ring}28`,
-              border: `3px solid ${ring}55`,
-            }}
-          >
-            {pet.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={pet.photoUrl}
-                alt={pet.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{SPECIES_EMOJI[pet.species] || "🐾"}</span>
-            )}
-          </div>
+          <PetAvatarUpload
+            petId={pet.id}
+            defaultPhotoUrl={pet.photoUrl}
+            species={pet.species}
+            petName={pet.name}
+            ringColor={ring}
+          />
           <div className="min-w-0 flex-1">
             <p
               className="text-[24px] font-black truncate"
