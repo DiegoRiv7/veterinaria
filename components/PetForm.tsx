@@ -30,12 +30,15 @@ export function PetForm({
   submitLabel = "Guardar",
   resetOnSuccess = false,
   redirectTo,
+  redirectTemplate,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (formData: FormData) => Promise<void | { id: string }>;
   initial?: PetFormInitial;
   submitLabel?: string;
   resetOnSuccess?: boolean;
   redirectTo?: string;
+  /** Template like "/mascotas/{id}" — interpolated with the action's returned id. Takes precedence over redirectTo. */
+  redirectTemplate?: string;
 }) {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
@@ -48,13 +51,20 @@ export function PetForm({
       action={(fd) =>
         start(async () => {
           try {
-            await action(fd);
+            const result = await action(fd);
             toast.success(init.id ? "Mascota actualizada" : "Mascota agregada", {
-              description: init.id ? "Tus cambios se guardaron." : "Ya puedes agendar su próxima visita.",
+              description: init.id
+                ? "Tus cambios se guardaron."
+                : "Ahora puedes subir fotos y completar su información.",
             });
             if (resetOnSuccess) formRef.current?.reset();
-            if (redirectTo) router.push(redirectTo);
-            else router.refresh();
+            if (redirectTemplate && result && "id" in result) {
+              router.push(redirectTemplate.replace("{id}", result.id));
+            } else if (redirectTo) {
+              router.push(redirectTo);
+            } else {
+              router.refresh();
+            }
           } catch (e) {
             const msg = e instanceof Error ? e.message : "Algo salió mal";
             toast.error("No pudimos guardar", { description: msg });

@@ -22,7 +22,11 @@ export default async function NewPetPage() {
         <PageHeader title="Nueva mascota" subtitle="Cuéntanos un poco sobre ella." />
         <Card>
           <CardBody>
-            <PetForm action={addPetAction} submitLabel="Agregar mascota" redirectTo="/mascotas" />
+            <PetForm
+              action={addPetAction}
+              submitLabel="Agregar mascota"
+              redirectTemplate="/mascotas/{id}"
+            />
           </CardBody>
         </Card>
       </PageContainer>

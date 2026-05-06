@@ -70,6 +70,17 @@ model Pet {
   createdAt    DateTime  @default(now())
 
   appointments Appointment[]
+  photos       PetPhoto[]
+}
+
+model PetPhoto {
+  id        String   @id @default(cuid())
+  petId     String
+  pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
+  url       String
+  createdAt DateTime @default(now())
+
+  @@index([petId, createdAt])
 }
 
 model Veterinarian {

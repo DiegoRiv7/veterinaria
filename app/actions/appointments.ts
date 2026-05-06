@@ -277,21 +277,40 @@ function readPetForm(fd: FormData) {
   return { name, species, sex, breed, color, microchipId, sterilized, weightKg, birthDate, notes, photoUrl };
 }
 
-export async function addPetAction(formData: FormData) {
+export async function addPetAction(formData: FormData): Promise<{ id: string }> {
   const session = await requireSession();
   if (session.role !== "CLIENT") throw new Error("FORBIDDEN");
   const data = readPetForm(formData);
   if (!data.name) throw new Error("Falta nombre.");
-  await prisma.pet.create({
+  const created = await prisma.pet.create({
     data: {
       ownerId: session.userId,
       ...data,
       weightKg: data.weightKg && Number.isFinite(data.weightKg) ? data.weightKg : null,
       birthDate: data.birthDate && !Number.isNaN(data.birthDate.getTime()) ? data.birthDate : null,
     },
+    select: { id: true },
   });
   revalidatePath("/mascotas");
   revalidatePath("/agendar");
+  revalidatePath("/inicio");
+  return { id: created.id };
+}
+
+export async function deletePetPhotoAction(photoId: string): Promise<void> {
+  const session = await requireSession();
+  const id = (photoId ?? "").trim();
+  if (!id) throw new Error("Datos inválidos.");
+  const photo = await prisma.petPhoto.findUnique({
+    where: { id },
+    include: { pet: { select: { ownerId: true } } },
+  });
+  if (!photo) throw new Error("Foto no encontrada.");
+  if (photo.pet.ownerId !== session.userId && session.role !== "ADMIN") {
+    throw new Error("FORBIDDEN");
+  }
+  await prisma.petPhoto.delete({ where: { id } });
+  revalidatePath(`/mascotas/${photo.petId}`);
 }
 
 export async function updatePetAction(formData: FormData) {

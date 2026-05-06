@@ -51,6 +51,8 @@ export async function POST(req: NextRequest) {
   const vetId = typeof vetIdRaw === "string" && vetIdRaw.trim() ? vetIdRaw.trim() : null;
   const userIdRaw = formData.get("userId");
   const userIdParam = typeof userIdRaw === "string" && userIdRaw.trim() ? userIdRaw.trim() : null;
+  const galleryRaw = formData.get("gallery");
+  const isGallery = galleryRaw === "1" || galleryRaw === "true";
 
   if (petId) {
     const pet = await prisma.pet.findUnique({ where: { id: petId } });
@@ -81,6 +83,13 @@ export async function POST(req: NextRequest) {
 
   if (petId) {
     try {
+      if (isGallery) {
+        const created = await prisma.petPhoto.create({
+          data: { petId, url: dataUrl },
+          select: { id: true },
+        });
+        return NextResponse.json({ url: dataUrl, photoId: created.id });
+      }
       await prisma.pet.update({ where: { id: petId }, data: { photoUrl: dataUrl } });
     } catch (err) {
       console.error("upload-photo db update failed", err);

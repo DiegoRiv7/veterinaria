@@ -6,6 +6,7 @@ import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { DeletePetButton } from "@/components/DeletePetButton";
 import { PetAvatarUpload } from "@/components/PetAvatarUpload";
+import { PetGallery } from "@/components/PetGallery";
 import { PetDetailTabs } from "./pet-detail-tabs";
 import {
   SPECIES_LABEL,
@@ -57,6 +58,10 @@ export default async function PetDetailPage({
           vet: { include: { user: { select: { name: true, photoUrl: true } } } },
         },
         orderBy: { scheduledAt: "desc" },
+      },
+      photos: {
+        select: { id: true, url: true },
+        orderBy: { createdAt: "desc" },
       },
     },
   });
@@ -146,6 +151,8 @@ export default async function PetDetailPage({
             </p>
           </div>
         </div>
+
+        <PetGallery petId={pet.id} petName={pet.name} initialPhotos={pet.photos} />
 
         <PetDetailTabs info={info} vaccines={vaccines} history={history} />
 
