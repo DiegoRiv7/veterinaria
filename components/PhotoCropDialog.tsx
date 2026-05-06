@@ -1,6 +1,6 @@
 "use client";
 import { useCallback, useState } from "react";
-import Cropper, { type Area } from "react-easy-crop";
+import Cropper, { type Area, type MediaSize } from "react-easy-crop";
 import { Button } from "@/components/ui/button";
 import { X, ZoomIn, ZoomOut, RotateCw } from "lucide-react";
 
@@ -73,12 +73,25 @@ export function PhotoCropDialog({
 }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
+  const [minZoom, setMinZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
   const [areaPixels, setAreaPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
 
   const onComplete = useCallback((_: Area, pixels: Area) => {
     setAreaPixels(pixels);
+  }, []);
+
+  // When the photo loads, set the initial zoom so the photo fills the
+  // 1:1 crop square with no black bars (Instagram-style). The slider
+  // min stays at 1 so the user can zoom out to see the whole photo if
+  // they want to recompose.
+  const onMediaLoaded = useCallback((mediaSize: MediaSize) => {
+    const { width, height } = mediaSize;
+    if (!width || !height) return;
+    const fillZoom = Math.max(width, height) / Math.min(width, height);
+    setZoom(fillZoom);
+    setMinZoom(1);
   }, []);
 
   async function handleSave() {
@@ -126,6 +139,8 @@ export function PhotoCropDialog({
           image={imageSrc}
           crop={crop}
           zoom={zoom}
+          minZoom={minZoom}
+          maxZoom={6}
           rotation={rotation}
           aspect={1}
           cropShape="rect"
@@ -136,6 +151,7 @@ export function PhotoCropDialog({
           onZoomChange={setZoom}
           onRotationChange={setRotation}
           onCropComplete={onComplete}
+          onMediaLoaded={onMediaLoaded}
         />
       </div>
 
@@ -143,8 +159,8 @@ export function PhotoCropDialog({
         <ZoomOut className="h-4 w-4 opacity-70 shrink-0" />
         <input
           type="range"
-          min={1}
-          max={4}
+          min={minZoom}
+          max={6}
           step={0.01}
           value={zoom}
           onChange={(e) => setZoom(Number(e.target.value))}

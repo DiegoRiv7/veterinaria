@@ -4,13 +4,22 @@ import { cn } from "@/lib/utils";
 export type InputProps = React.InputHTMLAttributes<HTMLInputElement>;
 
 export const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, ...props }, ref) => (
+  ({ className, style, ...props }, ref) => (
     <input
       ref={ref}
       className={cn(
-        "h-12 w-full rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] px-4 text-[15px] text-[var(--color-foreground)] placeholder:text-[var(--color-muted-2)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition shadow-[var(--shadow-soft-sm)]",
+        "h-12 w-full rounded-[12px] bg-[var(--color-surface)] border border-[var(--color-border)] px-4 text-[15px] text-[var(--color-foreground)] placeholder:text-[var(--color-muted-2)] focus:outline-none focus:border-[var(--color-brand)] focus:ring-2 focus:ring-[var(--color-brand)]/20 transition shadow-[var(--shadow-soft-sm)] appearance-none",
         className
       )}
+      style={{
+        // Force iOS Safari to honor the box height for type="date" /
+        // type="number" / type="text" identically — without this, the
+        // date picker chevron pushes the box ~6px taller than siblings.
+        WebkitAppearance: "none",
+        minHeight: 48,
+        boxSizing: "border-box",
+        ...style,
+      }}
       {...props}
     />
   )
