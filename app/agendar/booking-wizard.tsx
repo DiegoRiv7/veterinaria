@@ -39,7 +39,7 @@ type VetAvailability = {
   vetName: string;
   bio: string | null;
   photoUrl: string | null;
-  slots: { start: string; end: string }[];
+  slots: { start: string; end: string; display: string }[];
 };
 
 function next14Days() {
@@ -311,7 +311,7 @@ export function BookingWizard({
                                   : "bg-[var(--color-surface-2)] hover:bg-[var(--color-brand-soft)] text-[var(--color-foreground)]"
                               )}
                             >
-                              {formatTime(s.start)}
+                              {s.display}
                             </button>
                           );
                         })}
