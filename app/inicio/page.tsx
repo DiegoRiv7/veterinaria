@@ -100,12 +100,15 @@ export default async function ClientHome() {
     <ClientShellServer>
       <PageContainer className="pb-8">
         {/* Greeting */}
-        <div className="mb-5">
-          <p className="text-[13px] font-bold capitalize" style={{ color: "var(--color-muted)" }}>
+        <div className="mb-5 lg:mb-7">
+          <p
+            className="text-[13px] lg:text-[14px] font-bold capitalize"
+            style={{ color: "var(--color-muted)" }}
+          >
             {dateText}
           </p>
           <h1
-            className="text-[26px] font-black tracking-tight leading-tight"
+            className="text-[26px] lg:text-[34px] font-black tracking-tight leading-tight"
             style={{ color: "var(--color-foreground)" }}
           >
             Hola, {session.name.split(" ")[0]} 👋
@@ -160,7 +163,7 @@ export default async function ClientHome() {
             </div>
             <Link href={`/cita/${next.id}`} className="block">
               <div
-                className="rounded-[20px] p-5"
+                className="rounded-[20px] p-5 lg:p-6 flex items-center gap-4 lg:gap-5"
                 style={{
                   background:
                     "linear-gradient(135deg, color-mix(in oklab, var(--vet-blue, #f4c95e) 22%, var(--color-surface)), var(--color-surface))",
@@ -169,64 +172,64 @@ export default async function ClientHome() {
                   boxShadow: "0 8px 22px rgba(206, 90, 45, 0.06)",
                 }}
               >
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide"
-                    style={{
-                      background: STATUS_BADGE.SCHEDULED.bg,
-                      color: STATUS_BADGE.SCHEDULED.color,
-                      border: `1px solid ${STATUS_BADGE.SCHEDULED.border}`,
-                    }}
-                  >
-                    {STATUS_BADGE.SCHEDULED.label}
-                  </span>
-                  <span
-                    className="text-[15px] font-black"
-                    style={{
-                      color: "var(--color-foreground)",
-                      fontFamily: "var(--font-space-grotesk), sans-serif",
-                    }}
-                  >
-                    {dateLabel(next.scheduledAt)} · {formatTime(next.scheduledAt)}
-                  </span>
-                </div>
-                <p
-                  className="text-[17px] font-black leading-tight mb-2"
-                  style={{ color: "var(--color-foreground)" }}
+                {/* Pet photo — main visual */}
+                <div
+                  className="rounded-full overflow-hidden flex items-center justify-center text-[28px] shrink-0"
+                  style={{
+                    width: 64,
+                    height: 64,
+                    background: next.pet.photoUrl
+                      ? "transparent"
+                      : "color-mix(in oklab, var(--color-brand) 16%, transparent)",
+                    border: "2.5px solid color-mix(in oklab, var(--color-brand) 35%, var(--color-border))",
+                  }}
                 >
-                  {next.service.name}
-                </p>
-                <div className="flex items-center gap-2.5">
-                  <div
-                    className="rounded-full overflow-hidden flex items-center justify-center text-[13px] font-extrabold text-white shrink-0"
-                    style={{
-                      width: 28,
-                      height: 28,
-                      background: next.vet.user.photoUrl
-                        ? "var(--color-surface-2, var(--color-surface))"
-                        : "linear-gradient(135deg, var(--color-brand), color-mix(in oklab, var(--color-brand) 60%, oklch(45% 0.12 38)))",
-                      border: "1.5px solid var(--color-border)",
-                    }}
-                  >
-                    {next.vet.user.photoUrl ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={next.vet.user.photoUrl}
-                        alt={next.vet.user.name}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <span>{next.vet.user.name.replace(/^Dr[a]?\.\s*/i, "").charAt(0).toUpperCase()}</span>
-                    )}
+                  {next.pet.photoUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={next.pet.photoUrl}
+                      alt={next.pet.name}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <span>{SPECIES_EMOJI[next.pet.species] || "🐾"}</span>
+                  )}
+                </div>
+
+                {/* Info column */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-3 mb-2">
+                    <span
+                      className="px-2.5 py-1 rounded-full text-[11px] font-extrabold uppercase tracking-wide whitespace-nowrap"
+                      style={{
+                        background: STATUS_BADGE.SCHEDULED.bg,
+                        color: STATUS_BADGE.SCHEDULED.color,
+                        border: `1px solid ${STATUS_BADGE.SCHEDULED.border}`,
+                      }}
+                    >
+                      {STATUS_BADGE.SCHEDULED.label}
+                    </span>
+                    <span
+                      className="text-[14px] lg:text-[15px] font-black whitespace-nowrap"
+                      style={{
+                        color: "var(--color-foreground)",
+                        fontFamily: "var(--font-space-grotesk), sans-serif",
+                      }}
+                    >
+                      {dateLabel(next.scheduledAt)} · {formatTime(next.scheduledAt)}
+                    </span>
                   </div>
                   <p
-                    className="text-[13px] font-semibold flex items-center gap-1.5"
+                    className="text-[17px] lg:text-[19px] font-black leading-tight truncate"
+                    style={{ color: "var(--color-foreground)" }}
+                  >
+                    {next.service.name}
+                  </p>
+                  <p
+                    className="text-[13px] lg:text-[14px] font-semibold mt-1 truncate"
                     style={{ color: "var(--color-muted)" }}
                   >
-                    <span>{SPECIES_EMOJI[next.pet.species] || "🐾"}</span>
-                    <span>{next.pet.name}</span>
-                    <span>·</span>
-                    <span>{next.vet.user.name}</span>
+                    {next.pet.name} · {next.vet.user.name}
                   </p>
                 </div>
               </div>
@@ -253,14 +256,14 @@ export default async function ClientHome() {
               Ver todas
             </Link>
           </div>
-          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none">
+          <div className="flex gap-3 overflow-x-auto pb-1 -mx-1 px-1 scrollbar-none lg:grid lg:grid-cols-3 lg:overflow-visible lg:px-0 lg:mx-0">
             {pets.slice(0, 6).map((p, i) => {
               const ring = PET_RING_COLORS[i % PET_RING_COLORS.length];
               return (
                 <Link
                   key={p.id}
                   href={`/mascotas/${p.id}`}
-                  className="flex-shrink-0 w-[110px] flex flex-col items-center gap-2 p-3 rounded-[18px] hover:brightness-105 transition"
+                  className="flex-shrink-0 w-[110px] lg:w-auto flex flex-col items-center gap-2 p-3 lg:p-4 rounded-[18px] hover:brightness-105 transition"
                   style={{
                     background: "var(--color-surface)",
                     border: "1.5px solid var(--color-border)",
@@ -303,7 +306,7 @@ export default async function ClientHome() {
             })}
             <Link
               href="/mascotas/nueva"
-              className="flex-shrink-0 w-[100px] flex flex-col items-center justify-center gap-2 rounded-[18px] py-4"
+              className="flex-shrink-0 w-[100px] lg:w-auto flex flex-col items-center justify-center gap-2 rounded-[18px] py-4 lg:py-6"
               style={{
                 background: "transparent",
                 border: "1.5px dashed var(--color-border)",
