@@ -5,9 +5,13 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
-import { paletteForStyle, bgEmojisFor } from "@/lib/pet-flavor";
-import { SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
-import { PetCardStylePicker } from "@/components/client/PetCardStylePicker";
+import {
+  paletteForStyle,
+  parsePersonalityTags,
+  personalityFor,
+  moodFor,
+} from "@/lib/pet-flavor";
+import { PetdexEditorClient } from "./petdex-editor-client";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +28,16 @@ export default async function PersonalizarPage() {
       ...(activeIdCookie ? { id: activeIdCookie } : {}),
     },
     include: {
+      photos: {
+        select: { url: true },
+        orderBy: { createdAt: "desc" },
+      },
       _count: { select: { photos: true } },
+      vaccines: { select: { nextAt: true } },
+      appointments: {
+        where: { status: "SCHEDULED", scheduledAt: { gte: new Date() } },
+        select: { id: true },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -64,269 +77,188 @@ export default async function PersonalizarPage() {
   }
 
   const palette = paletteForStyle(pet);
-  const age = ageFromBirthDate(pet.birthDate) ?? "—";
   const photoCount = pet._count.photos;
+  const galleryUrls = [
+    pet.photoUrl,
+    ...pet.photos.slice(0, 5).map((ph) => ph.url),
+  ].filter((u): u is string => !!u);
 
-  type Tile = {
-    icon: string;
-    title: string;
-    subtitle: string;
-    href?: string;
-    soon?: boolean;
-    accent?: boolean;
-  };
-
-  const editor: Tile[] = [
-    {
-      icon: "✏️",
-      title: "Editar datos",
-      subtitle: "Nombre, raza, peso, sexo, color, fecha de nacimiento",
-      href: `/mascotas/${pet.id}/editar`,
-    },
-    {
-      icon: "📷",
-      title: "Cambiar foto principal",
-      subtitle: "La que aparece en el carrusel y todo el resto de la app",
-      href: `/mascotas/${pet.id}`,
-    },
-    {
-      icon: "🖼️",
-      title: "Galería",
-      subtitle: `${photoCount} ${photoCount === 1 ? "foto" : "fotos"} subidas · estas son las que rotan en el carrusel`,
-      href: "/recuerdos",
-    },
-  ];
-
-
-  const sharing: Tile[] = [
-    {
-      icon: "🖥️",
-      title: "Wallpapers",
-      subtitle: "Genera fondos de pantalla con las fotos de tu mascota",
-      soon: true,
-      accent: true,
-    },
-    {
-      icon: "🔗",
-      title: "Imagen para compartir",
-      subtitle: "Una tarjeta lista para Instagram / WhatsApp",
-      soon: true,
-      accent: true,
-    },
-  ];
-
-  const future: Tile[] = [
-    {
-      icon: "🎂",
-      title: "Video de cumpleaños",
-      subtitle: `${pet.name} cumple — la app lo arma solo`,
-      soon: true,
-    },
-    {
-      icon: "🎬",
-      title: "Resumen del año",
-      subtitle: `Citas, vacunas, fotos y momentos de ${pet.name} en un mini-video`,
-      soon: true,
-    },
-    {
-      icon: "🐾",
-      title: "Comunidad",
-      subtitle: "Comparte logros con otros dueños — próximamente social",
-      soon: true,
-    },
-  ];
+  const defaultPersonality = personalityFor(pet.species);
+  const savedTags = parsePersonalityTags(pet.personalityTags);
+  const now = Date.now();
+  const defaultMood = moodFor({
+    species: pet.species,
+    hasUpcoming: pet.appointments.length > 0,
+    hasPendingVaccine: pet.vaccines.some(
+      (v) => v.nextAt && v.nextAt.getTime() < now
+    ),
+  });
 
   return (
     <ClientShellServer>
       <PageContainer className="pb-12">
         <div className="flex flex-col gap-5">
-          {/* Hero */}
-          <section
-            className="rounded-[22px] p-5 flex items-center gap-4"
-            style={{
-              background: `linear-gradient(135deg, ${palette.from}, ${palette.to})`,
-              boxShadow: `0 14px 38px ${palette.accent}33`,
+          {/* Header */}
+          <div className="px-1">
+            <p
+              className="text-[11px] font-extrabold uppercase tracking-[1.5px]"
+              style={{ color: "var(--color-muted)" }}
+            >
+              PERSONALIZAR
+            </p>
+            <h1
+              className="text-[26px] lg:text-[32px] font-black tracking-tight"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              {pet.name}
+            </h1>
+            <p
+              className="text-[12px] font-semibold mt-0.5"
+              style={{ color: "var(--color-muted)" }}
+            >
+              Edita el cuadro como quieras — los cambios se guardan solos.
+            </p>
+          </div>
+
+          {/* Live editor */}
+          <PetdexEditorClient
+            petId={pet.id}
+            petName={pet.name}
+            petSpecies={pet.species}
+            petPhotoUrl={pet.photoUrl}
+            galleryUrls={galleryUrls}
+            defaultMood={defaultMood}
+            defaultPersonality={defaultPersonality}
+            initial={{
+              cardStyle: pet.cardStyle ?? null,
+              personalityTags: savedTags,
+              customMood: pet.customMood ?? null,
             }}
-          >
-            <div
-              className="rounded-full overflow-hidden flex items-center justify-center text-[34px] shrink-0"
-              style={{
-                width: 70,
-                height: 70,
-                background: pet.photoUrl
-                  ? "transparent"
-                  : "rgba(255,255,255,0.18)",
-                border: "2.5px solid rgba(255,255,255,0.35)",
-              }}
+          />
+
+          {/* More options */}
+          <div className="flex flex-col gap-2 mt-2">
+            <p
+              className="text-[11px] font-extrabold uppercase tracking-[1px] px-1"
+              style={{ color: "var(--color-muted)" }}
             >
-              {pet.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={pet.photoUrl}
-                  alt={pet.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{bgEmojisFor(pet.species)[0]}</span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1 text-white">
-              <p className="text-[10px] font-extrabold tracking-[1.5px] opacity-80">
-                PERSONALIZAR
-              </p>
-              <p className="text-[24px] lg:text-[28px] font-black tracking-tight leading-tight">
-                {pet.name}
-              </p>
-              <p className="text-[12px] font-bold opacity-90 truncate">
-                {pet.breed ?? SPECIES_LABEL[pet.species]} · {age}
-              </p>
-            </div>
-          </section>
+              Más opciones
+            </p>
 
-          <Section title="Información" subtitle="Datos y fotos del perfil">
-            {editor.map((t) => (
-              <TileCard key={t.title} tile={t} accent={palette.accent} />
-            ))}
-          </Section>
+            <SmallTile
+              icon="✏️"
+              title="Editar datos"
+              subtitle="Nombre, raza, peso, sexo, color, fecha de nacimiento"
+              href={`/mascotas/${pet.id}/editar`}
+              accent={palette.accent}
+            />
+            <SmallTile
+              icon="📷"
+              title="Cambiar foto principal"
+              subtitle="La que aparece arriba en el cuadro"
+              href={`/mascotas/${pet.id}`}
+              accent={palette.accent}
+            />
+            <SmallTile
+              icon="🖼️"
+              title="Galería"
+              subtitle={`${photoCount} ${photoCount === 1 ? "foto" : "fotos"} subidas — estas son las que rotan en el carrusel`}
+              href="/recuerdos"
+              accent={palette.accent}
+            />
+          </div>
 
-          <Section
-            title="Apariencia"
-            subtitle="Cómo se ve el cuadro de tu mascota en Inicio"
-          >
-            <div
-              className="rounded-[18px] p-4 lg:p-5"
-              style={{
-                background: "var(--color-surface)",
-                border: "1px solid var(--color-border)",
-              }}
+          {/* Coming soon */}
+          <div className="flex flex-col gap-2 mt-2">
+            <p
+              className="text-[11px] font-extrabold uppercase tracking-[1px] px-1"
+              style={{ color: "var(--color-muted)" }}
             >
-              <p
-                className="text-[14px] font-extrabold mb-1"
-                style={{ color: "var(--color-foreground)" }}
-              >
-                Color del fondo
-              </p>
-              <p
-                className="text-[12px] font-semibold leading-snug mb-4"
-                style={{ color: "var(--color-muted)" }}
-              >
-                Elige un tono cálido, deja el automático, o ponlo transparente
-                para que las fotos se vean sin tinte.
-              </p>
-              <PetCardStylePicker
-                petId={pet.id}
-                initialStyle={pet.cardStyle ?? null}
-              />
-            </div>
-          </Section>
-
-          <Section
-            title="Crear y compartir"
-            subtitle="Saca lo mejor de las fotos de tu mascota"
-          >
-            {sharing.map((t) => (
-              <TileCard key={t.title} tile={t} accent={palette.accent} />
-            ))}
-          </Section>
-
-          <Section
-            title="Próximamente"
-            subtitle="Funciones que vienen — preparándose para una app social"
-          >
-            {future.map((t) => (
-              <TileCard key={t.title} tile={t} accent={palette.accent} />
-            ))}
-          </Section>
+              Próximamente
+            </p>
+            <SmallTile
+              icon="🖥️"
+              title="Wallpapers"
+              subtitle="Genera fondos de pantalla con tus fotos"
+              soon
+              accent={palette.accent}
+            />
+            <SmallTile
+              icon="🔗"
+              title="Imagen para compartir"
+              subtitle="Tarjeta lista para Instagram o WhatsApp"
+              soon
+              accent={palette.accent}
+            />
+            <SmallTile
+              icon="🎂"
+              title="Video de cumpleaños"
+              subtitle="La app arma el video automáticamente"
+              soon
+              accent={palette.accent}
+            />
+            <SmallTile
+              icon="🎬"
+              title="Resumen del año"
+              subtitle="Citas, vacunas y momentos en un mini-video"
+              soon
+              accent={palette.accent}
+            />
+          </div>
         </div>
       </PageContainer>
     </ClientShellServer>
   );
 }
 
-function Section({
+function SmallTile({
+  icon,
   title,
   subtitle,
-  children,
-}: {
-  title: string;
-  subtitle?: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <div className="px-1">
-        <p
-          className="text-[11px] font-extrabold uppercase tracking-[1px]"
-          style={{ color: "var(--color-muted)" }}
-        >
-          {title}
-        </p>
-        {subtitle && (
-          <p
-            className="text-[12px] font-semibold mt-0.5"
-            style={{ color: "var(--color-muted)" }}
-          >
-            {subtitle}
-          </p>
-        )}
-      </div>
-      <div className="flex flex-col gap-2">{children}</div>
-    </section>
-  );
-}
-
-function TileCard({
-  tile,
+  href,
+  soon,
   accent,
 }: {
-  tile: {
-    icon: string;
-    title: string;
-    subtitle: string;
-    href?: string;
-    soon?: boolean;
-    accent?: boolean;
-  };
+  icon: string;
+  title: string;
+  subtitle: string;
+  href?: string;
+  soon?: boolean;
   accent: string;
 }) {
   const inner = (
     <div
-      className="flex items-center gap-3.5 px-4 py-3.5 rounded-[16px] transition"
+      className="flex items-center gap-3 px-4 py-3 rounded-[14px] transition"
       style={{
-        background: tile.accent
-          ? `color-mix(in oklab, ${accent} 8%, var(--color-surface))`
-          : "var(--color-surface)",
-        border: `1px solid ${
-          tile.accent
-            ? `color-mix(in oklab, ${accent} 22%, var(--color-border))`
-            : "var(--color-border)"
-        }`,
-        opacity: tile.soon ? 0.85 : 1,
+        background: "var(--color-surface)",
+        border: "1px solid var(--color-border)",
+        opacity: soon ? 0.85 : 1,
       }}
     >
       <div
-        className="rounded-[12px] flex items-center justify-center text-[22px] shrink-0"
+        className="rounded-[10px] flex items-center justify-center text-[18px] shrink-0"
         style={{
-          width: 44,
-          height: 44,
+          width: 36,
+          height: 36,
           background: `${accent}1a`,
         }}
       >
-        {tile.icon}
+        {icon}
       </div>
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 mb-0.5">
+        <div className="flex items-center gap-2">
           <p
-            className="text-[14px] font-extrabold"
+            className="text-[13px] font-extrabold truncate"
             style={{ color: "var(--color-foreground)" }}
           >
-            {tile.title}
+            {title}
           </p>
-          {tile.soon && (
+          {soon && (
             <span
               className="text-[9px] font-extrabold uppercase tracking-wide px-1.5 py-0.5 rounded-full"
               style={{
-                background: "color-mix(in oklab, var(--color-muted) 18%, transparent)",
+                background:
+                  "color-mix(in oklab, var(--color-muted) 18%, transparent)",
                 color: "var(--color-muted)",
               }}
             >
@@ -335,28 +267,21 @@ function TileCard({
           )}
         </div>
         <p
-          className="text-[12px] font-semibold leading-snug"
+          className="text-[11px] font-semibold leading-snug truncate"
           style={{ color: "var(--color-muted)" }}
         >
-          {tile.subtitle}
+          {subtitle}
         </p>
       </div>
-      {!tile.soon && tile.href && (
-        <span
-          className="text-[18px] shrink-0"
-          style={{ color: "var(--color-muted)" }}
-        >
-          ›
-        </span>
+      {href && !soon && (
+        <span style={{ color: "var(--color-muted)" }}>›</span>
       )}
     </div>
   );
 
-  if (tile.soon || !tile.href) {
-    return <div className="cursor-not-allowed">{inner}</div>;
-  }
+  if (soon || !href) return <div>{inner}</div>;
   return (
-    <Link href={tile.href} className="block">
+    <Link href={href} className="block">
       {inner}
     </Link>
   );

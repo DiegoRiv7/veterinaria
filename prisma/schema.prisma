@@ -70,7 +70,9 @@ model Pet {
   sterilized   Boolean   @default(false)
   photoUrl     String?
   notes        String?
-  cardStyle    String?
+  cardStyle        String?
+  personalityTags  String?  // JSON array of strings, max 3
+  customMood       String?
   createdAt    DateTime  @default(now())
 
   appointments Appointment[]

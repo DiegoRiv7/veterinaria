@@ -88,7 +88,68 @@ export async function deleteDewormingAction(id: string): Promise<void> {
   revalidatePath(`/vet/pacientes/${row.petId}`);
 }
 
-/* ─── Pet card style ───────────────────────────────────────── */
+/* ─── Pet card customization ───────────────────────────────── */
+
+export async function updatePetCustomizationAction(
+  petId: string,
+  data: {
+    cardStyle?: string | null;
+    personalityTags?: string[] | null;
+    customMood?: string | null;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  const id = (petId ?? "").trim();
+  if (!id) return { ok: false, error: "Mascota inválida." };
+
+  const pet = await prisma.pet.findUnique({
+    where: { id },
+    select: { ownerId: true },
+  });
+  if (!pet) return { ok: false, error: "Mascota no encontrada." };
+  if (pet.ownerId !== session.userId && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+
+  const update: {
+    cardStyle?: string | null;
+    personalityTags?: string | null;
+    customMood?: string | null;
+  } = {};
+
+  if (data.cardStyle !== undefined) {
+    const s = data.cardStyle;
+    if (s === "transparent") update.cardStyle = "transparent";
+    else if (s && /^[0-9]$/.test(s)) update.cardStyle = s;
+    else update.cardStyle = null;
+  }
+
+  if (data.personalityTags !== undefined) {
+    if (!data.personalityTags || data.personalityTags.length === 0) {
+      update.personalityTags = null;
+    } else {
+      const cleaned = data.personalityTags
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0 && t.length <= 24)
+        .slice(0, 3);
+      update.personalityTags =
+        cleaned.length > 0 ? JSON.stringify(cleaned) : null;
+    }
+  }
+
+  if (data.customMood !== undefined) {
+    const mood = (data.customMood ?? "").trim();
+    update.customMood = mood.length === 0 ? null : mood.slice(0, 80);
+  }
+
+  await prisma.pet.update({ where: { id }, data: update });
+
+  revalidatePath("/inicio");
+  revalidatePath("/personalizar");
+  return { ok: true };
+}
+
+/* ─── Pet card style (legacy single-field action) ──────────── */
 
 export async function updatePetCardStyleAction(
   petId: string,

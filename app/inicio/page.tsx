@@ -10,7 +10,7 @@ import { ageFromBirthDate, formatTime } from "@/lib/utils";
 import {
   paletteForStyle,
   isTransparentStyle,
-  personalityFor,
+  personalityForPet,
   funFactFor,
   bgEmojisFor,
   moodFor,
@@ -174,6 +174,12 @@ export default async function ClientHome() {
 
     const ageStr = ageFromBirthDate(p.birthDate) ?? "—";
 
+    const autoMood = moodFor({
+      species: p.species,
+      hasUpcoming,
+      hasPendingVaccine: hasPendingVaccine || hasOverdueVaccine,
+    });
+
     return {
       id: p.id,
       name: p.name,
@@ -182,12 +188,11 @@ export default async function ClientHome() {
       photoUrl: p.photoUrl,
       galleryUrls,
       bgEmojis: bgEmojisFor(p.species),
-      mood: moodFor({
+      mood: p.customMood ?? autoMood,
+      personality: personalityForPet({
         species: p.species,
-        hasUpcoming,
-        hasPendingVaccine: hasPendingVaccine || hasOverdueVaccine,
+        personalityTags: p.personalityTags,
       }),
-      personality: personalityFor(p.species),
       funFact: funFactFor(p),
       status,
       statusOk,

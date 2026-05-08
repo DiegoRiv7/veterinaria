@@ -121,6 +121,29 @@ export function personalityFor(species: string): string[] {
   return PERSONALITY_BY_SPECIES[species] ?? PERSONALITY_BY_SPECIES.OTHER;
 }
 
+export function parsePersonalityTags(raw: string | null): string[] | null {
+  if (!raw) return null;
+  try {
+    const arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) return null;
+    const cleaned = arr
+      .filter((x): x is string => typeof x === "string")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+      .slice(0, 3);
+    return cleaned.length > 0 ? cleaned : null;
+  } catch {
+    return null;
+  }
+}
+
+export function personalityForPet(pet: {
+  species: string;
+  personalityTags: string | null;
+}): string[] {
+  return parsePersonalityTags(pet.personalityTags) ?? personalityFor(pet.species);
+}
+
 const FUN_FACTS_BY_SPECIES: Record<string, string[]> = {
   DOG: [
     "Adora correr al escuchar la palabra paseo y siempre llega primero a la puerta.",
