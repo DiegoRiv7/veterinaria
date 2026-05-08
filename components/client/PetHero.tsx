@@ -20,9 +20,12 @@ export type PetHeroData = {
 export function PetHero({
   pet,
   onAgendar,
+  cardHref = "/personalizar",
 }: {
   pet: PetHeroData;
   onAgendar?: () => void;
+  /** Whole-card tap target. Defaults to the personalization page. */
+  cardHref?: string;
 }) {
   const tiles: { kind: "photo"; url: string }[] | { kind: "emoji"; char: string }[] =
     pet.galleryUrls.length > 0
@@ -50,6 +53,14 @@ export function PetHero({
         boxShadow: `0 16px 52px ${p.accent}33`,
       }}
     >
+      {/* Whole-card link sitting beneath the actionable controls. The
+          Agendar button + dot navigation are above it (relative + z-10)
+          so they stay clickable. */}
+      <Link
+        href={cardHref}
+        aria-label={`Personalizar a ${pet.name}`}
+        className="absolute inset-0 z-0"
+      />
       {/* Background photo / emoji */}
       <div className="absolute inset-0 transition-opacity duration-700">
         {current.kind === "photo" ? (
@@ -89,7 +100,7 @@ export function PetHero({
         }}
       />
 
-      <div className="relative z-10 h-full px-5 lg:px-7 pt-5 lg:pt-6 flex flex-col">
+      <div className="relative z-10 h-full px-5 lg:px-7 pt-5 lg:pt-6 flex flex-col pointer-events-none">
         {/* Status chip */}
         <div
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full self-start mb-2"
@@ -146,7 +157,7 @@ export function PetHero({
         <div className="flex-1" />
 
         {/* Bottom: agendar + dots */}
-        <div className="flex items-center justify-between pb-5 lg:pb-6">
+        <div className="flex items-center justify-between pb-5 lg:pb-6 pointer-events-auto">
           {onAgendar ? (
             <button
               type="button"

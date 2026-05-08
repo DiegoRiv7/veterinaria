@@ -121,12 +121,12 @@ export default async function CarnetPage() {
   return (
     <ClientShellServer>
       <div
-        className="min-h-full p-4 lg:p-8"
+        className="h-full flex items-center justify-center px-4 py-3 lg:p-8 overflow-hidden"
         style={{
           background: `linear-gradient(160deg, ${dk.bg2}, ${dk.bg})`,
         }}
       >
-        <div className="max-w-[460px] mx-auto flex flex-col gap-4">
+        <div className="w-full max-w-[420px] flex flex-col gap-3">
           {/* The carnet card — protagonist, simulated wallet pass */}
           <div
             className="rounded-[28px] overflow-hidden relative"
@@ -161,10 +161,10 @@ export default async function CarnetPage() {
 
             {/* Header — Vetsfriend brand strip */}
             <div
-              className="flex items-center justify-between px-6 pt-5 pb-3 relative z-10"
+              className="flex items-center justify-between px-5 pt-3.5 pb-2 relative z-10"
             >
               <p
-                className="text-[10px] font-extrabold tracking-[2px]"
+                className="text-[9px] font-extrabold tracking-[2px]"
                 style={{ color: dk.textMuted }}
               >
                 VETSFRIEND · CARNET
@@ -176,14 +176,14 @@ export default async function CarnetPage() {
                 <span
                   className="rounded-full"
                   style={{
-                    width: 7,
-                    height: 7,
+                    width: 6,
+                    height: 6,
                     background: "#7df291",
-                    boxShadow: "0 0 8px #7df291",
+                    boxShadow: "0 0 6px #7df291",
                   }}
                 />
                 <span
-                  className="text-[10px] font-extrabold uppercase tracking-wide"
+                  className="text-[9px] font-extrabold uppercase tracking-wide"
                   style={{ color: "#7df291" }}
                 >
                   Activo
@@ -192,16 +192,16 @@ export default async function CarnetPage() {
             </div>
 
             {/* Pet identity */}
-            <div className="px-6 pb-5 flex items-center gap-4 relative z-10">
+            <div className="px-5 pb-3 flex items-center gap-3.5 relative z-10">
               <div
-                className="rounded-[22px] overflow-hidden flex items-center justify-center text-[44px] shrink-0"
+                className="rounded-[18px] overflow-hidden flex items-center justify-center text-[36px] shrink-0"
                 style={{
-                  width: 84,
-                  height: 84,
+                  width: 68,
+                  height: 68,
                   background: active.photoUrl
                     ? "transparent"
                     : `linear-gradient(145deg, ${palette.from}, ${palette.to})`,
-                  boxShadow: `0 8px 28px ${dk.accent}66`,
+                  boxShadow: `0 6px 22px ${dk.accent}66`,
                   border: `2px solid color-mix(in oklab, ${dk.accent} 45%, transparent)`,
                 }}
               >
@@ -218,18 +218,18 @@ export default async function CarnetPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p
-                  className="text-[9px] font-extrabold tracking-[1.5px] mb-1"
+                  className="text-[8px] font-extrabold tracking-[1.5px] mb-0.5"
                   style={{ color: dk.textMuted }}
                 >
                   NOMBRE
                 </p>
                 <p
-                  className="text-[34px] font-black leading-[0.95] truncate text-white tracking-tight"
+                  className="text-[28px] font-black leading-[0.95] truncate text-white tracking-tight"
                 >
                   {active.name}
                 </p>
                 <p
-                  className="text-[13px] font-bold mt-1 truncate"
+                  className="text-[12px] font-bold mt-0.5 truncate"
                   style={{ color: dk.textDim }}
                 >
                   {active.breed ?? SPECIES_LABEL[active.species]} ·{" "}
@@ -246,7 +246,7 @@ export default async function CarnetPage() {
               {fields.map((f, i) => (
                 <div
                   key={f.l}
-                  className="px-4 py-3"
+                  className="px-3 py-2"
                   style={{
                     borderRight:
                       (i + 1) % 3 !== 0 ? `1px solid ${dk.border}` : "none",
@@ -255,13 +255,13 @@ export default async function CarnetPage() {
                   }}
                 >
                   <p
-                    className="text-[8px] font-extrabold tracking-[1px] mb-1"
+                    className="text-[7px] font-extrabold tracking-[1px] mb-0.5"
                     style={{ color: dk.textMuted }}
                   >
                     {f.l}
                   </p>
                   <p
-                    className="text-[13px] font-extrabold truncate"
+                    className="text-[12px] font-extrabold truncate"
                     style={{
                       color: dk.text,
                       fontFamily: "var(--font-space-grotesk), sans-serif",
@@ -276,34 +276,34 @@ export default async function CarnetPage() {
             {/* QR + owner / vet */}
             <div className="flex relative z-10">
               <div
-                className="flex flex-col items-center gap-2 px-5 py-5 border-r"
+                className="flex flex-col items-center gap-1.5 px-4 py-3.5 border-r"
                 style={{ borderRightColor: dk.border }}
               >
-                <CarnetQrCode url={publicUrl} size={108} dark="#1a1035" />
+                <CarnetQrCode url={publicUrl} size={88} dark="#1a1035" />
                 <p
-                  className="text-[8px] font-extrabold tracking-wide text-center"
+                  className="text-[7px] font-extrabold tracking-wide text-center"
                   style={{ color: dk.textMuted }}
                 >
                   ESCANEAR FICHA
                 </p>
               </div>
-              <div className="flex-1 px-5 py-5 flex flex-col gap-3 min-w-0">
+              <div className="flex-1 px-4 py-3.5 flex flex-col gap-2.5 min-w-0">
                 <div>
                   <p
-                    className="text-[8px] font-extrabold tracking-[1px] mb-0.5"
+                    className="text-[7px] font-extrabold tracking-[1px] mb-0.5"
                     style={{ color: dk.textMuted }}
                   >
                     PROPIETARIO
                   </p>
                   <p
-                    className="text-[13px] font-extrabold truncate"
+                    className="text-[12px] font-extrabold truncate"
                     style={{ color: dk.text }}
                   >
                     {owner?.name ?? "—"}
                   </p>
                   {owner?.phone && (
                     <p
-                      className="text-[12px] font-bold truncate"
+                      className="text-[11px] font-bold truncate"
                       style={{
                         color: dk.accent,
                         fontFamily: "var(--font-space-grotesk), sans-serif",
@@ -315,19 +315,19 @@ export default async function CarnetPage() {
                 </div>
                 <div>
                   <p
-                    className="text-[8px] font-extrabold tracking-[1px] mb-0.5"
+                    className="text-[7px] font-extrabold tracking-[1px] mb-0.5"
                     style={{ color: dk.textMuted }}
                   >
                     CLÍNICA
                   </p>
                   <p
-                    className="text-[13px] font-extrabold"
+                    className="text-[12px] font-extrabold"
                     style={{ color: dk.text }}
                   >
                     Vetsfriend
                   </p>
                   <p
-                    className="text-[11px] font-semibold"
+                    className="text-[10px] font-semibold"
                     style={{ color: dk.textDim }}
                   >
                     Clínica & Grooming
@@ -338,17 +338,17 @@ export default async function CarnetPage() {
 
             {/* Bottom accent — wallet pass footer */}
             <div
-              className="px-6 py-3 flex items-center justify-between relative z-10"
+              className="px-5 py-2.5 flex items-center justify-between relative z-10"
               style={{ borderTop: `1px solid ${dk.border}` }}
             >
               <p
-                className="text-[9px] font-extrabold tracking-[1.5px]"
+                className="text-[8px] font-extrabold tracking-[1.5px]"
                 style={{ color: dk.textMuted }}
               >
                 EMITIDO · VETSFRIEND
               </p>
               <p
-                className="text-[9px] font-extrabold tracking-[1px]"
+                className="text-[8px] font-extrabold tracking-[1px]"
                 style={{
                   color: dk.textMuted,
                   fontFamily: "var(--font-space-grotesk), sans-serif",

@@ -318,20 +318,20 @@ export function PetVaccinesTab({
         <div
           className="rounded-[18px] py-12 px-6 text-center"
           style={{
-            background: "var(--color-surface)",
-            border: "1px solid var(--color-border)",
+            background: t.cardBg,
+            border: `1px ${dark ? "dashed" : "solid"} ${t.border}`,
           }}
         >
           <p className="text-[36px] mb-2">💉</p>
           <p
             className="text-[14px] font-bold"
-            style={{ color: "var(--color-foreground)" }}
+            style={{ color: t.text }}
           >
             Sin vacunas registradas
           </p>
           <p
             className="text-[12px] font-semibold mt-1"
-            style={{ color: "var(--color-muted)" }}
+            style={{ color: t.textMuted }}
           >
             {readonly
               ? "El dueño todavía no registró vacunas para esta mascota."
@@ -347,14 +347,14 @@ export function PetVaccinesTab({
             key={v.id}
             className="rounded-[16px] p-4"
             style={{
-              background: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
+              background: t.cardBg,
+              border: `1px solid ${t.border}`,
             }}
           >
             <div className="flex items-start justify-between gap-3 mb-2.5">
               <p
                 className="text-[15px] font-extrabold"
-                style={{ color: "var(--color-foreground)" }}
+                style={{ color: t.text }}
               >
                 💉 {v.name}
               </p>
@@ -377,7 +377,7 @@ export function PetVaccinesTab({
                     aria-label={`Quitar ${v.name}`}
                     className="w-7 h-7 rounded-full flex items-center justify-center"
                     style={{
-                      background: "var(--color-surface-2, var(--color-surface))",
+                      background: t.cardBgLight,
                       color: "#c0392b",
                     }}
                   >
@@ -394,13 +394,13 @@ export function PetVaccinesTab({
               <div>
                 <p
                   className="text-[10px] font-extrabold uppercase tracking-wide"
-                  style={{ color: "var(--color-muted)" }}
+                  style={{ color: t.textMuted }}
                 >
                   Aplicada
                 </p>
                 <p
                   className="text-[13px] font-extrabold"
-                  style={{ color: "var(--color-foreground)" }}
+                  style={{ color: t.text }}
                 >
                   {formatLong(v.appliedAt)}
                 </p>
@@ -409,7 +409,7 @@ export function PetVaccinesTab({
                 <div>
                   <p
                     className="text-[10px] font-extrabold uppercase tracking-wide"
-                    style={{ color: "var(--color-muted)" }}
+                    style={{ color: t.textMuted }}
                   >
                     Próxima
                   </p>
@@ -434,14 +434,14 @@ export function PetVaccinesTab({
             {v.notes && (
               <p
                 className="text-[12px] font-semibold leading-snug"
-                style={{ color: "var(--color-muted)" }}
+                style={{ color: t.textDim }}
               >
                 {v.notes}
               </p>
             )}
             <p
               className="text-[11px] font-semibold mt-1.5"
-              style={{ color: "var(--color-muted)" }}
+              style={{ color: t.textMuted }}
             >
               Registrada por {v.addedByName}
             </p>
