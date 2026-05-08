@@ -7,6 +7,7 @@ import {
   SEX_LABEL,
   ageFromBirthDate,
 } from "@/lib/utils";
+import { NavChips, VisitsList } from "./cartilla-public-client";
 
 export const dynamic = "force-dynamic";
 
@@ -42,7 +43,7 @@ export default async function PublicCartillaPage({
   const pet = await prisma.pet.findUnique({
     where: { id: petId },
     include: {
-      owner: { select: { name: true } },
+      owner: { select: { name: true, phone: true } },
       vaccines: { orderBy: { appliedAt: "desc" } },
       dewormings: { orderBy: { appliedAt: "desc" } },
       surgeries: { orderBy: { performedAt: "desc" } },
@@ -53,7 +54,6 @@ export default async function PublicCartillaPage({
           vet: { include: { user: { select: { name: true } } } },
         },
         orderBy: { scheduledAt: "desc" },
-        take: 12,
       },
     },
   });
@@ -102,14 +102,12 @@ export default async function PublicCartillaPage({
     (a, b) => b.performedAt.getTime() - a.performedAt.getTime()
   );
 
-  const consults = completed
-    .filter(
-      (a) =>
-        !isDeworming(a.service.name) &&
-        !isSurgery(a.service.name) &&
-        !/vacun/i.test(a.service.name)
-    )
-    .slice(0, 8);
+  const consults = completed.filter(
+    (a) =>
+      !isDeworming(a.service.name) &&
+      !isSurgery(a.service.name) &&
+      !/vacun/i.test(a.service.name)
+  );
 
   const lastVet =
     pet.appointments.find((a) => a.vet?.user?.name)?.vet.user.name ?? null;
@@ -148,6 +146,7 @@ export default async function PublicCartillaPage({
       </div>
 
       <div className="px-4 pb-12 max-w-md mx-auto w-full flex flex-col gap-4">
+        <NavChips accent={palette.accent} />
         {/* Hero */}
         <div
           className="rounded-[24px] p-5 flex items-center gap-4"
@@ -201,207 +200,194 @@ export default async function PublicCartillaPage({
         </div>
 
         {/* Datos */}
-        <DkCard>
-          <SectionHeader icon="📇" label="Datos del paciente" />
-          {[
-            { l: "Fecha de nacimiento", v: formatLong(pet.birthDate) },
-            { l: "Edad", v: age },
-            { l: "Peso", v: pet.weightKg ? `${pet.weightKg} kg` : "—" },
-            { l: "Género", v: SEX_LABEL[pet.sex] ?? "—" },
-            { l: "Esterilizado/a", v: pet.sterilized ? "Sí" : "No" },
-            { l: "Color", v: pet.color ?? "—" },
-            { l: "Microchip", v: pet.microchipId ?? "—" },
-          ].map((row) => (
-            <Row key={row.l} label={row.l} value={row.v} />
-          ))}
-        </DkCard>
+        <section id="datos">
+          <DkCard>
+            <SectionHeader icon="📇" label="Datos del paciente" />
+            {[
+              { l: "Fecha de nacimiento", v: formatLong(pet.birthDate) },
+              { l: "Edad", v: age },
+              { l: "Peso", v: pet.weightKg ? `${pet.weightKg} kg` : "—" },
+              { l: "Género", v: SEX_LABEL[pet.sex] ?? "—" },
+              { l: "Esterilizado/a", v: pet.sterilized ? "Sí" : "No" },
+              { l: "Color", v: pet.color ?? "—" },
+            ].map((row) => (
+              <Row key={row.l} label={row.l} value={row.v} />
+            ))}
+          </DkCard>
+        </section>
 
         {/* Owner + vet */}
-        <DkCard>
-          <SectionHeader icon="👤" label="Contacto" />
-          <Row label="Propietario" value={pet.owner.name} />
-          <Row label="Clínica" value="Vetsfriend · Clínica & Grooming" />
-          {lastVet && <Row label="Veterinario" value={lastVet} />}
-        </DkCard>
+        <section id="contacto">
+          <DkCard>
+            <SectionHeader icon="👤" label="Contacto" />
+            <Row label="Propietario" value={pet.owner.name} />
+            {pet.owner.phone && (
+              <Row label="Teléfono" value={pet.owner.phone} />
+            )}
+            <Row label="Clínica" value="Vetsfriend · Clínica & Grooming" />
+            {lastVet && <Row label="Veterinario" value={lastVet} />}
+          </DkCard>
+        </section>
 
         {/* Vacunas */}
-        <DkCard>
-          <SectionHeader icon="💉" label="Vacunas" />
-          {vaccines.length === 0 ? (
-            <Empty text="Sin vacunas registradas." />
-          ) : (
-            vaccines.map((v) => (
-              <div
-                key={v.id}
-                className="px-4 py-3 border-t"
-                style={{ borderTopColor: "oklch(34% 0.05 35)" }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[14px] font-extrabold">{v.name}</p>
-                  <StatusPill status={v.status} accent={palette.accent} />
-                </div>
-                <p
-                  className="text-[12px] font-semibold"
-                  style={{ color: "oklch(78% 0.04 60)" }}
+        <section id="vacunas">
+          <DkCard>
+            <SectionHeader icon="💉" label="Vacunas" />
+            {vaccines.length === 0 ? (
+              <Empty text="Sin vacunas registradas." />
+            ) : (
+              vaccines.map((v) => (
+                <div
+                  key={v.id}
+                  className="px-4 py-3 border-t"
+                  style={{ borderTopColor: "oklch(34% 0.05 35)" }}
                 >
-                  Aplicada: {formatLong(v.appliedAt)}
-                  {v.nextAt && (
-                    <span
-                      style={{ color: palette.accent, marginLeft: 8 }}
-                    >
-                      Próxima: {formatLong(v.nextAt)}
-                    </span>
-                  )}
-                </p>
-                {v.notes && (
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[14px] font-extrabold">{v.name}</p>
+                    <StatusPill status={v.status} accent={palette.accent} />
+                  </div>
                   <p
-                    className="text-[12px] font-semibold mt-1"
-                    style={{ color: "oklch(72% 0.04 60)" }}
+                    className="text-[12px] font-semibold"
+                    style={{ color: "oklch(78% 0.04 60)" }}
                   >
-                    {v.notes}
+                    Aplicada: {formatLong(v.appliedAt)}
+                    {v.nextAt && (
+                      <span
+                        style={{ color: palette.accent, marginLeft: 8 }}
+                      >
+                        Próxima: {formatLong(v.nextAt)}
+                      </span>
+                    )}
                   </p>
-                )}
-              </div>
-            ))
-          )}
-        </DkCard>
+                  {v.notes && (
+                    <p
+                      className="text-[12px] font-semibold mt-1"
+                      style={{ color: "oklch(72% 0.04 60)" }}
+                    >
+                      {v.notes}
+                    </p>
+                  )}
+                </div>
+              ))
+            )}
+          </DkCard>
+        </section>
 
         {/* Desparasitaciones */}
-        <DkCard>
-          <SectionHeader icon="💊" label="Desparasitaciones" />
-          {allDewormings.length === 0 ? (
-            <Empty text="Sin desparasitaciones registradas." />
-          ) : (
-            allDewormings.map((d) => (
-              <div
-                key={d.id}
-                className="px-4 py-3 border-t"
-                style={{ borderTopColor: "oklch(34% 0.05 35)" }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[14px] font-extrabold">{d.product}</p>
-                  {d.kind && (
-                    <span
-                      className="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
-                      style={{
-                        background: `${palette.accent}22`,
-                        color: palette.accent,
-                        border: `1px solid ${palette.accent}55`,
-                      }}
+        <section id="desparas">
+          <DkCard>
+            <SectionHeader icon="💊" label="Desparasitaciones" />
+            {allDewormings.length === 0 ? (
+              <Empty text="Sin desparasitaciones registradas." />
+            ) : (
+              allDewormings.map((d) => (
+                <div
+                  key={d.id}
+                  className="px-4 py-3 border-t"
+                  style={{ borderTopColor: "oklch(34% 0.05 35)" }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[14px] font-extrabold">{d.product}</p>
+                    {d.kind && (
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[10px] font-extrabold"
+                        style={{
+                          background: `${palette.accent}22`,
+                          color: palette.accent,
+                          border: `1px solid ${palette.accent}55`,
+                        }}
+                      >
+                        {d.kind}
+                      </span>
+                    )}
+                  </div>
+                  <p
+                    className="text-[12px] font-semibold"
+                    style={{ color: "oklch(78% 0.04 60)" }}
+                  >
+                    Aplicada: {formatLong(d.appliedAt)}
+                    {d.nextAt && (
+                      <span style={{ color: palette.accent, marginLeft: 8 }}>
+                        Próxima: {formatLong(d.nextAt)}
+                      </span>
+                    )}
+                  </p>
+                  {d.notes && (
+                    <p
+                      className="text-[12px] font-semibold mt-1"
+                      style={{ color: "oklch(72% 0.04 60)" }}
                     >
-                      {d.kind}
-                    </span>
+                      {d.notes}
+                    </p>
                   )}
                 </div>
-                <p
-                  className="text-[12px] font-semibold"
-                  style={{ color: "oklch(78% 0.04 60)" }}
-                >
-                  Aplicada: {formatLong(d.appliedAt)}
-                  {d.nextAt && (
-                    <span style={{ color: palette.accent, marginLeft: 8 }}>
-                      Próxima: {formatLong(d.nextAt)}
-                    </span>
-                  )}
-                </p>
-                {d.notes && (
-                  <p
-                    className="text-[12px] font-semibold mt-1"
-                    style={{ color: "oklch(72% 0.04 60)" }}
-                  >
-                    {d.notes}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
-        </DkCard>
+              ))
+            )}
+          </DkCard>
+        </section>
 
         {/* Cirugías */}
-        <DkCard>
-          <SectionHeader icon="🔪" label="Procedimientos" />
-          {allSurgeries.length === 0 ? (
-            <Empty text="Sin procedimientos registrados." />
-          ) : (
-            allSurgeries.map((s) => (
-              <div
-                key={s.id}
-                className="px-4 py-3 border-t"
-                style={{ borderTopColor: "oklch(34% 0.05 35)" }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[14px] font-extrabold">{s.name}</p>
-                  <span
-                    className="text-[12px] font-semibold"
-                    style={{ color: "oklch(78% 0.04 60)" }}
-                  >
-                    {formatLong(s.performedAt)}
-                  </span>
+        <section id="cirugias">
+          <DkCard>
+            <SectionHeader icon="🔪" label="Procedimientos" />
+            {allSurgeries.length === 0 ? (
+              <Empty text="Sin procedimientos registrados." />
+            ) : (
+              allSurgeries.map((s) => (
+                <div
+                  key={s.id}
+                  className="px-4 py-3 border-t"
+                  style={{ borderTopColor: "oklch(34% 0.05 35)" }}
+                >
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-[14px] font-extrabold">{s.name}</p>
+                    <span
+                      className="text-[12px] font-semibold"
+                      style={{ color: "oklch(78% 0.04 60)" }}
+                    >
+                      {formatLong(s.performedAt)}
+                    </span>
+                  </div>
+                  {s.clinic && (
+                    <p
+                      className="text-[12px] font-semibold"
+                      style={{ color: "oklch(72% 0.04 60)" }}
+                    >
+                      {s.clinic}
+                    </p>
+                  )}
+                  {s.notes && (
+                    <p
+                      className="text-[12px] font-semibold mt-1"
+                      style={{ color: "oklch(72% 0.04 60)" }}
+                    >
+                      {s.notes}
+                    </p>
+                  )}
                 </div>
-                {s.clinic && (
-                  <p
-                    className="text-[12px] font-semibold"
-                    style={{ color: "oklch(72% 0.04 60)" }}
-                  >
-                    {s.clinic}
-                  </p>
-                )}
-                {s.notes && (
-                  <p
-                    className="text-[12px] font-semibold mt-1"
-                    style={{ color: "oklch(72% 0.04 60)" }}
-                  >
-                    {s.notes}
-                  </p>
-                )}
-              </div>
-            ))
-          )}
-        </DkCard>
+              ))
+            )}
+          </DkCard>
+        </section>
 
-        {/* Consultas */}
-        <DkCard>
-          <SectionHeader icon="📋" label="Historial de visitas" />
-          {consults.length === 0 ? (
-            <Empty text="Sin visitas registradas." />
-          ) : (
-            consults.map((c) => (
-              <div
-                key={c.id}
-                className="px-4 py-3 border-t"
-                style={{ borderTopColor: "oklch(34% 0.05 35)" }}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <p className="text-[13px] font-extrabold">
-                    {c.service.name}
-                  </p>
-                  <span
-                    className="text-[11px] font-semibold"
-                    style={{ color: "oklch(78% 0.04 60)" }}
-                  >
-                    {formatLong(c.scheduledAt)}
-                  </span>
-                </div>
-                <p
-                  className="text-[12px] font-semibold"
-                  style={{ color: "oklch(72% 0.04 60)" }}
-                >
-                  {c.vetNotes ||
-                    c.instructions ||
-                    c.medications ||
-                    c.clientNotes ||
-                    "Sin notas registradas."}
-                </p>
-                <p
-                  className="text-[11px] font-bold mt-1"
-                  style={{ color: palette.accent }}
-                >
-                  {c.vet.user.name}
-                </p>
-              </div>
-            ))
-          )}
-        </DkCard>
+        {/* Visitas — todas, expandibles */}
+        <section id="visitas">
+          <DkCard>
+            <SectionHeader icon="📋" label={`Historial de visitas · ${consults.length}`} />
+            <VisitsList
+              accent={palette.accent}
+              items={consults.map((c) => ({
+                id: c.id,
+                serviceName: c.service.name,
+                date: formatLong(c.scheduledAt),
+                vetName: c.vet.user.name,
+                vetNotes: c.vetNotes,
+                instructions: c.instructions,
+                medications: c.medications,
+              }))}
+            />
+          </DkCard>
+        </section>
 
         <p
           className="text-center text-[11px] font-semibold py-4"

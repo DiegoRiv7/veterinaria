@@ -82,7 +82,7 @@ export default async function CarnetPage() {
   const age = ageFromBirthDate(active.birthDate) ?? "—";
   const owner = await prisma.user.findUnique({
     where: { id: session.userId },
-    select: { name: true },
+    select: { name: true, phone: true },
   });
 
   // Compute absolute URL for the public cartilla page so the QR works
@@ -126,38 +126,83 @@ export default async function CarnetPage() {
           background: `linear-gradient(160deg, ${dk.bg2}, ${dk.bg})`,
         }}
       >
-        <div className="max-w-md mx-auto flex flex-col gap-4">
-          {/* The carnet card */}
+        <div className="max-w-[460px] mx-auto flex flex-col gap-4">
+          {/* The carnet card — protagonist, simulated wallet pass */}
           <div
-            className="rounded-[22px] overflow-hidden"
+            className="rounded-[28px] overflow-hidden relative"
             style={{
-              background: dk.card,
+              background: `linear-gradient(160deg, ${dk.card}, ${dk.bg2})`,
               border: `1px solid ${dk.border}`,
-              boxShadow: "0 16px 50px rgba(0,0,0,0.45)",
+              boxShadow:
+                "0 24px 64px rgba(0,0,0,0.55), inset 0 1px 0 rgba(255,255,255,0.04)",
             }}
           >
-            {/* Top accent bar */}
+            {/* Top accent bar — wallet pass header strip */}
             <div
               style={{
-                height: 3,
-                background: `linear-gradient(90deg, transparent, ${dk.accent}, transparent)`,
+                height: 5,
+                background: `linear-gradient(90deg, ${dk.accent}, color-mix(in oklab, ${dk.accent} 50%, white))`,
               }}
             />
 
-            {/* Pet identity */}
+            {/* Subtle radial glow upper-right */}
             <div
-              className="flex items-center gap-3.5 px-5 py-4 border-b"
-              style={{ borderBottomColor: dk.border }}
+              aria-hidden
+              className="absolute pointer-events-none rounded-full"
+              style={{
+                top: -50,
+                right: -40,
+                width: 220,
+                height: 220,
+                background: `${dk.accent}26`,
+                filter: "blur(50px)",
+              }}
+            />
+
+            {/* Header — Vetsfriend brand strip */}
+            <div
+              className="flex items-center justify-between px-6 pt-5 pb-3 relative z-10"
             >
+              <p
+                className="text-[10px] font-extrabold tracking-[2px]"
+                style={{ color: dk.textMuted }}
+              >
+                VETSFRIEND · CARNET
+              </p>
               <div
-                className="rounded-[18px] overflow-hidden flex items-center justify-center text-[36px] shrink-0"
+                className="flex items-center gap-1.5"
+                aria-label="Estado"
+              >
+                <span
+                  className="rounded-full"
+                  style={{
+                    width: 7,
+                    height: 7,
+                    background: "#7df291",
+                    boxShadow: "0 0 8px #7df291",
+                  }}
+                />
+                <span
+                  className="text-[10px] font-extrabold uppercase tracking-wide"
+                  style={{ color: "#7df291" }}
+                >
+                  Activo
+                </span>
+              </div>
+            </div>
+
+            {/* Pet identity */}
+            <div className="px-6 pb-5 flex items-center gap-4 relative z-10">
+              <div
+                className="rounded-[22px] overflow-hidden flex items-center justify-center text-[44px] shrink-0"
                 style={{
-                  width: 64,
-                  height: 64,
+                  width: 84,
+                  height: 84,
                   background: active.photoUrl
                     ? "transparent"
                     : `linear-gradient(145deg, ${palette.from}, ${palette.to})`,
-                  boxShadow: `0 6px 20px ${dk.accent}55`,
+                  boxShadow: `0 8px 28px ${dk.accent}66`,
+                  border: `2px solid color-mix(in oklab, ${dk.accent} 45%, transparent)`,
                 }}
               >
                 {active.photoUrl ? (
@@ -173,18 +218,18 @@ export default async function CarnetPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p
-                  className="text-[9px] font-extrabold tracking-[1.5px]"
+                  className="text-[9px] font-extrabold tracking-[1.5px] mb-1"
                   style={{ color: dk.textMuted }}
                 >
                   NOMBRE
                 </p>
                 <p
-                  className="text-[26px] font-black leading-none truncate text-white tracking-tight"
+                  className="text-[34px] font-black leading-[0.95] truncate text-white tracking-tight"
                 >
                   {active.name}
                 </p>
                 <p
-                  className="text-[12px] font-bold mt-1 truncate"
+                  className="text-[13px] font-bold mt-1 truncate"
                   style={{ color: dk.textDim }}
                 >
                   {active.breed ?? SPECIES_LABEL[active.species]} ·{" "}
@@ -195,13 +240,13 @@ export default async function CarnetPage() {
 
             {/* Field grid */}
             <div
-              className="grid grid-cols-3"
-              style={{ borderBottom: `1px solid ${dk.border}` }}
+              className="grid grid-cols-3 relative z-10"
+              style={{ borderTop: `1px solid ${dk.border}` }}
             >
               {fields.map((f, i) => (
                 <div
                   key={f.l}
-                  className="px-3 py-2.5"
+                  className="px-4 py-3"
                   style={{
                     borderRight:
                       (i + 1) % 3 !== 0 ? `1px solid ${dk.border}` : "none",
@@ -216,7 +261,7 @@ export default async function CarnetPage() {
                     {f.l}
                   </p>
                   <p
-                    className="text-[12px] font-extrabold truncate"
+                    className="text-[13px] font-extrabold truncate"
                     style={{
                       color: dk.text,
                       fontFamily: "var(--font-space-grotesk), sans-serif",
@@ -229,12 +274,12 @@ export default async function CarnetPage() {
             </div>
 
             {/* QR + owner / vet */}
-            <div className="flex">
+            <div className="flex relative z-10">
               <div
-                className="flex flex-col items-center gap-1.5 px-3.5 py-3 border-r"
+                className="flex flex-col items-center gap-2 px-5 py-5 border-r"
                 style={{ borderRightColor: dk.border }}
               >
-                <CarnetQrCode url={publicUrl} size={88} dark="#1a1035" />
+                <CarnetQrCode url={publicUrl} size={108} dark="#1a1035" />
                 <p
                   className="text-[8px] font-extrabold tracking-wide text-center"
                   style={{ color: dk.textMuted }}
@@ -242,30 +287,41 @@ export default async function CarnetPage() {
                   ESCANEAR FICHA
                 </p>
               </div>
-              <div className="flex-1 px-4 py-3 flex flex-col gap-3">
+              <div className="flex-1 px-5 py-5 flex flex-col gap-3 min-w-0">
                 <div>
                   <p
-                    className="text-[8px] font-extrabold tracking-[1px]"
+                    className="text-[8px] font-extrabold tracking-[1px] mb-0.5"
                     style={{ color: dk.textMuted }}
                   >
                     PROPIETARIO
                   </p>
                   <p
-                    className="text-[12px] font-extrabold truncate"
+                    className="text-[13px] font-extrabold truncate"
                     style={{ color: dk.text }}
                   >
                     {owner?.name ?? "—"}
                   </p>
+                  {owner?.phone && (
+                    <p
+                      className="text-[12px] font-bold truncate"
+                      style={{
+                        color: dk.accent,
+                        fontFamily: "var(--font-space-grotesk), sans-serif",
+                      }}
+                    >
+                      {owner.phone}
+                    </p>
+                  )}
                 </div>
                 <div>
                   <p
-                    className="text-[8px] font-extrabold tracking-[1px]"
+                    className="text-[8px] font-extrabold tracking-[1px] mb-0.5"
                     style={{ color: dk.textMuted }}
                   >
-                    VETERINARIO
+                    CLÍNICA
                   </p>
                   <p
-                    className="text-[12px] font-extrabold"
+                    className="text-[13px] font-extrabold"
                     style={{ color: dk.text }}
                   >
                     Vetsfriend
@@ -280,68 +336,57 @@ export default async function CarnetPage() {
               </div>
             </div>
 
-            {/* Status */}
+            {/* Bottom accent — wallet pass footer */}
             <div
-              className="flex items-center gap-2 px-5 py-3"
+              className="px-6 py-3 flex items-center justify-between relative z-10"
               style={{ borderTop: `1px solid ${dk.border}` }}
             >
-              <span
-                className="rounded-full"
-                style={{
-                  width: 7,
-                  height: 7,
-                  background: "#7df291",
-                  boxShadow: "0 0 6px #7df291",
-                }}
-              />
-              <span
-                className="text-[11px] font-extrabold"
-                style={{ color: dk.text }}
+              <p
+                className="text-[9px] font-extrabold tracking-[1.5px]"
+                style={{ color: dk.textMuted }}
               >
-                {active.vaccines.length > 0 ? "Saludable" : "Pendiente registro"}
-              </span>
+                EMITIDO · VETSFRIEND
+              </p>
+              <p
+                className="text-[9px] font-extrabold tracking-[1px]"
+                style={{
+                  color: dk.textMuted,
+                  fontFamily: "var(--font-space-grotesk), sans-serif",
+                }}
+              >
+                {active.id.slice(-8).toUpperCase()}
+              </p>
             </div>
-
-            {/* Bottom accent */}
             <div
               style={{
-                height: 2,
-                background: `linear-gradient(90deg, transparent, ${dk.accent}, transparent)`,
+                height: 4,
+                background: `linear-gradient(90deg, ${dk.accent}, color-mix(in oklab, ${dk.accent} 50%, white))`,
               }}
             />
           </div>
 
-          {/* Add to wallet — opens the public cartilla which the user can
-              save / share / "Add to Apple Wallet" via Safari share sheet
-              once the pkpass cert is set up. */}
+          {/* Secondary: Ver cartilla pública (compact link) */}
           <Link
             href={publicUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="w-full py-3.5 rounded-[16px] flex items-center justify-center gap-2.5 text-white text-[14px] font-extrabold transition hover:brightness-110"
+            className="self-center inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12px] font-extrabold transition"
             style={{
-              background: "black",
-              boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
+              background: "rgba(255,255,255,0.06)",
+              border: `1px solid ${dk.border}`,
+              color: dk.textDim,
             }}
           >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="white"
-              aria-hidden
-            >
-              <path d="M19 7h-1V6a3 3 0 00-3-3H5a3 3 0 00-3 3v12a3 3 0 003 3h14a3 3 0 003-3v-8a3 3 0 00-3-3zm-14-1h10a1 1 0 011 1v1H5a1 1 0 010-2zm14 13H5a1 1 0 01-1-1V9h15a1 1 0 011 1v8a1 1 0 01-1 1zm-2-5a1 1 0 110 2 1 1 0 010-2z" />
-            </svg>
+            <span>↗</span>
             <span>Ver cartilla pública</span>
           </Link>
 
           <p
-            className="text-[12px] text-center font-semibold leading-relaxed mt-1"
+            className="text-[11px] text-center font-semibold leading-relaxed"
             style={{ color: dk.textMuted }}
           >
             El QR lleva a la cartilla pública de {active.name} — cualquier vet
-            puede ver todo su historial sin necesidad de cuenta.
+            puede ver todo su historial sin cuenta.
           </p>
         </div>
       </div>
