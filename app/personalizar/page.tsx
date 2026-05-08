@@ -5,8 +5,9 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
-import { paletteFor, bgEmojisFor } from "@/lib/pet-flavor";
+import { paletteForStyle, bgEmojisFor } from "@/lib/pet-flavor";
 import { SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
+import { PetCardStylePicker } from "@/components/client/PetCardStylePicker";
 
 export const dynamic = "force-dynamic";
 
@@ -62,7 +63,7 @@ export default async function PersonalizarPage() {
     );
   }
 
-  const palette = paletteFor(pet);
+  const palette = paletteForStyle(pet);
   const age = ageFromBirthDate(pet.birthDate) ?? "—";
   const photoCount = pet._count.photos;
 
@@ -96,20 +97,6 @@ export default async function PersonalizarPage() {
     },
   ];
 
-  const visualPersonalization: Tile[] = [
-    {
-      icon: "🎨",
-      title: "Color del fondo",
-      subtitle: `Actualmente usa la paleta automática (${pet.species.toLowerCase()})`,
-      soon: true,
-    },
-    {
-      icon: "🪟",
-      title: "Fondo transparente",
-      subtitle: "Para que tus fotos sean las protagonistas, sin tinte de color",
-      soon: true,
-    },
-  ];
 
   const sharing: Tile[] = [
     {
@@ -204,11 +191,33 @@ export default async function PersonalizarPage() {
 
           <Section
             title="Apariencia"
-            subtitle="Cómo se ve el cuadro de tu mascota"
+            subtitle="Cómo se ve el cuadro de tu mascota en Inicio"
           >
-            {visualPersonalization.map((t) => (
-              <TileCard key={t.title} tile={t} accent={palette.accent} />
-            ))}
+            <div
+              className="rounded-[18px] p-4 lg:p-5"
+              style={{
+                background: "var(--color-surface)",
+                border: "1px solid var(--color-border)",
+              }}
+            >
+              <p
+                className="text-[14px] font-extrabold mb-1"
+                style={{ color: "var(--color-foreground)" }}
+              >
+                Color del fondo
+              </p>
+              <p
+                className="text-[12px] font-semibold leading-snug mb-4"
+                style={{ color: "var(--color-muted)" }}
+              >
+                Elige un tono cálido, deja el automático, o ponlo transparente
+                para que las fotos se vean sin tinte.
+              </p>
+              <PetCardStylePicker
+                petId={pet.id}
+                initialStyle={pet.cardStyle ?? null}
+              />
+            </div>
           </Section>
 
           <Section

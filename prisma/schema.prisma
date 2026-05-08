@@ -70,6 +70,7 @@ model Pet {
   sterilized   Boolean   @default(false)
   photoUrl     String?
   notes        String?
+  cardStyle    String?
   createdAt    DateTime  @default(now())
 
   appointments Appointment[]

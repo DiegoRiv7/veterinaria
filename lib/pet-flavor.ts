@@ -76,6 +76,37 @@ export function paletteFor(pet: { id: string }): PetPalette {
   return PALETTES[hashId(pet.id) % PALETTES.length];
 }
 
+export const PALETTE_COUNT = PALETTES.length;
+
+/**
+ * Resolve which palette to use for a pet given its saved cardStyle:
+ *   - null / "auto" → deterministic from id (default)
+ *   - "0".."5"      → user picked a specific palette
+ *   - "transparent" → still returns a palette (used for accent), but the
+ *                     hero should skip the gradient and let the photo
+ *                     show through. Use {@link isTransparent}.
+ */
+export function paletteForStyle(pet: {
+  id: string;
+  cardStyle?: string | null;
+}): PetPalette {
+  const s = pet.cardStyle;
+  if (!s || s === "auto" || s === "transparent") return paletteFor(pet);
+  const idx = Number(s);
+  if (Number.isInteger(idx) && idx >= 0 && idx < PALETTES.length) {
+    return PALETTES[idx];
+  }
+  return paletteFor(pet);
+}
+
+export function isTransparentStyle(cardStyle?: string | null): boolean {
+  return cardStyle === "transparent";
+}
+
+export function paletteByIndex(i: number): PetPalette {
+  return PALETTES[((i % PALETTES.length) + PALETTES.length) % PALETTES.length];
+}
+
 const PERSONALITY_BY_SPECIES: Record<string, string[]> = {
   DOG: ["Juguetón", "Leal", "Aventurero"],
   CAT: ["Curioso", "Independiente", "Cariñoso"],

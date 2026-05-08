@@ -15,6 +15,8 @@ export type PetHeroData = {
   status: string;
   statusOk: boolean;
   palette: PetPalette;
+  /** When true, skip the colored gradient — let photos shine. */
+  transparent?: boolean;
 };
 
 export function PetHero({
@@ -43,13 +45,22 @@ export function PetHero({
 
   const current = slides[idx % slides.length];
   const p = pet.palette;
+  const transparent = pet.transparent === true;
+  const hasPhoto = pet.galleryUrls.length > 0;
 
   return (
     <div
       className="relative overflow-hidden rounded-[28px] lg:rounded-[32px]"
       style={{
         height: 380,
-        background: `linear-gradient(145deg, ${p.from}, ${p.to})`,
+        // Transparent mode drops the colored gradient and lets photos run.
+        // For pets with no photos yet, fall back to a neutral charcoal so
+        // the emoji is still visible.
+        background: transparent
+          ? hasPhoto
+            ? "#1a1410"
+            : "linear-gradient(145deg, oklch(28% 0.04 40), oklch(20% 0.04 30))"
+          : `linear-gradient(145deg, ${p.from}, ${p.to})`,
         boxShadow: `0 16px 52px ${p.accent}33`,
       }}
     >
@@ -68,12 +79,17 @@ export function PetHero({
           <img
             src={current.url}
             alt=""
-            className="w-full h-full object-cover opacity-50"
+            className="w-full h-full object-cover"
+            style={{ opacity: transparent ? 1 : 0.5 }}
           />
         ) : (
           <div
             className="w-full h-full flex items-center justify-center select-none"
-            style={{ fontSize: 220, opacity: 0.18, lineHeight: 1 }}
+            style={{
+              fontSize: 220,
+              opacity: transparent ? 0.5 : 0.18,
+              lineHeight: 1,
+            }}
             aria-hidden
           >
             {current.char}
@@ -85,8 +101,9 @@ export function PetHero({
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
+          background: transparent
+            ? "linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.62) 100%)"
+            : "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
         }}
       />
 

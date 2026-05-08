@@ -88,6 +88,42 @@ export async function deleteDewormingAction(id: string): Promise<void> {
   revalidatePath(`/vet/pacientes/${row.petId}`);
 }
 
+/* ─── Pet card style ───────────────────────────────────────── */
+
+export async function updatePetCardStyleAction(
+  petId: string,
+  style: string | null
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  const id = (petId ?? "").trim();
+  if (!id) return { ok: false, error: "Mascota inválida." };
+
+  const pet = await prisma.pet.findUnique({
+    where: { id },
+    select: { ownerId: true },
+  });
+  if (!pet) return { ok: false, error: "Mascota no encontrada." };
+  if (pet.ownerId !== session.userId && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+
+  // Whitelist: null, "auto", "transparent", or "0".."9"
+  let value: string | null = null;
+  if (style === "transparent") value = "transparent";
+  else if (style && /^[0-9]$/.test(style)) value = style;
+  else if (style === "auto") value = null;
+  else value = null;
+
+  await prisma.pet.update({
+    where: { id },
+    data: { cardStyle: value },
+  });
+
+  revalidatePath("/inicio");
+  revalidatePath("/personalizar");
+  return { ok: true };
+}
+
 /* ─── Surgery ──────────────────────────────────────────────── */
 
 export async function addSurgeryAction(

@@ -8,7 +8,8 @@ import { ClientShellServer } from "@/components/client/ClientShellServer";
 import { PetdexHomeClient, type PetdexPet } from "./petdex-home-client";
 import { ageFromBirthDate, formatTime } from "@/lib/utils";
 import {
-  paletteFor,
+  paletteForStyle,
+  isTransparentStyle,
   personalityFor,
   funFactFor,
   bgEmojisFor,
@@ -112,7 +113,8 @@ export default async function ClientHome() {
   const now = Date.now();
   const SOON_DAYS = 60;
   const pets: PetdexPet[] = petsRaw.map((p) => {
-    const palette = paletteFor(p);
+    const palette = paletteForStyle(p);
+    const transparent = isTransparentStyle(p.cardStyle);
     const next = p.appointments[0];
     const hasUpcoming = !!next;
     const hasPendingVaccine = p.vaccines.some(
@@ -190,6 +192,7 @@ export default async function ClientHome() {
       status,
       statusOk,
       palette,
+      transparent,
       age: ageStr,
       weight: p.weightKg ? `${p.weightKg} kg` : "—",
       vaccinesAllOk: !hasPendingVaccine && !hasOverdueVaccine,
