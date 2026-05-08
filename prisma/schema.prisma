@@ -50,7 +50,9 @@ model User {
   vetProfile    Veterinarian?
   appointments  Appointment[] @relation("ClientAppointments")
   messages      Message[]
-  vaccinesAdded Vaccine[]
+  vaccinesAdded   Vaccine[]   @relation("VaccineAddedBy")
+  dewormingsAdded Deworming[] @relation("DewormingAddedBy")
+  surgeriesAdded  Surgery[]   @relation("SurgeryAddedBy")
 }
 
 model Pet {
@@ -73,6 +75,8 @@ model Pet {
   appointments Appointment[]
   photos       PetPhoto[]
   vaccines     Vaccine[]
+  dewormings   Deworming[]
+  surgeries    Surgery[]
 }
 
 model Vaccine {
@@ -84,10 +88,41 @@ model Vaccine {
   nextAt        DateTime?
   notes         String?
   addedByUserId String
-  addedBy       User      @relation(fields: [addedByUserId], references: [id])
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "VaccineAddedBy")
   createdAt     DateTime  @default(now())
 
   @@index([petId, appliedAt])
+}
+
+model Deworming {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  product       String
+  kind          String?   // "Interna" / "Externa" / "Ambas"
+  appliedAt     DateTime
+  nextAt        DateTime?
+  notes         String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "DewormingAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, appliedAt])
+}
+
+model Surgery {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  name          String
+  performedAt   DateTime
+  clinic        String?
+  notes         String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "SurgeryAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, performedAt])
 }
 
 model PetPhoto {

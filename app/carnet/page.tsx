@@ -13,7 +13,8 @@ import {
   SEX_LABEL,
   ageFromBirthDate,
 } from "@/lib/utils";
-import { CarnetQrPlaceholder } from "./carnet-qr-placeholder";
+import { CarnetQrCode } from "@/components/CarnetQrCode";
+import { headers } from "next/headers";
 
 export const dynamic = "force-dynamic";
 
@@ -83,6 +84,15 @@ export default async function CarnetPage() {
     where: { id: session.userId },
     select: { name: true },
   });
+
+  // Compute absolute URL for the public cartilla page so the QR works
+  // when the carnet is shown / printed off-device.
+  const headersList = await headers();
+  const host = headersList.get("host") ?? "veterinaria10.vercel.app";
+  const proto =
+    headersList.get("x-forwarded-proto") ??
+    (host.includes("localhost") ? "http" : "https");
+  const publicUrl = `${proto}://${host}/p/${active.id}`;
 
   // Dark palette tinted by pet's accent hue
   const dk = {
@@ -224,7 +234,7 @@ export default async function CarnetPage() {
                 className="flex flex-col items-center gap-1.5 px-3.5 py-3 border-r"
                 style={{ borderRightColor: dk.border }}
               >
-                <CarnetQrPlaceholder petId={active.id} />
+                <CarnetQrCode url={publicUrl} size={88} dark="#1a1035" />
                 <p
                   className="text-[8px] font-extrabold tracking-wide text-center"
                   style={{ color: dk.textMuted }}
@@ -301,33 +311,37 @@ export default async function CarnetPage() {
             />
           </div>
 
-          {/* Add to wallet */}
-          <button
-            type="button"
-            disabled
-            className="w-full py-3.5 rounded-[16px] flex items-center justify-center gap-2.5 text-white text-[14px] font-extrabold opacity-60 cursor-not-allowed"
+          {/* Add to wallet — opens the public cartilla which the user can
+              save / share / "Add to Apple Wallet" via Safari share sheet
+              once the pkpass cert is set up. */}
+          <Link
+            href={publicUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full py-3.5 rounded-[16px] flex items-center justify-center gap-2.5 text-white text-[14px] font-extrabold transition hover:brightness-110"
             style={{
               background: "black",
               boxShadow: "0 4px 16px rgba(0,0,0,0.4)",
             }}
-            title="Próximamente"
           >
-            <span className="text-[16px]">💳</span>
-            <span>Agregar al Wallet</span>
-            <span
-              className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full"
-              style={{ background: "rgba(255,255,255,0.18)" }}
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 24 24"
+              fill="white"
+              aria-hidden
             >
-              Próximamente
-            </span>
-          </button>
+              <path d="M19 7h-1V6a3 3 0 00-3-3H5a3 3 0 00-3 3v12a3 3 0 003 3h14a3 3 0 003-3v-8a3 3 0 00-3-3zm-14-1h10a1 1 0 011 1v1H5a1 1 0 010-2zm14 13H5a1 1 0 01-1-1V9h15a1 1 0 011 1v8a1 1 0 01-1 1zm-2-5a1 1 0 110 2 1 1 0 010-2z" />
+            </svg>
+            <span>Ver cartilla pública</span>
+          </Link>
 
           <p
             className="text-[12px] text-center font-semibold leading-relaxed mt-1"
             style={{ color: dk.textMuted }}
           >
-            El QR llevará a cualquier persona a la cartilla pública de{" "}
-            {active.name} para que el vet vea su historial al instante.
+            El QR lleva a la cartilla pública de {active.name} — cualquier vet
+            puede ver todo su historial sin necesidad de cuenta.
           </p>
         </div>
       </div>

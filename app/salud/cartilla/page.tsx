@@ -41,7 +41,18 @@ export default async function CartillaPage() {
       ...(activeIdCookie ? { id: activeIdCookie } : {}),
     },
     include: {
-      vaccines: { orderBy: { appliedAt: "desc" } },
+      vaccines: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { appliedAt: "desc" },
+      },
+      dewormings: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { appliedAt: "desc" },
+      },
+      surgeries: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { performedAt: "desc" },
+      },
       appointments: {
         include: {
           service: { select: { name: true } },
@@ -64,16 +75,8 @@ export default async function CartillaPage() {
 
   const vaccines = pet.vaccines.map((v) => {
     let status: "al día" | "próxima" | "vencida" | "—" = "—";
-    let progress = 100;
     if (v.nextAt) {
       const days = Math.ceil((v.nextAt.getTime() - now) / 86400000);
-      const span =
-        (v.nextAt.getTime() - v.appliedAt.getTime()) / 86400000;
-      const elapsed = span - days;
-      progress = Math.max(
-        0,
-        Math.min(100, Math.round((elapsed / Math.max(span, 1)) * 100))
-      );
       status = days > 60 ? "al día" : days >= 0 ? "próxima" : "vencida";
     } else {
       status = "al día";
@@ -81,11 +84,11 @@ export default async function CartillaPage() {
     return {
       id: v.id,
       name: v.name,
-      applied: formatLong(v.appliedAt),
-      next: v.nextAt ? formatLong(v.nextAt) : "—",
-      notes: v.notes ?? null,
+      appliedAt: v.appliedAt.toISOString(),
+      nextAt: v.nextAt ? v.nextAt.toISOString() : null,
+      notes: v.notes,
+      addedByName: v.addedBy.name,
       status,
-      progress,
     };
   });
 
@@ -93,32 +96,57 @@ export default async function CartillaPage() {
     (a) => a.status === "COMPLETED"
   );
 
-  const dewormings = completedAppts
+  // Manual entries — what the owner / vet wrote in the cartilla itself.
+  const manualDewormings = pet.dewormings.map((d) => ({
+    id: d.id,
+    product: d.product,
+    kind: d.kind,
+    appliedAt: d.appliedAt.toISOString(),
+    nextAt: d.nextAt ? d.nextAt.toISOString() : null,
+    notes: d.notes,
+    addedByName: d.addedBy.name,
+  }));
+
+  const manualSurgeries = pet.surgeries.map((s) => ({
+    id: s.id,
+    name: s.name,
+    performedAt: s.performedAt.toISOString(),
+    clinic: s.clinic,
+    notes: s.notes,
+    addedByName: s.addedBy.name,
+  }));
+
+  // Auto-derived entries from completed appointments — read-only, surfaced
+  // alongside the manual ones so the user sees the full picture.
+  const autoDewormings = completedAppts
     .filter((a) => isDeworming(a.service.name))
     .map((a) => ({
-      id: a.id,
-      name: a.service.name,
-      date: formatLong(a.scheduledAt),
-      vet: a.vet.user.name,
+      id: `appt-${a.id}`,
+      product: a.service.name,
+      kind: null,
+      appliedAt: a.scheduledAt.toISOString(),
+      nextAt: null,
       notes:
         a.medications ||
         a.instructions ||
         a.vetNotes ||
-        "Sin notas registradas.",
+        "Aplicada en consulta veterinaria.",
+      addedByName: a.vet.user.name,
     }));
 
-  const surgeries = completedAppts
+  const autoSurgeries = completedAppts
     .filter((a) => isSurgery(a.service.name))
     .map((a) => ({
-      id: a.id,
+      id: `appt-${a.id}`,
       name: a.service.name,
-      date: formatLong(a.scheduledAt),
-      vet: a.vet.user.name,
+      performedAt: a.scheduledAt.toISOString(),
+      clinic: "Vetsfriend",
       notes:
         a.vetNotes ||
         a.instructions ||
         a.medications ||
-        "Sin notas registradas.",
+        "Realizada en consulta veterinaria.",
+      addedByName: a.vet.user.name,
     }));
 
   const consults = completedAppts
@@ -168,8 +196,8 @@ export default async function CartillaPage() {
       accent: palette.accent,
     },
     vaccines,
-    dewormings,
-    surgeries,
+    dewormings: [...manualDewormings, ...autoDewormings],
+    surgeries: [...manualSurgeries, ...autoSurgeries],
     consults,
     myVet,
   };

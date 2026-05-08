@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { PetHero, type PetHeroData } from "@/components/client/PetHero";
 import { PetSwitcher } from "@/components/client/PetSwitcher";
 import type { PetPalette } from "@/lib/pet-flavor";
@@ -30,6 +31,7 @@ type Props = {
 export function PetdexHomeClient({ pets, initialActiveId }: Props) {
   const [activeId, setActiveId] = useState(initialActiveId);
   const [, startTransition] = useTransition();
+  const router = useRouter();
 
   const active = pets.find((p) => p.id === activeId) ?? pets[0];
 
@@ -57,24 +59,24 @@ export function PetdexHomeClient({ pets, initialActiveId }: Props) {
         }))}
         activeId={active.id}
         onSelect={pickPet}
+        onAdd={() => router.push("/mascotas/nueva")}
       />
 
-      {/* On desktop, surface 2-col grid for next + health + fun + milestones */}
+      {/* Desktop: 2-col grid for the action cards. Fun-fact stays at the
+          bottom (full-width on mobile, last cell on desktop). */}
       <div className="grid lg:grid-cols-2 lg:gap-5 gap-3">
         {/* Próxima visita */}
-        {active.nextAppt && (
-          <NextAppointmentCard pet={active} />
-        )}
+        {active.nextAppt && <NextAppointmentCard pet={active} />}
 
         {/* Health stats */}
         <HealthSummaryCard pet={active} />
 
-        {/* Fun fact */}
-        <FunFactCard pet={active} />
-
         {/* Milestones */}
         <MilestonesCard pet={active} />
       </div>
+
+      {/* Fun fact — moved to the very bottom */}
+      <FunFactCard pet={active} />
     </div>
   );
 }

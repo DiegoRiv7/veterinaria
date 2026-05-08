@@ -1,5 +1,14 @@
 "use client";
 import { useState } from "react";
+import { PetVaccinesTab, type VaccineEntry } from "@/components/PetVaccinesTab";
+import {
+  PetDewormingsTab,
+  type DewormingEntry,
+} from "@/components/PetDewormingsTab";
+import {
+  PetSurgeriesTab,
+  type SurgeryEntry,
+} from "@/components/PetSurgeriesTab";
 
 export type CartillaPayload = {
   pet: {
@@ -16,29 +25,9 @@ export type CartillaPayload = {
     to: string;
     accent: string;
   };
-  vaccines: {
-    id: string;
-    name: string;
-    applied: string;
-    next: string;
-    notes: string | null;
-    status: "al día" | "próxima" | "vencida" | "—";
-    progress: number;
-  }[];
-  dewormings: {
-    id: string;
-    name: string;
-    date: string;
-    vet: string;
-    notes: string;
-  }[];
-  surgeries: {
-    id: string;
-    name: string;
-    date: string;
-    vet: string;
-    notes: string;
-  }[];
+  vaccines: VaccineEntry[];
+  dewormings: DewormingEntry[];
+  surgeries: SurgeryEntry[];
   consults: {
     id: string;
     type: string;
@@ -239,189 +228,39 @@ function EmptyState({ icon, message }: { icon: string; message: string }) {
   );
 }
 
-/* ─── Vaccines ─────────────────────────────────────────────── */
+/* ─── Vaccines (editable) ──────────────────────────────────── */
 function VaccinesSection({ payload }: { payload: CartillaPayload }) {
-  if (payload.vaccines.length === 0) {
-    return (
-      <EmptyState
-        icon="💉"
-        message={`Aún no hay vacunas registradas para ${payload.pet.name}.`}
-      />
-    );
-  }
   return (
-    <>
-      {payload.vaccines.map((v) => (
-        <DkCard key={v.id}>
-          <div className="flex items-start justify-between gap-3 mb-3">
-            <p
-              className="text-[15px] font-black"
-              style={{ color: DK.text }}
-            >
-              {v.name}
-            </p>
-            <StatusPill status={v.status} />
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <Field
-              label="APLICADA"
-              value={v.applied}
-              accent={payload.palette.accent}
-            />
-            <Field
-              label="PRÓXIMA"
-              value={v.next}
-              hi
-              accent={payload.palette.accent}
-            />
-          </div>
-          <div
-            className="h-[3px] rounded-full overflow-hidden"
-            style={{ background: DK.border }}
-          >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${v.progress}%`,
-                background:
-                  v.status === "vencida"
-                    ? DK.redText
-                    : v.status === "próxima"
-                    ? DK.amberText
-                    : `linear-gradient(90deg, ${payload.palette.from}, ${payload.palette.accent})`,
-              }}
-            />
-          </div>
-          {v.notes && (
-            <p
-              className="text-[12px] font-semibold leading-snug mt-3"
-              style={{ color: DK.textDim }}
-            >
-              {v.notes}
-            </p>
-          )}
-        </DkCard>
-      ))}
-    </>
+    <PetVaccinesTab
+      petId={payload.pet.id}
+      vaccines={payload.vaccines}
+      dark
+      accent={payload.palette.accent}
+    />
   );
 }
 
-/* ─── Dewormings ───────────────────────────────────────────── */
+/* ─── Dewormings (editable) ────────────────────────────────── */
 function DewormSection({ payload }: { payload: CartillaPayload }) {
-  if (payload.dewormings.length === 0) {
-    return (
-      <EmptyState
-        icon="💊"
-        message={`Aún no hay desparasitaciones registradas para ${payload.pet.name}.`}
-      />
-    );
-  }
   return (
-    <>
-      {payload.dewormings.map((d) => (
-        <DkCard key={d.id}>
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <p className="text-[14px] font-black" style={{ color: DK.text }}>
-              {d.name}
-            </p>
-            <span
-              className="px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase"
-              style={{
-                background: `${payload.palette.accent}22`,
-                border: `1px solid ${payload.palette.accent}55`,
-                color: payload.palette.accent,
-              }}
-            >
-              Aplicada
-            </span>
-          </div>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <Field
-              label="FECHA"
-              value={d.date}
-              accent={payload.palette.accent}
-            />
-            <Field
-              label="VETERINARIO"
-              value={d.vet}
-              accent={payload.palette.accent}
-            />
-          </div>
-          <div
-            className="rounded-[10px] px-3 py-2.5"
-            style={{ background: DK.cardLight }}
-          >
-            <p
-              className="text-[9px] font-extrabold tracking-[0.5px] mb-1"
-              style={{ color: DK.textMuted }}
-            >
-              NOTAS
-            </p>
-            <p
-              className="text-[12px] font-semibold leading-snug"
-              style={{ color: DK.textDim }}
-            >
-              {d.notes}
-            </p>
-          </div>
-        </DkCard>
-      ))}
-    </>
+    <PetDewormingsTab
+      petId={payload.pet.id}
+      items={payload.dewormings}
+      dark
+      accent={payload.palette.accent}
+    />
   );
 }
 
-/* ─── Surgeries ────────────────────────────────────────────── */
+/* ─── Surgeries (editable) ─────────────────────────────────── */
 function SurgeriesSection({ payload }: { payload: CartillaPayload }) {
-  if (payload.surgeries.length === 0) {
-    return (
-      <EmptyState
-        icon="🔪"
-        message="Sin procedimientos registrados."
-      />
-    );
-  }
   return (
-    <>
-      {payload.surgeries.map((s) => (
-        <DkCard key={s.id}>
-          <p
-            className="text-[15px] font-black mb-3"
-            style={{ color: DK.text }}
-          >
-            {s.name}
-          </p>
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <Field
-              label="FECHA"
-              value={s.date}
-              accent={payload.palette.accent}
-            />
-            <Field
-              label="VETERINARIO"
-              value={s.vet}
-              accent={payload.palette.accent}
-            />
-          </div>
-          <div
-            className="rounded-[10px] px-3 py-2.5"
-            style={{ background: DK.cardLight }}
-          >
-            <p
-              className="text-[9px] font-extrabold tracking-[0.5px] mb-1"
-              style={{ color: DK.textMuted }}
-            >
-              NOTAS
-            </p>
-            <p
-              className="text-[12px] font-semibold leading-snug"
-              style={{ color: DK.textDim }}
-            >
-              {s.notes}
-            </p>
-          </div>
-        </DkCard>
-      ))}
-    </>
+    <PetSurgeriesTab
+      petId={payload.pet.id}
+      items={payload.surgeries}
+      dark
+      accent={payload.palette.accent}
+    />
   );
 }
 

@@ -57,10 +57,14 @@ export function PetVaccinesTab({
   petId,
   vaccines,
   readonly = false,
+  dark = false,
+  accent = "var(--color-brand)",
 }: {
   petId: string;
   vaccines: VaccineEntry[];
   readonly?: boolean;
+  dark?: boolean;
+  accent?: string;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -93,6 +97,27 @@ export function PetVaccinesTab({
     });
   }
 
+  // Theme tokens — light or dark.
+  const t = dark
+    ? {
+        cardBg: "oklch(24% 0.05 35)",
+        cardBgLight: "oklch(28% 0.05 35)",
+        border: "oklch(34% 0.05 35)",
+        text: "oklch(96% 0.02 60)",
+        textDim: "oklch(78% 0.04 60)",
+        textMuted: "oklch(58% 0.04 60)",
+        inputBg: "oklch(20% 0.04 35)",
+      }
+    : {
+        cardBg: "var(--color-surface)",
+        cardBgLight: "var(--color-surface-2, var(--color-surface))",
+        border: "var(--color-border)",
+        text: "var(--color-foreground)",
+        textDim: "var(--color-foreground)",
+        textMuted: "var(--color-muted)",
+        inputBg: "var(--color-surface-2, var(--color-surface))",
+      };
+
   return (
     <div className="flex flex-col gap-3">
       {!readonly && !adding && (
@@ -101,10 +126,11 @@ export function PetVaccinesTab({
           onClick={() => setAdding(true)}
           className="w-full py-3 rounded-[14px] flex items-center justify-center gap-2 text-[14px] font-extrabold transition"
           style={{
-            background:
-              "color-mix(in oklab, var(--color-brand) 10%, transparent)",
-            border: "1.5px dashed var(--color-brand)",
-            color: "var(--color-brand)",
+            background: dark
+              ? `${accent}15`
+              : "color-mix(in oklab, var(--color-brand) 10%, transparent)",
+            border: `1.5px dashed ${accent}`,
+            color: accent,
           }}
         >
           <Plus className="h-4 w-4" /> Agregar vacuna
