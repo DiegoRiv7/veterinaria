@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer, PageHeader } from "@/components/ui/page";
@@ -37,6 +38,16 @@ export default async function AgendarPage({
 
   const modifierMap = Object.fromEntries(modifiers.map((m) => [m.species, m.multiplier]));
 
+  // Pre-select the active pet from the cookie if there's no explicit reagendar
+  // prefill. This makes "Agendar cita" from the hero card jump straight into
+  // the wizard already locked to the pet the user is browsing.
+  const cookieStore = await cookies();
+  const activeIdCookie = cookieStore.get("activePetId")?.value ?? null;
+  const activePetId =
+    activeIdCookie && pets.some((p) => p.id === activeIdCookie)
+      ? activeIdCookie
+      : null;
+
   const prefill =
     original && original.clientId === session.userId
       ? {
@@ -45,6 +56,8 @@ export default async function AgendarPage({
           serviceId: original.serviceId,
           clientNotes: original.clientNotes ?? "",
         }
+      : activePetId
+      ? { petId: activePetId, serviceId: null, clientNotes: "" }
       : null;
 
   return (

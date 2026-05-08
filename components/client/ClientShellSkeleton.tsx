@@ -1,14 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { Menu, Bell } from "lucide-react";
-import { Home, Heart, Camera, Calendar, User } from "lucide-react";
+import { Bell, Home, Heart, Calendar, CreditCard, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Inicio", icon: Home },
   { label: "Salud", icon: Heart },
-  { label: "Recuerdos", icon: Camera },
   { label: "Citas", icon: Calendar },
+  { label: "Carnet", icon: CreditCard },
   { label: "Avisos", icon: Bell },
   { label: "Perfil", icon: User },
 ];
@@ -76,12 +75,7 @@ export function ClientShellSkeleton({
           }}
         >
           <div className="flex items-center gap-2.5">
-            <div
-              className="lg:hidden flex items-center justify-center w-10 h-10 -ml-2 rounded-lg"
-              style={{ color: "var(--color-foreground)" }}
-            >
-              <Menu className="h-[22px] w-[22px]" />
-            </div>
+            <span className="lg:hidden text-[22px]">🐾</span>
           </div>
           <div className="flex items-center gap-1">
             <div

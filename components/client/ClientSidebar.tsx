@@ -6,8 +6,8 @@ import { usePathname } from "next/navigation";
 import {
   Home,
   Heart,
-  Camera,
   Calendar,
+  CreditCard as Camera,
   Bell,
   User,
 } from "lucide-react";
@@ -42,12 +42,12 @@ export function ClientSidebar({
   const pathname = usePathname();
 
   const items: NavItem[] = [
-    { href: "/inicio",         label: "Inicio",    icon: Home,     match: (p) => p === "/inicio" },
-    { href: "/mascotas",       label: "Salud",     icon: Heart },
-    { href: "/recuerdos",      label: "Recuerdos", icon: Camera },
-    { href: "/citas",          label: "Citas",     icon: Calendar },
-    { href: "/notificaciones", label: "Avisos",    icon: Bell,     badge: unreadNotifs },
-    { href: "/perfil",         label: "Perfil",    icon: User },
+    { href: "/inicio",         label: "Inicio", icon: Home,     match: (p) => p === "/inicio" },
+    { href: "/salud",          label: "Salud",  icon: Heart },
+    { href: "/citas",          label: "Citas",  icon: Calendar },
+    { href: "/carnet",         label: "Carnet", icon: Camera },
+    { href: "/notificaciones", label: "Avisos", icon: Bell,     badge: unreadNotifs },
+    { href: "/perfil",         label: "Perfil", icon: User },
   ];
 
   return (

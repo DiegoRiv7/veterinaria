@@ -1,7 +1,7 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { Menu } from "lucide-react";
 import {
   ClientNotificationsButton,
   type ClientNotifPreview,
@@ -29,32 +29,32 @@ function titleFor(pathname: string): string {
 export function ClientTopbar({
   unreadNotifs,
   notifPreviews,
-  onMenuClick,
 }: {
   unreadNotifs: number;
   notifPreviews: ClientNotifPreview[];
-  onMenuClick?: () => void;
 }) {
   const pathname = usePathname();
   return (
     <header
-      className="flex items-center justify-between px-4 sm:px-6 border-b flex-shrink-0"
+      className="flex items-center justify-between px-4 sm:px-6 border-b flex-shrink-0 pt-[max(0px,env(safe-area-inset-top))]"
       style={{
-        height: 60,
-        background: "var(--color-surface-2, var(--color-surface))",
+        height: "calc(60px + env(safe-area-inset-top, 0px))",
+        background: "color-mix(in oklab, var(--color-surface) 95%, transparent)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
         borderBottomColor: "var(--color-border)",
       }}
     >
-      <div className="flex items-center gap-2.5">
-        <button
-          type="button"
-          onClick={onMenuClick}
-          aria-label="Abrir menú"
-          className="lg:hidden flex items-center justify-center w-10 h-10 -ml-2 rounded-lg transition-colors"
-          style={{ color: "var(--color-foreground)" }}
-        >
-          <Menu className="h-[22px] w-[22px]" />
-        </button>
+      <div className="flex items-center gap-2.5 min-w-0">
+        {/* Logo on mobile (sidebar already shows it on desktop) */}
+        <Image
+          src="/vetsfriend-icon-192.png"
+          alt=""
+          width={32}
+          height={32}
+          priority
+          className="lg:hidden rounded-[8px] shrink-0"
+        />
         <div
           className="font-extrabold text-[17px] truncate"
           style={{ color: "var(--color-foreground)" }}

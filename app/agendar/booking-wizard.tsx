@@ -53,9 +53,9 @@ function next14Days() {
 }
 
 export type BookingPrefill = {
-  fromAppointmentId: string;
+  fromAppointmentId?: string;
   petId: string;
-  serviceId: string;
+  serviceId: string | null;
   clientNotes: string;
 };
 
@@ -71,7 +71,12 @@ export function BookingWizard({
   prefill?: BookingPrefill | null;
 }) {
   const router = useRouter();
-  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(prefill ? 3 : 1);
+  const initialStep: 1 | 2 | 3 | 4 | 5 = prefill?.petId
+    ? prefill.serviceId
+      ? 3
+      : 2
+    : 1;
+  const [step, setStep] = useState<1 | 2 | 3 | 4 | 5>(initialStep);
   const [petId, setPetId] = useState<string | null>(prefill?.petId ?? null);
   const [serviceId, setServiceId] = useState<string | null>(prefill?.serviceId ?? null);
   const [date, setDate] = useState<Date | null>(null);
