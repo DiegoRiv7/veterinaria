@@ -5,7 +5,6 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
-import { PetSwitcherWithRefresh } from "@/app/recuerdos/pet-switcher-with-refresh";
 import {
   paletteFor,
   moodFor,
@@ -93,14 +92,6 @@ export default async function SaludPage() {
   const palette = paletteFor(active);
   const age = ageFromBirthDate(active.birthDate) ?? "—";
 
-  const switcherItems = pets.map((p) => ({
-    id: p.id,
-    name: p.name,
-    species: p.species,
-    photoUrl: p.photoUrl,
-    palette: paletteFor(p),
-  }));
-
   // Vaccines with status
   const now = Date.now();
   const vaccinesView = active.vaccines.map((v) => {
@@ -169,7 +160,7 @@ export default async function SaludPage() {
   }
   const historyItems = active.appointments
     .filter((a) => a.status === "COMPLETED")
-    .slice(0, 4)
+    .slice(0, 3)
     .map((a) => ({
       id: a.id,
       type: a.service.name,
@@ -231,13 +222,6 @@ export default async function SaludPage() {
               </p>
             </div>
           </section>
-
-          {pets.length > 1 && (
-            <PetSwitcherWithRefresh
-              items={switcherItems}
-              activeId={active.id}
-            />
-          )}
 
           {/* Ficha card */}
           <section
@@ -485,9 +469,10 @@ export default async function SaludPage() {
               </div>
             ) : (
               historyItems.map((h, i, arr) => (
-                <div
+                <Link
                   key={h.id}
-                  className="flex items-start gap-3 px-5 py-3.5"
+                  href={`/cita/${h.id}`}
+                  className="flex items-start gap-3 px-5 py-3.5 hover:brightness-[1.02] transition"
                   style={{
                     borderBottom:
                       i < arr.length - 1
@@ -527,7 +512,13 @@ export default async function SaludPage() {
                       {h.notes}
                     </p>
                   </div>
-                </div>
+                  <span
+                    className="self-center text-[14px] font-bold shrink-0"
+                    style={{ color: palette.accent }}
+                  >
+                    →
+                  </span>
+                </Link>
               ))
             )}
           </section>

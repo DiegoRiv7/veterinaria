@@ -1,72 +1,60 @@
 "use client";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Home, Heart, Calendar, IdCard, User } from "lucide-react";
 
 type Tab = {
   href: string;
   label: string;
-  icon: string;
+  icon: typeof Home;
   matchPrefix?: string;
 };
 
 const TABS: Tab[] = [
-  { href: "/inicio", label: "Inicio", icon: "🏠" },
-  { href: "/salud", label: "Salud", icon: "❤️", matchPrefix: "/salud" },
-  { href: "/citas", label: "Citas", icon: "📅", matchPrefix: "/citas" },
-  { href: "/carnet", label: "Carnet", icon: "🪪", matchPrefix: "/carnet" },
-  { href: "/perfil", label: "Perfil", icon: "👤", matchPrefix: "/perfil" },
+  { href: "/inicio", label: "Inicio", icon: Home },
+  { href: "/salud", label: "Salud", icon: Heart, matchPrefix: "/salud" },
+  { href: "/citas", label: "Citas", icon: Calendar, matchPrefix: "/citas" },
+  { href: "/carnet", label: "Carnet", icon: IdCard, matchPrefix: "/carnet" },
+  { href: "/perfil", label: "Perfil", icon: User, matchPrefix: "/perfil" },
 ];
 
 export function ClientBottomTabBar() {
   const pathname = usePathname();
   return (
     <nav
-      className="lg:hidden flex-shrink-0 border-t pb-[max(0px,env(safe-area-inset-bottom))]"
+      className="lg:hidden flex-shrink-0 pb-[max(0px,env(safe-area-inset-bottom))]"
       style={{
-        background: "color-mix(in oklab, var(--color-surface) 96%, transparent)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
-        borderTopColor: "var(--color-border)",
+        background: "color-mix(in oklab, var(--color-surface) 80%, transparent)",
+        backdropFilter: "blur(18px) saturate(160%)",
+        WebkitBackdropFilter: "blur(18px) saturate(160%)",
+        borderTop:
+          "1px solid color-mix(in oklab, var(--color-border) 60%, transparent)",
       }}
     >
-      <div className="grid grid-cols-5 px-1 pt-1.5 pb-1">
+      <div className="flex items-center justify-around px-3 pt-2 pb-1.5">
         {TABS.map((tab) => {
           const isActive =
             pathname === tab.href ||
             (tab.matchPrefix &&
               tab.matchPrefix !== "/" &&
               pathname.startsWith(tab.matchPrefix));
+          const Icon = tab.icon;
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className="flex flex-col items-center gap-0.5 py-1.5 rounded-[14px]"
+              aria-label={tab.label}
+              className="flex items-center justify-center w-12 h-10 rounded-[12px] transition-colors"
               style={{
-                color: isActive
-                  ? "var(--color-brand)"
-                  : "var(--color-muted)",
+                color: isActive ? "var(--color-brand)" : "var(--color-muted)",
               }}
             >
-              <span className="text-[22px] leading-none">{tab.icon}</span>
-              <span
-                className="text-[10px]"
-                style={{
-                  fontWeight: isActive ? 800 : 600,
-                }}
-              >
-                {tab.label}
-              </span>
-              {isActive && (
-                <span
-                  aria-hidden
-                  className="rounded-full mt-0.5"
-                  style={{
-                    width: 14,
-                    height: 2,
-                    background: "var(--color-brand)",
-                  }}
-                />
-              )}
+              <Icon
+                className="h-[24px] w-[24px]"
+                strokeWidth={isActive ? 2.4 : 1.7}
+                fill={isActive ? "currentColor" : "none"}
+                fillOpacity={isActive ? 0.12 : 0}
+              />
             </Link>
           );
         })}

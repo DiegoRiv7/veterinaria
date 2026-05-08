@@ -4,7 +4,6 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
-import { PetSwitcherWithRefresh } from "@/app/recuerdos/pet-switcher-with-refresh";
 import {
   paletteFor,
   bgEmojisFor,
@@ -85,14 +84,6 @@ export default async function CarnetPage() {
     select: { name: true },
   });
 
-  const switcherItems = pets.map((p) => ({
-    id: p.id,
-    name: p.name,
-    species: p.species,
-    photoUrl: p.photoUrl,
-    palette: paletteFor(p),
-  }));
-
   // Dark palette tinted by pet's accent hue
   const dk = {
     bg: "oklch(18% 0.07 268)",
@@ -126,13 +117,6 @@ export default async function CarnetPage() {
         }}
       >
         <div className="max-w-md mx-auto flex flex-col gap-4">
-          {pets.length > 1 && (
-            <PetSwitcherWithRefresh
-              items={switcherItems}
-              activeId={active.id}
-            />
-          )}
-
           {/* The carnet card */}
           <div
             className="rounded-[22px] overflow-hidden"
