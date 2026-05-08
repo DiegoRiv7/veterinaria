@@ -64,16 +64,11 @@ export function PetHero({
         boxShadow: `0 16px 52px ${p.accent}33`,
       }}
     >
-      {/* Whole-card link sitting beneath the actionable controls. The
-          Agendar button + dot navigation are above it (relative + z-10)
-          so they stay clickable. */}
-      <Link
-        href={cardHref}
-        aria-label={`Personalizar a ${pet.name}`}
-        className="absolute inset-0 z-0"
-      />
-      {/* Background photo / emoji */}
-      <div className="absolute inset-0 transition-opacity duration-700">
+      {/* Background photo / emoji — purely decorative, must not catch
+          taps so the underlying card link stays clickable. */}
+      <div
+        className="absolute inset-0 transition-opacity duration-700 pointer-events-none"
+      >
         {current.kind === "photo" ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -99,12 +94,22 @@ export function PetHero({
 
       {/* Bottom darkening for legibility */}
       <div
-        className="absolute inset-0"
+        className="absolute inset-0 pointer-events-none"
         style={{
           background: transparent
             ? "linear-gradient(to bottom, rgba(0,0,0,0) 35%, rgba(0,0,0,0.62) 100%)"
             : "linear-gradient(to bottom, rgba(0,0,0,0) 30%, rgba(0,0,0,0.45) 100%)",
         }}
+      />
+
+      {/* Whole-card tap target — placed AFTER the decorative layers so it
+          sits on top of them in the natural stacking order. The Agendar
+          button + dot navigation re-enable pointer-events on themselves
+          via pointer-events-auto so they keep working. */}
+      <Link
+        href={cardHref}
+        aria-label={`Personalizar a ${pet.name}`}
+        className="absolute inset-0 z-[1]"
       />
 
       {/* Glow */}
