@@ -37,8 +37,11 @@ export default async function SaludPage() {
     include: {
       vaccines: { orderBy: { appliedAt: "desc" } },
       appointments: {
-        where: { status: "SCHEDULED", scheduledAt: { gte: new Date() } },
-        select: { id: true },
+        include: {
+          service: { select: { name: true } },
+          vet: { include: { user: { select: { name: true } } } },
+        },
+        orderBy: { scheduledAt: "desc" },
       },
     },
     orderBy: { createdAt: "asc" },
@@ -134,13 +137,51 @@ export default async function SaludPage() {
     { l: "Esterilizado/a", v: active.sterilized ? "Sí ✓" : "No" },
   ];
 
+  const upcomingCount = active.appointments.filter(
+    (a) =>
+      a.status === "SCHEDULED" && a.scheduledAt.getTime() >= Date.now()
+  ).length;
   const mood = moodFor({
     species: active.species,
-    hasUpcoming: active.appointments.length > 0,
+    hasUpcoming: upcomingCount > 0,
     hasPendingVaccine: active.vaccines.some(
       (v) => v.nextAt && v.nextAt.getTime() < now
     ),
   });
+
+  // Recent history — top 4 completed appointments for the historia card
+  const HISTORY_ICON: Record<string, string> = {
+    Vacunación: "💉",
+    Desparasitación: "💊",
+    "Operación menor": "🔪",
+    "Operación mayor": "🔪",
+    "Estética / baño": "🛁",
+    Urgencia: "🚨",
+    "Consulta general": "🩺",
+  };
+  function iconForService(name: string): string {
+    if (HISTORY_ICON[name]) return HISTORY_ICON[name];
+    if (/vacun/i.test(name)) return "💉";
+    if (/desparasit|antiparasit/i.test(name)) return "💊";
+    if (/operaci|cirug|esteriliza/i.test(name)) return "🔪";
+    if (/urgenc|emergenc/i.test(name)) return "🚨";
+    return "🩺";
+  }
+  const historyItems = active.appointments
+    .filter((a) => a.status === "COMPLETED")
+    .slice(0, 4)
+    .map((a) => ({
+      id: a.id,
+      type: a.service.name,
+      icon: iconForService(a.service.name),
+      date: formatLong(a.scheduledAt),
+      notes:
+        a.vetNotes ||
+        a.instructions ||
+        a.medications ||
+        a.clientNotes ||
+        "Sin notas registradas.",
+    }));
 
   return (
     <ClientShellServer>
@@ -221,7 +262,7 @@ export default async function SaludPage() {
                 </span>
               </div>
               <Link
-                href={`/mascotas/${active.id}`}
+                href="/salud/cartilla"
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-white text-[12px] font-extrabold"
                 style={{
                   background: `linear-gradient(135deg, ${palette.from}, ${palette.to})`,
@@ -393,6 +434,101 @@ export default async function SaludPage() {
                   </div>
                 );
               })
+            )}
+          </section>
+
+          {/* Historia clínica */}
+          <section
+            className="rounded-[22px] overflow-hidden"
+            style={{
+              background: "var(--color-surface)",
+              border: "1px solid var(--color-border)",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+            }}
+          >
+            <div
+              className="flex items-center justify-between px-5 py-3 border-b"
+              style={{ borderBottomColor: "var(--color-border)" }}
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-[18px]">📋</span>
+                <span
+                  className="text-[14px] font-black"
+                  style={{ color: "var(--color-foreground)" }}
+                >
+                  Historia clínica de {active.name}
+                </span>
+              </div>
+              <Link
+                href="/citas"
+                className="text-[12px] font-bold"
+                style={{ color: palette.accent }}
+              >
+                Ver más →
+              </Link>
+            </div>
+            {historyItems.length === 0 ? (
+              <div className="px-5 py-10 text-center">
+                <p className="text-[36px] mb-2">📋</p>
+                <p
+                  className="text-[13px] font-bold mb-1"
+                  style={{ color: "var(--color-foreground)" }}
+                >
+                  Sin historial clínico aún
+                </p>
+                <p
+                  className="text-[12px] font-semibold"
+                  style={{ color: "var(--color-muted)" }}
+                >
+                  Las visitas completadas de {active.name} aparecerán aquí.
+                </p>
+              </div>
+            ) : (
+              historyItems.map((h, i, arr) => (
+                <div
+                  key={h.id}
+                  className="flex items-start gap-3 px-5 py-3.5"
+                  style={{
+                    borderBottom:
+                      i < arr.length - 1
+                        ? "1px solid color-mix(in oklab, var(--color-border) 55%, transparent)"
+                        : "none",
+                  }}
+                >
+                  <div
+                    className="rounded-[12px] flex items-center justify-center text-[18px] shrink-0"
+                    style={{
+                      width: 38,
+                      height: 38,
+                      background: `${palette.accent}1a`,
+                    }}
+                  >
+                    {h.icon}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-0.5">
+                      <span
+                        className="text-[13px] font-extrabold"
+                        style={{ color: "var(--color-foreground)" }}
+                      >
+                        {h.type}
+                      </span>
+                      <span
+                        className="text-[11px] font-semibold whitespace-nowrap"
+                        style={{ color: "var(--color-muted)" }}
+                      >
+                        {h.date}
+                      </span>
+                    </div>
+                    <p
+                      className="text-[12px] font-semibold leading-snug line-clamp-2"
+                      style={{ color: "var(--color-muted)" }}
+                    >
+                      {h.notes}
+                    </p>
+                  </div>
+                </div>
+              ))
             )}
           </section>
         </div>
