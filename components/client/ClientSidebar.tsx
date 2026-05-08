@@ -5,8 +5,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Home,
+  Heart,
+  Camera,
   Calendar,
-  PawPrint,
   Bell,
   User,
 } from "lucide-react";
@@ -41,11 +42,12 @@ export function ClientSidebar({
   const pathname = usePathname();
 
   const items: NavItem[] = [
-    { href: "/inicio",         label: "Inicio",   icon: Home,      match: (p) => p === "/inicio" },
-    { href: "/citas",          label: "Citas",    icon: Calendar },
-    { href: "/mascotas",       label: "Mascotas", icon: PawPrint },
-    { href: "/notificaciones", label: "Avisos",   icon: Bell,      badge: unreadNotifs },
-    { href: "/perfil",         label: "Perfil",   icon: User },
+    { href: "/inicio",         label: "Inicio",    icon: Home,     match: (p) => p === "/inicio" },
+    { href: "/mascotas",       label: "Salud",     icon: Heart },
+    { href: "/recuerdos",      label: "Recuerdos", icon: Camera },
+    { href: "/citas",          label: "Citas",     icon: Calendar },
+    { href: "/notificaciones", label: "Avisos",    icon: Bell,     badge: unreadNotifs },
+    { href: "/perfil",         label: "Perfil",    icon: User },
   ];
 
   return (

@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import { Menu, Bell } from "lucide-react";
-import { Home, Calendar, PawPrint, User } from "lucide-react";
+import { Home, Heart, Camera, Calendar, User } from "lucide-react";
 
 const NAV_ITEMS = [
   { label: "Inicio", icon: Home },
+  { label: "Salud", icon: Heart },
+  { label: "Recuerdos", icon: Camera },
   { label: "Citas", icon: Calendar },
-  { label: "Mascotas", icon: PawPrint },
   { label: "Avisos", icon: Bell },
   { label: "Perfil", icon: User },
 ];
