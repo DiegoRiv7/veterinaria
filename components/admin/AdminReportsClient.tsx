@@ -1,7 +1,6 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
 import { VetIcon } from "@/components/vet/VetIcon";
 
 /* ─── Types ───────────────────────────────────────────── */
@@ -16,9 +15,12 @@ type Appointment = {
   serviceName: string;
   vetId: string;
   vetName: string;
+  clientId: string;
+  clientName: string;
 };
 
 type Vet = { id: string; name: string };
+type Client = { id: string; name: string };
 
 type Tab = "dia" | "mes" | "año" | "comparar";
 
@@ -35,6 +37,8 @@ type Aggregate = {
   byCategory: Record<Category, number>;
   topPet: { name: string; count: number } | null;
   topService: { name: string; count: number } | null;
+  topClient: { name: string; count: number } | null;
+  topSpender: { name: string; amount: number } | null;
 };
 
 /* ─── Constants ───────────────────────────────────────── */
@@ -126,13 +130,24 @@ function aggregate(appts: Appointment[]): Aggregate {
   };
   const petCounts = new Map<string, number>();
   const svcCounts = new Map<string, number>();
+  const clientCounts = new Map<string, number>();
+  const clientSpend = new Map<string, number>();
   for (const a of appts) {
     byCategory[categoryFor(a.serviceName)]++;
     petCounts.set(a.petName, (petCounts.get(a.petName) ?? 0) + 1);
     svcCounts.set(a.serviceName, (svcCounts.get(a.serviceName) ?? 0) + 1);
+    clientCounts.set(a.clientName, (clientCounts.get(a.clientName) ?? 0) + 1);
+    if (a.status === "COMPLETED") {
+      clientSpend.set(
+        a.clientName,
+        (clientSpend.get(a.clientName) ?? 0) + a.priceEstimate
+      );
+    }
   }
   const topPetEntry = [...petCounts.entries()].sort((a, b) => b[1] - a[1])[0];
   const topSvcEntry = [...svcCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const topClientEntry = [...clientCounts.entries()].sort((a, b) => b[1] - a[1])[0];
+  const topSpenderEntry = [...clientSpend.entries()].sort((a, b) => b[1] - a[1])[0];
 
   return {
     total: appts.length,
@@ -144,6 +159,8 @@ function aggregate(appts: Appointment[]): Aggregate {
     byCategory,
     topPet: topPetEntry ? { name: topPetEntry[0], count: topPetEntry[1] } : null,
     topService: topSvcEntry ? { name: topSvcEntry[0], count: topSvcEntry[1] } : null,
+    topClient: topClientEntry ? { name: topClientEntry[0], count: topClientEntry[1] } : null,
+    topSpender: topSpenderEntry ? { name: topSpenderEntry[0], amount: topSpenderEntry[1] } : null,
   };
 }
 
@@ -152,10 +169,16 @@ function aggregate(appts: Appointment[]): Aggregate {
 type Props = {
   appointments: Appointment[];
   vets: Vet[];
+  clients: Client[];
   currentMonth: { year: number; month: number };
 };
 
-export function AdminReportsClient({ appointments, vets, currentMonth }: Props) {
+export function AdminReportsClient({
+  appointments,
+  vets,
+  clients,
+  currentMonth,
+}: Props) {
   const [tab, setTab] = useState<Tab>("mes");
 
   // Day/month selectors
@@ -171,10 +194,14 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
 
   // Filters
   const [vetFilter, setVetFilter] = useState<Set<string>>(new Set(vets.map((v) => v.id)));
+  const [clientFilter, setClientFilter] = useState<Set<string>>(
+    new Set(clients.map((c) => c.id))
+  );
   const [statusFilter, setStatusFilter] = useState<Set<StatusKey>>(new Set(ALL_STATUSES));
   const [categoryFilter, setCategoryFilter] = useState<Set<Category>>(
     new Set(CATEGORY_META.map((c) => c.key))
   );
+  const [clientSearch, setClientSearch] = useState("");
 
   // Per-vet table sort
   type SortKey = "name" | "total" | "completed" | "cancelled" | "revenue" | "rate" | "avg";
@@ -227,10 +254,11 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
     return tabAppointments.filter(
       (a) =>
         vetFilter.has(a.vetId) &&
+        clientFilter.has(a.clientId) &&
         statusFilter.has(a.status as StatusKey) &&
         categoryFilter.has(categoryFor(a.serviceName))
     );
-  }, [tabAppointments, vetFilter, statusFilter, categoryFilter]);
+  }, [tabAppointments, vetFilter, clientFilter, statusFilter, categoryFilter]);
 
   const stats = useMemo(() => aggregate(filtered), [filtered]);
 
@@ -295,6 +323,12 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
     else next.add(id);
     setVetFilter(next);
   }
+  function toggleClient(id: string) {
+    const next = new Set(clientFilter);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setClientFilter(next);
+  }
   function toggleStatus(s: StatusKey) {
     const next = new Set(statusFilter);
     if (next.has(s)) next.delete(s);
@@ -316,30 +350,76 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
 
   function resetFilters() {
     setVetFilter(new Set(vets.map((v) => v.id)));
+    setClientFilter(new Set(clients.map((c) => c.id)));
     setStatusFilter(new Set(ALL_STATUSES));
     setCategoryFilter(new Set(CATEGORY_META.map((c) => c.key)));
+    setClientSearch("");
   }
 
   const filtersActive =
     vetFilter.size !== vets.length ||
+    clientFilter.size !== clients.length ||
     statusFilter.size !== ALL_STATUSES.length ||
     categoryFilter.size !== CATEGORY_META.length;
 
   function exportCsv() {
-    const headerRow = ["Fecha", "Hora", "Veterinario", "Paciente", "Servicio", "Estado", "Precio"];
+    const headerRow = [
+      "Fecha",
+      "Hora",
+      "Veterinario",
+      "Cliente",
+      "Paciente",
+      "Servicio",
+      "Estado",
+      "Precio",
+    ];
     const rows = filtered.map((a) => {
       const d = new Date(a.date);
       return [
         new Intl.DateTimeFormat("es-MX", { day: "2-digit", month: "2-digit", year: "numeric" }).format(d),
         formatTime(d),
         a.vetName,
+        a.clientName,
         a.petName,
         a.serviceName,
         STATUS_LABEL[a.status as StatusKey] ?? a.status,
         a.priceEstimate.toString(),
       ];
     });
-    const summary = [
+
+    // Per-client breakdown
+    const clientMap = new Map<
+      string,
+      {
+        name: string;
+        total: number;
+        completed: number;
+        revenue: number;
+        cancelled: number;
+      }
+    >();
+    for (const a of filtered) {
+      const cur =
+        clientMap.get(a.clientId) ?? {
+          name: a.clientName,
+          total: 0,
+          completed: 0,
+          revenue: 0,
+          cancelled: 0,
+        };
+      cur.total++;
+      if (a.status === "COMPLETED") {
+        cur.completed++;
+        cur.revenue += a.priceEstimate;
+      }
+      if (a.status === "CANCELLED" || a.status === "NO_SHOW") cur.cancelled++;
+      clientMap.set(a.clientId, cur);
+    }
+    const perClient = [...clientMap.values()].sort(
+      (a, b) => b.total - a.total
+    );
+
+    const summary: string[][] = [
       [],
       ["Resumen general"],
       ["Total citas", String(stats.total)],
@@ -348,6 +428,18 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
       ["Canceladas", String(stats.cancelled)],
       ["Ingresos (MXN)", String(stats.revenue)],
       ["Promedio por atendida (MXN)", String(stats.avgPerCompleted)],
+      [
+        "Cliente top",
+        stats.topClient
+          ? `${stats.topClient.name} (${stats.topClient.count})`
+          : "—",
+      ],
+      [
+        "Cliente con mayor gasto",
+        stats.topSpender
+          ? `${stats.topSpender.name} (${formatMxn(stats.topSpender.amount)})`
+          : "—",
+      ],
       ["Paciente top", stats.topPet ? `${stats.topPet.name} (${stats.topPet.count})` : "—"],
       ["Servicio top", stats.topService ? `${stats.topService.name} (${stats.topService.count})` : "—"],
       [],
@@ -363,6 +455,16 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
         `${p.rate}%`,
         String(p.avg),
       ]),
+      [],
+      ["Top clientes"],
+      ["Cliente", "Citas", "Atendidas", "Canceladas", "Ingresos generados"],
+      ...perClient.map((c) => [
+        c.name,
+        String(c.total),
+        String(c.completed),
+        String(c.cancelled),
+        String(c.revenue),
+      ]),
     ];
     const all = [headerRow, ...rows, ...summary];
     const csv = all
@@ -372,7 +474,7 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `reporte-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.download = `reporte-vetsfriend-${tab}-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -380,55 +482,37 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
   }
 
   return (
-    <div className="vet-theme min-h-dvh">
-      {/* Top bar */}
-      <header
-        className="sticky top-0 z-30 flex items-center justify-between gap-3 px-4 sm:px-7 py-4 border-b backdrop-blur"
-        style={{
-          background: "color-mix(in oklab, var(--vet-bg-mid) 92%, transparent)",
-          borderBottomColor: "var(--vet-border)",
-        }}
-      >
-        <div className="flex items-center gap-3">
-          <Link
-            href="/admin"
-            className="inline-flex items-center justify-center w-10 h-10 rounded-[12px] border"
-            aria-label="Volver al admin"
-            style={{
-              background: "var(--vet-bg-card)",
-              borderColor: "var(--vet-border)",
-              color: "var(--vet-text-2)",
-            }}
+    <div className="flex flex-col gap-5">
+      <div className="flex items-end justify-between gap-3 flex-wrap">
+        <div>
+          <h1
+            className="text-[26px] font-black tracking-tight"
+            style={{ color: "var(--vet-text-1)" }}
           >
-            <VetIcon name="chevronLeft" size={18} color="var(--vet-text-2)" />
-          </Link>
-          <div>
-            <h1
-              className="text-[20px] sm:text-[22px] font-black tracking-tight"
-              style={{ color: "var(--vet-text-1)" }}
-            >
-              Reportes
-            </h1>
-            <p className="text-[12px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
-              {appointments.length} citas en los últimos 12 meses · {vets.length} veterinarios
-            </p>
-          </div>
+            Reportes y estadísticas
+          </h1>
+          <p
+            className="text-[13px] font-semibold"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {appointments.length} citas en los últimos 12 meses · {vets.length}{" "}
+            veterinarios · {clients.length} clientes
+          </p>
         </div>
         <button
           type="button"
           onClick={exportCsv}
-          className="inline-flex items-center gap-2 px-4 h-10 rounded-[12px] text-[13px] font-extrabold text-white transition-all hover:brightness-105 active:scale-[.99]"
+          className="inline-flex items-center gap-2 px-4 h-11 rounded-[12px] text-[13px] font-extrabold text-white transition-all hover:brightness-105 active:scale-[.99]"
           style={{
             background:
               "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
             boxShadow: "0 8px 24px var(--vet-green-glow)",
           }}
         >
-          <ExportIcon /> Exportar Excel
+          <ExportIcon /> Exportar a Excel
         </button>
-      </header>
-
-      <main className="max-w-[1400px] mx-auto p-4 sm:p-7 flex flex-col gap-5">
+      </div>
+      <div className="flex flex-col gap-5">
         {/* Filter card */}
         <section
           className="border p-5 sm:p-6 flex flex-col gap-5"
@@ -668,17 +752,45 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
         </section>
 
         {/* Highlights */}
-        <section className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+        <section className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Highlight
+            label="Cliente con más visitas"
+            primary={stats.topClient?.name ?? "—"}
+            secondary={
+              stats.topClient
+                ? `${stats.topClient.count} ${stats.topClient.count === 1 ? "cita" : "citas"}`
+                : "Sin datos"
+            }
+            color="var(--vet-green)"
+          />
+          <Highlight
+            label="Cliente que más invierte"
+            primary={stats.topSpender?.name ?? "—"}
+            secondary={
+              stats.topSpender
+                ? formatMxn(stats.topSpender.amount)
+                : "Sin datos"
+            }
+            color="var(--vet-blue)"
+          />
           <Highlight
             label="Paciente más atendido"
             primary={stats.topPet?.name ?? "—"}
-            secondary={stats.topPet ? `${stats.topPet.count} ${stats.topPet.count === 1 ? "cita" : "citas"}` : "Sin datos"}
+            secondary={
+              stats.topPet
+                ? `${stats.topPet.count} ${stats.topPet.count === 1 ? "cita" : "citas"}`
+                : "Sin datos"
+            }
             color="var(--vet-amber)"
           />
           <Highlight
             label="Servicio más solicitado"
             primary={stats.topService?.name ?? "—"}
-            secondary={stats.topService ? `${stats.topService.count} ${stats.topService.count === 1 ? "vez" : "veces"}` : "Sin datos"}
+            secondary={
+              stats.topService
+                ? `${stats.topService.count} ${stats.topService.count === 1 ? "vez" : "veces"}`
+                : "Sin datos"
+            }
             color="var(--vet-violet)"
           />
         </section>
@@ -778,9 +890,19 @@ export function AdminReportsClient({ appointments, vets, currentMonth }: Props) 
         {tab === "mes" && <DailyChart appts={filtered} monthKey={monthKey} />}
         {tab === "año" && <YearlyChart appointments={appointments} statusFilter={statusFilter} categoryFilter={categoryFilter} vetFilter={vetFilter} />}
 
+        {/* Per-client breakdown */}
+        <PerClientPerformance
+          appts={filtered}
+          clientFilter={clientFilter}
+          onToggle={toggleClient}
+          search={clientSearch}
+          onSearchChange={setClientSearch}
+          clients={clients}
+        />
+
         {/* Details */}
         <DetailsList appts={filtered} />
-      </main>
+      </div>
     </div>
   );
 }
@@ -1388,6 +1510,301 @@ function DetailsList({ appts }: { appts: Appointment[] }) {
           )}
         </>
       )}
+    </section>
+  );
+}
+
+function PerClientPerformance({
+  appts,
+  clientFilter,
+  onToggle,
+  search,
+  onSearchChange,
+  clients,
+}: {
+  appts: Appointment[];
+  clientFilter: Set<string>;
+  onToggle: (id: string) => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+  clients: Client[];
+}) {
+  // Aggregate by client (only those that show up in the filtered set)
+  const map = new Map<
+    string,
+    {
+      id: string;
+      name: string;
+      total: number;
+      completed: number;
+      cancelled: number;
+      revenue: number;
+      lastDate: string | null;
+      pets: Set<string>;
+      services: Map<string, number>;
+    }
+  >();
+  for (const a of appts) {
+    const cur =
+      map.get(a.clientId) ?? {
+        id: a.clientId,
+        name: a.clientName,
+        total: 0,
+        completed: 0,
+        cancelled: 0,
+        revenue: 0,
+        lastDate: null,
+        pets: new Set<string>(),
+        services: new Map<string, number>(),
+      };
+    cur.total++;
+    if (a.status === "COMPLETED") {
+      cur.completed++;
+      cur.revenue += a.priceEstimate;
+    }
+    if (a.status === "CANCELLED" || a.status === "NO_SHOW") cur.cancelled++;
+    if (!cur.lastDate || a.date > cur.lastDate) cur.lastDate = a.date;
+    cur.pets.add(a.petName);
+    cur.services.set(
+      a.serviceName,
+      (cur.services.get(a.serviceName) ?? 0) + 1
+    );
+    map.set(a.clientId, cur);
+  }
+  const rows = [...map.values()].sort((a, b) => b.total - a.total);
+
+  const visibleClientFilters = clients.filter((c) =>
+    c.name.toLowerCase().includes(search.trim().toLowerCase())
+  );
+
+  return (
+    <section
+      className="border overflow-hidden"
+      style={{
+        background: "var(--vet-bg-card)",
+        borderColor: "var(--vet-border)",
+        borderRadius: 22,
+      }}
+    >
+      <div
+        className="px-5 py-4 border-b flex items-center justify-between gap-3 flex-wrap"
+        style={{ borderBottomColor: "var(--vet-border)" }}
+      >
+        <div>
+          <h2
+            className="font-extrabold text-[15px]"
+            style={{ color: "var(--vet-text-1)" }}
+          >
+            Rendimiento por cliente
+          </h2>
+          <p
+            className="text-[12px] font-semibold"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {rows.length} cliente{rows.length === 1 ? "" : "s"} con citas en el
+            período seleccionado
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Buscar cliente…"
+            className="h-9 px-3 rounded-[10px] border outline-none text-[12px] font-bold"
+            style={{
+              background: "var(--vet-bg-mid)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-1)",
+              minWidth: 200,
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Client filter chips (collapsible) */}
+      {clients.length > 0 && (
+        <details
+          className="border-b"
+          style={{ borderBottomColor: "var(--vet-border)" }}
+        >
+          <summary
+            className="px-5 py-2.5 cursor-pointer text-[11px] font-extrabold uppercase tracking-wider list-none flex items-center justify-between"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            <span>
+              Filtrar por cliente · {clientFilter.size}/{clients.length} activos
+            </span>
+            <span style={{ color: "var(--vet-green)" }}>▾</span>
+          </summary>
+          <div className="px-5 pb-3 flex flex-wrap gap-1.5">
+            {visibleClientFilters.length === 0 ? (
+              <span
+                className="text-[11px] font-semibold"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Sin coincidencias.
+              </span>
+            ) : (
+              visibleClientFilters.map((c) => {
+                const active = clientFilter.has(c.id);
+                return (
+                  <button
+                    key={c.id}
+                    type="button"
+                    onClick={() => onToggle(c.id)}
+                    className="px-2.5 py-1 rounded-full text-[11px] font-bold border transition-colors"
+                    style={{
+                      background: active
+                        ? "var(--vet-green-glow)"
+                        : "transparent",
+                      borderColor: active
+                        ? "var(--vet-green)"
+                        : "var(--vet-border)",
+                      color: active ? "var(--vet-green)" : "var(--vet-text-3)",
+                      opacity: active ? 1 : 0.55,
+                    }}
+                  >
+                    {c.name}
+                  </button>
+                );
+              })
+            )}
+          </div>
+        </details>
+      )}
+
+      <div className="overflow-x-auto">
+        <table className="w-full text-[13px]" style={{ borderCollapse: "collapse" }}>
+          <thead>
+            <tr style={{ background: "var(--vet-bg-mid)" }}>
+              <th
+                className="px-5 py-3 text-left text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Cliente
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Mascotas
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Citas
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Atendidas
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Canceladas
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Ingresos
+              </th>
+              <th
+                className="px-3 py-3 text-left text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Servicio top
+              </th>
+              <th
+                className="px-3 py-3 text-right text-[11px] font-extrabold uppercase tracking-wider"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Última cita
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={8}
+                  className="px-5 py-10 text-center text-[13px] font-semibold"
+                  style={{ color: "var(--vet-text-3)" }}
+                >
+                  Sin clientes con citas en el período/filtros aplicados.
+                </td>
+              </tr>
+            ) : (
+              rows.map((r) => {
+                const top = [...r.services.entries()].sort(
+                  (a, b) => b[1] - a[1]
+                )[0];
+                return (
+                  <tr
+                    key={r.id}
+                    style={{ borderTop: "1px solid var(--vet-border)" }}
+                  >
+                    <td
+                      className="px-5 py-3 font-extrabold"
+                      style={{ color: "var(--vet-text-1)" }}
+                    >
+                      {r.name}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right font-bold"
+                      style={{ color: "var(--vet-text-2)" }}
+                    >
+                      {r.pets.size}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right font-bold"
+                      style={{ color: "var(--vet-text-1)" }}
+                    >
+                      {r.total}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right font-bold"
+                      style={{ color: "var(--vet-blue)" }}
+                    >
+                      {r.completed}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right font-bold"
+                      style={{ color: "var(--vet-red)" }}
+                    >
+                      {r.cancelled}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right font-bold"
+                      style={{ color: "var(--vet-violet)" }}
+                    >
+                      {formatMxn(r.revenue)}
+                    </td>
+                    <td
+                      className="px-3 py-3 text-[12px] font-bold"
+                      style={{ color: "var(--vet-text-2)" }}
+                    >
+                      {top ? `${top[0]} (${top[1]})` : "—"}
+                    </td>
+                    <td
+                      className="px-3 py-3 vet-mono text-right text-[12px] font-bold"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      {r.lastDate
+                        ? formatDateShort(new Date(r.lastDate))
+                        : "—"}
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
     </section>
   );
 }

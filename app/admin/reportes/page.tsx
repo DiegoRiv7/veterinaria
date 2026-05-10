@@ -1,21 +1,7 @@
 import { redirect } from "next/navigation";
-import { Nunito, Space_Grotesk } from "next/font/google";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { AdminReportsClient } from "@/components/admin/AdminReportsClient";
-
-const nunito = Nunito({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  variable: "--font-nunito",
-  display: "swap",
-});
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-space-grotesk",
-  display: "swap",
-});
 
 export const dynamic = "force-dynamic";
 
@@ -35,7 +21,7 @@ export default async function AdminReportsPage() {
   const monthEnd = addMonths(monthStart, 1);
   const last12Start = addMonths(monthStart, -11);
 
-  const [appointments, vets] = await Promise.all([
+  const [appointments, vets, clients] = await Promise.all([
     prisma.appointment.findMany({
       where: { scheduledAt: { gte: last12Start, lt: monthEnd } },
       select: {
@@ -45,6 +31,7 @@ export default async function AdminReportsPage() {
         priceEstimate: true,
         pet: { select: { name: true, species: true } },
         service: { select: { name: true } },
+        client: { select: { id: true, name: true } },
         vet: {
           select: {
             id: true,
@@ -61,6 +48,11 @@ export default async function AdminReportsPage() {
       },
       orderBy: { user: { name: "asc" } },
     }),
+    prisma.user.findMany({
+      where: { role: "CLIENT" },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   const data = appointments.map((a) => ({
@@ -73,17 +65,22 @@ export default async function AdminReportsPage() {
     serviceName: a.service.name,
     vetId: a.vet.id,
     vetName: a.vet.user.name,
+    clientId: a.client.id,
+    clientName: a.client.name,
   }));
 
   const vetOptions = vets.map((v) => ({ id: v.id, name: v.user.name }));
+  const clientOptions = clients.map((c) => ({ id: c.id, name: c.name }));
 
   return (
-    <div className={`${nunito.variable} ${spaceGrotesk.variable}`}>
-      <AdminReportsClient
-        appointments={data}
-        vets={vetOptions}
-        currentMonth={{ year: monthStart.getFullYear(), month: monthStart.getMonth() }}
-      />
-    </div>
+    <AdminReportsClient
+      appointments={data}
+      vets={vetOptions}
+      clients={clientOptions}
+      currentMonth={{
+        year: monthStart.getFullYear(),
+        month: monthStart.getMonth(),
+      }}
+    />
   );
 }

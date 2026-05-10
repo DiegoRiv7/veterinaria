@@ -1,17 +1,20 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { AppShell, PageContainer, PageHeader, SectionTitle } from "@/components/ui/page";
-import { Card, CardBody } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
-import { AdminTabBar } from "@/components/AdminTabBar";
 import { SPECIES_EMOJI, SPECIES_LABEL } from "@/lib/utils";
-import { updateSpeciesModifierAction } from "@/app/actions/admin";
+import { TarifasEditor } from "@/components/admin/TarifasEditor";
 
 export const dynamic = "force-dynamic";
 
-const SPECIES = ["DOG", "CAT", "BIRD", "RABBIT", "HAMSTER", "REPTILE", "OTHER"] as const;
+const SPECIES = [
+  "DOG",
+  "CAT",
+  "BIRD",
+  "RABBIT",
+  "HAMSTER",
+  "REPTILE",
+  "OTHER",
+] as const;
 
 export default async function TarifasPage() {
   const session = await readSession();
@@ -21,51 +24,31 @@ export default async function TarifasPage() {
   const mods = await prisma.speciesPriceModifier.findMany();
   const map = Object.fromEntries(mods.map((m) => [m.species, m.multiplier]));
 
+  const rows = SPECIES.map((s) => ({
+    species: s,
+    label: SPECIES_LABEL[s] ?? s,
+    emoji: SPECIES_EMOJI[s] ?? "🐾",
+    multiplier: map[s] ?? 1,
+  }));
+
   return (
-    <AppShell>
-      <PageContainer>
-        <PageHeader
-          title="Tarifas por especie"
-          subtitle="Multiplicador aplicado al precio base del servicio."
-        />
-        <SectionTitle>Multiplicadores</SectionTitle>
-        <div className="flex flex-col gap-3">
-          {SPECIES.map((s) => {
-            const current = map[s] ?? 1;
-            return (
-              <Card key={s}>
-                <CardBody>
-                  <form action={updateSpeciesModifierAction} className="flex items-center gap-3">
-                    <input type="hidden" name="species" value={s} />
-                    <div className="h-11 w-11 rounded-[14px] bg-[var(--color-brand-soft)] flex items-center justify-center text-2xl shrink-0">
-                      {SPECIES_EMOJI[s]}
-                    </div>
-                    <div className="flex-1">
-                      <p className="font-medium">{SPECIES_LABEL[s]}</p>
-                      <p className="text-[12px] text-[var(--color-muted)]">
-                        Ej. 1.0 = precio base, 1.2 = +20%
-                      </p>
-                    </div>
-                    <div className="w-24">
-                      <Label className="sr-only">Multiplicador</Label>
-                      <Input
-                        name="multiplier"
-                        type="number"
-                        min="0.1"
-                        step="0.05"
-                        defaultValue={current}
-                        className="text-center"
-                      />
-                    </div>
-                    <Button type="submit" size="sm">Guardar</Button>
-                  </form>
-                </CardBody>
-              </Card>
-            );
-          })}
-        </div>
-      </PageContainer>
-      <AdminTabBar />
-    </AppShell>
+    <div className="flex flex-col gap-5">
+      <div>
+        <h1
+          className="text-[26px] font-black tracking-tight"
+          style={{ color: "var(--vet-text-1)" }}
+        >
+          Tarifas por especie
+        </h1>
+        <p
+          className="text-[13px] font-semibold"
+          style={{ color: "var(--vet-text-3)" }}
+        >
+          Multiplicador aplicado al precio base del servicio. Ej. <b>1.0</b> = sin
+          ajuste, <b>1.2</b> = +20%, <b>0.85</b> = −15%.
+        </p>
+      </div>
+      <TarifasEditor rows={rows} />
+    </div>
   );
 }

@@ -137,3 +137,171 @@ export async function removeVetAction(formData: FormData) {
   await prisma.user.delete({ where: { id: vet.userId } });
   revalidatePath("/admin/veterinarios");
 }
+
+/* ─── Vet edit / password / schedule ───────────────────────── */
+
+export async function updateVetAction(
+  vetId: string,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    bio?: string | null;
+    photoUrl?: string | null;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const id = (vetId ?? "").trim();
+  if (!id) return { ok: false, error: "Vet inválido." };
+
+  const vet = await prisma.veterinarian.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+  if (!vet) return { ok: false, error: "Veterinario no encontrado." };
+
+  try {
+    const userUpdate: Record<string, unknown> = {};
+    if (data.name !== undefined) {
+      const name = data.name.trim();
+      if (!name) return { ok: false, error: "El nombre no puede estar vacío." };
+      userUpdate.name = name;
+    }
+    if (data.email !== undefined) {
+      const email = data.email.trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+        return { ok: false, error: "Correo inválido." };
+      const dup = await prisma.user.findUnique({
+        where: { email },
+        select: { id: true },
+      });
+      if (dup && dup.id !== vet.userId)
+        return { ok: false, error: "Correo ya registrado." };
+      userUpdate.email = email;
+    }
+    if (data.phone !== undefined) {
+      const phone = data.phone.replace(/\D+/g, "");
+      if (phone.length < 7)
+        return { ok: false, error: "Teléfono inválido." };
+      const dup = await prisma.user.findUnique({
+        where: { phone },
+        select: { id: true },
+      });
+      if (dup && dup.id !== vet.userId)
+        return { ok: false, error: "Teléfono ya registrado." };
+      userUpdate.phone = phone;
+    }
+
+    const vetUpdate: Record<string, unknown> = {};
+    if (data.bio !== undefined) {
+      const bio = (data.bio ?? "").trim();
+      vetUpdate.bio = bio.length === 0 ? null : bio.slice(0, 280);
+    }
+    if (data.photoUrl !== undefined) {
+      vetUpdate.photoUrl = data.photoUrl;
+    }
+
+    if (Object.keys(userUpdate).length > 0) {
+      await prisma.user.update({ where: { id: vet.userId }, data: userUpdate });
+    }
+    if (Object.keys(vetUpdate).length > 0) {
+      await prisma.veterinarian.update({ where: { id }, data: vetUpdate });
+    }
+
+    revalidatePath("/admin/veterinarios");
+    revalidatePath(`/admin/veterinarios/${id}`);
+    return { ok: true };
+  } catch (e) {
+    return { ok: false, error: e instanceof Error ? e.message : "Error" };
+  }
+}
+
+export async function resetVetPasswordAction(
+  vetId: string,
+  newPassword: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const id = (vetId ?? "").trim();
+  if (!id) return { ok: false, error: "Vet inválido." };
+  if (!newPassword || newPassword.length < 4)
+    return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+
+  const vet = await prisma.veterinarian.findUnique({
+    where: { id },
+    select: { userId: true },
+  });
+  if (!vet) return { ok: false, error: "Veterinario no encontrado." };
+
+  const hash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id: vet.userId },
+    data: { passwordHash: hash },
+  });
+  return { ok: true };
+}
+
+export async function updateVetWorkingHoursAction(
+  vetId: string,
+  rows: {
+    dayOfWeek: number;
+    isWorking: boolean;
+    startMinutes: number;
+    endMinutes: number;
+  }[]
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const id = (vetId ?? "").trim();
+  if (!id) return { ok: false, error: "Vet inválido." };
+
+  const vet = await prisma.veterinarian.findUnique({
+    where: { id },
+    select: { id: true },
+  });
+  if (!vet) return { ok: false, error: "Veterinario no encontrado." };
+
+  // Whitelist + clamp: dayOfWeek 0..6, minutes 0..1440, end > start.
+  for (const r of rows) {
+    if (
+      !Number.isInteger(r.dayOfWeek) ||
+      r.dayOfWeek < 0 ||
+      r.dayOfWeek > 6 ||
+      r.startMinutes < 0 ||
+      r.startMinutes > 1440 ||
+      r.endMinutes < 0 ||
+      r.endMinutes > 1440
+    )
+      return { ok: false, error: "Horario inválido." };
+    if (r.isWorking && r.endMinutes <= r.startMinutes)
+      return {
+        ok: false,
+        error: `La hora de fin debe ser mayor que la de inicio (día ${r.dayOfWeek}).`,
+      };
+  }
+
+  await prisma.$transaction(
+    rows.map((r) =>
+      prisma.vetWorkingHours.upsert({
+        where: {
+          vetId_dayOfWeek: { vetId: id, dayOfWeek: r.dayOfWeek },
+        },
+        update: {
+          isWorking: r.isWorking,
+          startMinutes: r.startMinutes,
+          endMinutes: r.endMinutes,
+        },
+        create: {
+          vetId: id,
+          dayOfWeek: r.dayOfWeek,
+          isWorking: r.isWorking,
+          startMinutes: r.startMinutes,
+          endMinutes: r.endMinutes,
+        },
+      })
+    )
+  );
+
+  revalidatePath(`/admin/veterinarios/${id}`);
+  revalidatePath("/admin/veterinarios");
+  revalidatePath("/agendar");
+  return { ok: true };
+}
