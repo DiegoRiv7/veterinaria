@@ -101,7 +101,12 @@ export function PersonalizarClient({
         </div>
       </div>
 
-      {tab === "mascota" && <MascotaTab payload={payload} />}
+      {tab === "mascota" && (
+        <MascotaTab
+          payload={payload}
+          onGoToRecuerdos={() => setTab("recuerdos")}
+        />
+      )}
       {tab === "fondos" && (
         <FondosTab
           petId={payload.pet.id}
@@ -114,7 +119,13 @@ export function PersonalizarClient({
   );
 }
 
-function MascotaTab({ payload }: { payload: PersonalizarPayload }) {
+function MascotaTab({
+  payload,
+  onGoToRecuerdos,
+}: {
+  payload: PersonalizarPayload;
+  onGoToRecuerdos: () => void;
+}) {
   return (
     <>
       <PetdexEditorClient
@@ -144,9 +155,9 @@ function MascotaTab({ payload }: { payload: PersonalizarPayload }) {
       />
       <SmallTile
         icon="📷"
-        title="Cambiar foto principal"
-        subtitle="La que aparece arriba en el cuadro"
-        href={`/mascotas/${payload.pet.id}`}
+        title="Subir fotos al carrusel"
+        subtitle="Fotos para la galería del cuadro y la cartilla"
+        onClick={onGoToRecuerdos}
         accent={payload.paletteAccent}
       />
     </>
@@ -390,6 +401,7 @@ function SmallTile({
   title,
   subtitle,
   href,
+  onClick,
   soon,
   accent,
 }: {
@@ -397,6 +409,7 @@ function SmallTile({
   title: string;
   subtitle: string;
   href?: string;
+  onClick?: () => void;
   soon?: boolean;
   accent: string;
 }) {
@@ -447,16 +460,26 @@ function SmallTile({
           {subtitle}
         </p>
       </div>
-      {href && !soon && (
+      {(href || onClick) && !soon && (
         <span style={{ color: "var(--color-muted)" }}>›</span>
       )}
     </div>
   );
 
-  if (soon || !href) return <div>{inner}</div>;
-  return (
-    <Link href={href} className="block">
-      {inner}
-    </Link>
-  );
+  if (soon) return <div>{inner}</div>;
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className="block w-full text-left">
+        {inner}
+      </button>
+    );
+  }
+  if (href) {
+    return (
+      <Link href={href} className="block">
+        {inner}
+      </Link>
+    );
+  }
+  return <div>{inner}</div>;
 }

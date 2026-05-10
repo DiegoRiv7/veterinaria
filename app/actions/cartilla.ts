@@ -134,15 +134,17 @@ export async function updatePetCustomizationAction(
   }
 
   if (data.personalityTags !== undefined) {
-    if (!data.personalityTags || data.personalityTags.length === 0) {
+    if (data.personalityTags === null) {
+      // null means "reset to species default"
       update.personalityTags = null;
     } else {
       const cleaned = data.personalityTags
         .map((t) => t.trim())
         .filter((t) => t.length > 0 && t.length <= 24)
         .slice(0, 3);
-      update.personalityTags =
-        cleaned.length > 0 ? JSON.stringify(cleaned) : null;
+      // Always persist the explicit array — even when empty — so the
+      // user can clear all tags and have the cuadro stay clean.
+      update.personalityTags = JSON.stringify(cleaned);
     }
   }
 

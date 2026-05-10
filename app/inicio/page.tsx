@@ -142,35 +142,35 @@ export default async function ClientHome() {
       ...p.photos.slice(0, 5).map((ph) => ph.url),
     ].filter((u): u is string => !!u);
 
-    const milestones: { icon: string; label: string; value: string }[] = [];
-    if (p.birthDate) {
-      milestones.push({
+    // Always exactly 3 milestones in the "historia" card: birthday,
+    // gender, color. Missing values render as "—" to keep the layout
+    // stable rather than collapsing.
+    const sexLabel =
+      p.sex === "MALE" ? "Macho" : p.sex === "FEMALE" ? "Hembra" : "—";
+    const sexIcon =
+      p.sex === "MALE" ? "♂️" : p.sex === "FEMALE" ? "♀️" : "🐾";
+    const milestones: { icon: string; label: string; value: string }[] = [
+      {
         icon: "🎂",
         label: "Cumpleaños",
-        value: new Intl.DateTimeFormat("es-MX", {
-          day: "numeric",
-          month: "short",
-        }).format(p.birthDate),
-      });
-    }
-    milestones.push({
-      icon: "🏠",
-      label: "Llegó a casa",
-      value: new Intl.DateTimeFormat("es-MX", {
-        month: "short",
-        year: "numeric",
-      }).format(p.createdAt),
-    });
-    if (p.sterilized) {
-      milestones.push({ icon: "✂️", label: "Esterilizado", value: "Sí" });
-    }
-    if (p.vaccines.length > 0) {
-      milestones.push({
-        icon: "💉",
-        label: "Vacunas",
-        value: `${p.vaccines.length}`,
-      });
-    }
+        value: p.birthDate
+          ? new Intl.DateTimeFormat("es-MX", {
+              day: "numeric",
+              month: "short",
+            }).format(p.birthDate)
+          : "—",
+      },
+      {
+        icon: sexIcon,
+        label: "Género",
+        value: sexLabel,
+      },
+      {
+        icon: "🎨",
+        label: "Color",
+        value: p.color?.trim() || "—",
+      },
+    ];
 
     const ageStr = ageFromBirthDate(p.birthDate) ?? "—";
 

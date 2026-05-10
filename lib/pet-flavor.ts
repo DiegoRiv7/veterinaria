@@ -185,17 +185,21 @@ export function personalityFor(species: string): string[] {
   return PERSONALITY_BY_SPECIES[species] ?? PERSONALITY_BY_SPECIES.OTHER;
 }
 
+/**
+ * Returns null when the field is unset (i.e. fall back to species
+ * defaults), or a string[] (which may be empty when the user explicitly
+ * cleared all chips — in that case we want zero tags shown).
+ */
 export function parsePersonalityTags(raw: string | null): string[] | null {
-  if (!raw) return null;
+  if (raw === null || raw === undefined) return null;
   try {
     const arr = JSON.parse(raw);
     if (!Array.isArray(arr)) return null;
-    const cleaned = arr
+    return arr
       .filter((x): x is string => typeof x === "string")
       .map((s) => s.trim())
       .filter((s) => s.length > 0)
       .slice(0, 3);
-    return cleaned.length > 0 ? cleaned : null;
   } catch {
     return null;
   }
@@ -205,7 +209,10 @@ export function personalityForPet(pet: {
   species: string;
   personalityTags: string | null;
 }): string[] {
-  return parsePersonalityTags(pet.personalityTags) ?? personalityFor(pet.species);
+  const parsed = parsePersonalityTags(pet.personalityTags);
+  // null = unset, fall back to species default. [] = explicit empty.
+  if (parsed === null) return personalityFor(pet.species);
+  return parsed;
 }
 
 const FUN_FACTS_BY_SPECIES: Record<string, string[]> = {
