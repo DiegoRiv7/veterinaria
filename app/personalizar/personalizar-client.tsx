@@ -40,8 +40,10 @@ export type PersonalizarPayload = {
   initialPhotos: { id: string; url: string }[];
   defaultMood: string;
   defaultPersonality: string[];
+  defaultFunFact: string;
   savedPersonalityTags: string[] | null;
   customMood: string | null;
+  customFunFact: string | null;
   paletteAccent: string;
 };
 
@@ -100,7 +102,13 @@ export function PersonalizarClient({
       </div>
 
       {tab === "mascota" && <MascotaTab payload={payload} />}
-      {tab === "fondos" && <FondosTab accent={accent} petName={payload.pet.name} />}
+      {tab === "fondos" && (
+        <FondosTab
+          petId={payload.pet.id}
+          petName={payload.pet.name}
+          accent={accent}
+        />
+      )}
       {tab === "recuerdos" && <RecuerdosTab payload={payload} />}
     </div>
   );
@@ -117,10 +125,12 @@ function MascotaTab({ payload }: { payload: PersonalizarPayload }) {
         galleryUrls={payload.galleryUrls}
         defaultMood={payload.defaultMood}
         defaultPersonality={payload.defaultPersonality}
+        defaultFunFact={payload.defaultFunFact}
         initial={{
           cardStyle: payload.pet.cardStyle,
           personalityTags: payload.savedPersonalityTags,
           customMood: payload.customMood,
+          customFunFact: payload.customFunFact,
         }}
       />
 
@@ -144,53 +154,114 @@ function MascotaTab({ payload }: { payload: PersonalizarPayload }) {
 }
 
 function FondosTab({
-  accent,
+  petId,
   petName,
+  accent,
 }: {
-  accent: string;
+  petId: string;
   petName: string;
+  accent: string;
 }) {
-  const items = [
+  const formats = [
     {
+      key: "mobile",
       icon: "📱",
-      title: "Wallpaper de móvil",
-      subtitle: "Vertical 9:19 — perfecto para iPhone y Android",
+      title: "Móvil",
+      subtitle: "Vertical 1170×2532 — para iPhone y Android",
+      filename: `vetsfriend-${petName.toLowerCase()}-movil.png`,
     },
     {
+      key: "desktop",
       icon: "💻",
-      title: "Wallpaper de escritorio",
-      subtitle: "Horizontal 16:9 para tu computadora",
+      title: "Escritorio",
+      subtitle: "Horizontal 1920×1080 para computadora",
+      filename: `vetsfriend-${petName.toLowerCase()}-desktop.png`,
     },
     {
-      icon: "🎬",
-      title: "Wallpaper animado",
-      subtitle: "Loop de las fotos del carrusel — para iPhone live wallpaper",
-    },
-    {
-      icon: "🪞",
-      title: "Wallpaper estilo Apple Watch",
-      subtitle: "Foto en círculo con frase debajo, 1:1 cuadrado",
+      key: "square",
+      icon: "🟦",
+      title: "Cuadrado",
+      subtitle: "1080×1080 — Instagram post o feed cuadrado",
+      filename: `vetsfriend-${petName.toLowerCase()}-cuadrado.png`,
     },
   ];
 
   return (
     <>
-      <ComingSoonHero
-        emoji="🖼️"
-        title={`Fondos de pantalla con ${petName}`}
-        subtitle="Genera wallpapers únicos usando las fotos que ya subiste."
+      <div
+        className="rounded-[20px] p-5 lg:p-6"
+        style={{
+          background: `linear-gradient(135deg, color-mix(in oklab, ${accent} 12%, var(--color-surface)), var(--color-surface))`,
+          border: `1.5px solid color-mix(in oklab, ${accent} 28%, var(--color-border))`,
+        }}
+      >
+        <p
+          className="text-[15px] font-black mb-1"
+          style={{ color: "var(--color-foreground)" }}
+        >
+          Fondos de pantalla con {petName}
+        </p>
+        <p
+          className="text-[13px] font-semibold leading-snug"
+          style={{ color: "var(--color-muted)" }}
+        >
+          Generamos un wallpaper con la foto principal de {petName}, su
+          nombre y la frase que pusiste en el cuadro. Tap para descargar.
+        </p>
+      </div>
+      {formats.map((f) => (
+        <a
+          key={f.key}
+          href={`/api/wallpaper/${petId}?format=${f.key}`}
+          download={f.filename}
+          className="flex items-center gap-3 px-4 py-3 rounded-[14px] transition hover:brightness-[1.02]"
+          style={{
+            background: "var(--color-surface)",
+            border: "1px solid var(--color-border)",
+          }}
+        >
+          <div
+            className="rounded-[10px] flex items-center justify-center text-[20px] shrink-0"
+            style={{
+              width: 42,
+              height: 42,
+              background: `${accent}1a`,
+            }}
+          >
+            {f.icon}
+          </div>
+          <div className="flex-1 min-w-0">
+            <p
+              className="text-[14px] font-extrabold"
+              style={{ color: "var(--color-foreground)" }}
+            >
+              {f.title}
+            </p>
+            <p
+              className="text-[12px] font-semibold leading-snug"
+              style={{ color: "var(--color-muted)" }}
+            >
+              {f.subtitle}
+            </p>
+          </div>
+          <span
+            className="text-[12px] font-extrabold px-3 py-1.5 rounded-full whitespace-nowrap"
+            style={{
+              background: accent,
+              color: "white",
+            }}
+          >
+            ↓ Descargar
+          </span>
+        </a>
+      ))}
+      <SmallTile
+        icon="🎬"
+        title="Wallpaper animado"
+        subtitle="Loop de tus fotos del carrusel — iPhone live wallpaper"
+        soon
         accent={accent}
       />
-      {items.map((it) => (
-        <SmallTile
-          key={it.title}
-          icon={it.icon}
-          title={it.title}
-          subtitle={it.subtitle}
-          soon
-          accent={accent}
-        />
-      ))}
     </>
   );
 }

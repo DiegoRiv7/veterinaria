@@ -16,7 +16,8 @@ export type PetPalette = {
 };
 
 const PALETTES: PetPalette[] = [
-  // Terracotta — primary brand
+  // ── Warm spectrum (brand-aligned) ───────────────────────────
+  // 0 — Terracotta (primary brand)
   {
     from: "oklch(72% 0.16 40)",
     to: "oklch(46% 0.16 38)",
@@ -24,7 +25,7 @@ const PALETTES: PetPalette[] = [
     soft: "oklch(94% 0.04 45)",
     ring: "#ce5a2d",
   },
-  // Mustard / amber
+  // 1 — Mustard / amber
   {
     from: "oklch(80% 0.14 80)",
     to: "oklch(58% 0.16 60)",
@@ -32,7 +33,7 @@ const PALETTES: PetPalette[] = [
     soft: "oklch(95% 0.04 75)",
     ring: "#d49247",
   },
-  // Peach
+  // 2 — Peach
   {
     from: "oklch(78% 0.13 50)",
     to: "oklch(54% 0.16 30)",
@@ -40,7 +41,7 @@ const PALETTES: PetPalette[] = [
     soft: "oklch(95% 0.03 50)",
     ring: "#e8a061",
   },
-  // Sienna
+  // 3 — Sienna
   {
     from: "oklch(70% 0.14 35)",
     to: "oklch(40% 0.13 30)",
@@ -48,21 +49,70 @@ const PALETTES: PetPalette[] = [
     soft: "oklch(94% 0.03 40)",
     ring: "#a8431a",
   },
-  // Soft mauve (still warm)
+  // 4 — Lavender
   {
-    from: "oklch(72% 0.10 25)",
-    to: "oklch(48% 0.12 15)",
-    accent: "oklch(54% 0.13 20)",
-    soft: "oklch(94% 0.03 25)",
+    from: "oklch(74% 0.12 300)",
+    to: "oklch(48% 0.16 280)",
+    accent: "oklch(56% 0.16 290)",
+    soft: "oklch(95% 0.04 295)",
     ring: "#b48cd9",
   },
-  // Deep peach
+  // 5 — Deep peach
   {
     from: "oklch(76% 0.14 60)",
     to: "oklch(50% 0.14 45)",
     accent: "oklch(58% 0.15 50)",
     soft: "oklch(95% 0.04 55)",
     ring: "#f4a472",
+  },
+  // ── Cool / playful ──────────────────────────────────────────
+  // 6 — Mint / sage
+  {
+    from: "oklch(78% 0.10 165)",
+    to: "oklch(48% 0.14 155)",
+    accent: "oklch(55% 0.14 160)",
+    soft: "oklch(95% 0.04 160)",
+    ring: "#5fa885",
+  },
+  // 7 — Sky
+  {
+    from: "oklch(78% 0.10 220)",
+    to: "oklch(48% 0.16 230)",
+    accent: "oklch(55% 0.16 225)",
+    soft: "oklch(95% 0.04 220)",
+    ring: "#6699cc",
+  },
+  // 8 — Rose
+  {
+    from: "oklch(80% 0.12 5)",
+    to: "oklch(54% 0.18 10)",
+    accent: "oklch(62% 0.18 8)",
+    soft: "oklch(96% 0.04 8)",
+    ring: "#e5707a",
+  },
+  // 9 — Forest
+  {
+    from: "oklch(64% 0.12 145)",
+    to: "oklch(34% 0.13 150)",
+    accent: "oklch(46% 0.13 148)",
+    soft: "oklch(94% 0.04 145)",
+    ring: "#3f7d4f",
+  },
+  // 10 — Ocean
+  {
+    from: "oklch(70% 0.10 200)",
+    to: "oklch(42% 0.13 210)",
+    accent: "oklch(52% 0.14 205)",
+    soft: "oklch(94% 0.04 200)",
+    ring: "#4ea3c4",
+  },
+  // 11 — Plum
+  {
+    from: "oklch(60% 0.16 340)",
+    to: "oklch(36% 0.16 330)",
+    accent: "oklch(48% 0.18 335)",
+    soft: "oklch(94% 0.04 335)",
+    ring: "#94487d",
   },
 ];
 
@@ -92,11 +142,25 @@ export function paletteForStyle(pet: {
 }): PetPalette {
   const s = pet.cardStyle;
   if (!s || s === "auto" || s === "transparent") return paletteFor(pet);
+  if (s.startsWith("hex:#") && /^hex:#[0-9a-fA-F]{6}$/.test(s)) {
+    return paletteFromHex(s.slice(4));
+  }
   const idx = Number(s);
   if (Number.isInteger(idx) && idx >= 0 && idx < PALETTES.length) {
     return PALETTES[idx];
   }
   return paletteFor(pet);
+}
+
+/** Build a soft palette around a single hex color picked by the user. */
+export function paletteFromHex(hex: string): PetPalette {
+  return {
+    from: `color-mix(in oklab, ${hex} 78%, white)`,
+    to: `color-mix(in oklab, ${hex} 88%, black)`,
+    accent: hex,
+    soft: `color-mix(in oklab, ${hex} 14%, white)`,
+    ring: hex,
+  };
 }
 
 export function isTransparentStyle(cardStyle?: string | null): boolean {

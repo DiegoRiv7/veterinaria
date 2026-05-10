@@ -73,6 +73,7 @@ model Pet {
   cardStyle        String?
   personalityTags  String?  // JSON array of strings, max 3
   customMood       String?
+  customFunFact    String?
   createdAt    DateTime  @default(now())
 
   appointments Appointment[]

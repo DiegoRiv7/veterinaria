@@ -193,7 +193,7 @@ export default async function ClientHome() {
         species: p.species,
         personalityTags: p.personalityTags,
       }),
-      funFact: funFactFor(p),
+      funFact: p.customFunFact ?? funFactFor(p),
       status,
       statusOk,
       palette,

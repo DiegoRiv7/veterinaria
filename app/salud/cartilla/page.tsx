@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
@@ -6,6 +5,7 @@ import { readSession } from "@/lib/auth";
 import { paletteFor, bgEmojisFor } from "@/lib/pet-flavor";
 import { SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
 import { CartillaTabs, type CartillaPayload } from "./cartilla-tabs";
+import { BackLink } from "@/components/BackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -218,13 +218,13 @@ export default async function CartillaPage() {
           borderBottom: "1px solid oklch(28% 0.04 35)",
         }}
       >
-        <Link
-          href="/salud"
+        <BackLink
+          fallbackHref="/salud"
           className="inline-flex items-center gap-1 text-[13px] font-bold mb-3"
           style={{ color: palette.accent }}
         >
-          ← Volver a Salud
-        </Link>
+          ← Volver
+        </BackLink>
         <div className="flex items-center gap-3">
           <div
             className="rounded-[16px] overflow-hidden flex items-center justify-center text-[28px] shrink-0"

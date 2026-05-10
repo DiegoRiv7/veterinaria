@@ -96,6 +96,7 @@ export async function updatePetCustomizationAction(
     cardStyle?: string | null;
     personalityTags?: string[] | null;
     customMood?: string | null;
+    customFunFact?: string | null;
   }
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   const session = await requireSession();
@@ -115,13 +116,21 @@ export async function updatePetCustomizationAction(
     cardStyle?: string | null;
     personalityTags?: string | null;
     customMood?: string | null;
+    customFunFact?: string | null;
   } = {};
 
   if (data.cardStyle !== undefined) {
     const s = data.cardStyle;
-    if (s === "transparent") update.cardStyle = "transparent";
-    else if (s && /^[0-9]$/.test(s)) update.cardStyle = s;
-    else update.cardStyle = null;
+    if (s === "transparent") {
+      update.cardStyle = "transparent";
+    } else if (s && /^hex:#[0-9a-fA-F]{6}$/.test(s)) {
+      update.cardStyle = s.toLowerCase();
+    } else if (s && /^[0-9]+$/.test(s)) {
+      const idx = Number(s);
+      update.cardStyle = idx >= 0 && idx < 20 ? String(idx) : null;
+    } else {
+      update.cardStyle = null;
+    }
   }
 
   if (data.personalityTags !== undefined) {
@@ -140,6 +149,11 @@ export async function updatePetCustomizationAction(
   if (data.customMood !== undefined) {
     const mood = (data.customMood ?? "").trim();
     update.customMood = mood.length === 0 ? null : mood.slice(0, 80);
+  }
+
+  if (data.customFunFact !== undefined) {
+    const fact = (data.customFunFact ?? "").trim();
+    update.customFunFact = fact.length === 0 ? null : fact.slice(0, 240);
   }
 
   await prisma.pet.update({ where: { id }, data: update });

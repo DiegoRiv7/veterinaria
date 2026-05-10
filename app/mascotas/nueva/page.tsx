@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { readSession } from "@/lib/auth";
 import { PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
+import { BackLink } from "@/components/BackLink";
 import { PetForm } from "@/components/PetForm";
 import { addPetAction } from "@/app/actions/appointments";
 
@@ -16,9 +16,9 @@ export default async function NewPetPage() {
   return (
     <ClientShellServer>
       <PageContainer>
-        <Link href="/mascotas" className="text-sm text-[var(--color-brand)] mb-3 inline-block">
+        <BackLink fallbackHref="/inicio" className="text-sm text-[var(--color-brand)] mb-3 inline-block">
           ← Volver
-        </Link>
+        </BackLink>
         <PageHeader title="Nueva mascota" subtitle="Cuéntanos un poco sobre ella." />
         <Card>
           <CardBody>

@@ -23,10 +23,12 @@ type Props = {
   galleryUrls: string[];
   defaultMood: string;
   defaultPersonality: string[];
+  defaultFunFact: string;
   initial: {
     cardStyle: string | null;
     personalityTags: string[] | null;
     customMood: string | null;
+    customFunFact: string | null;
   };
 };
 
@@ -82,6 +84,7 @@ export function PetdexEditorClient({
   galleryUrls,
   defaultMood,
   defaultPersonality,
+  defaultFunFact,
   initial,
 }: Props) {
   const router = useRouter();
@@ -95,6 +98,7 @@ export function PetdexEditorClient({
     initial.personalityTags ?? defaultPersonality
   );
   const [mood, setMood] = useState<string>(initial.customMood ?? "");
+  const [funFact, setFunFact] = useState<string>(initial.customFunFact ?? "");
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -113,6 +117,7 @@ export function PetdexEditorClient({
           cardStyle: cardStyle === null ? "auto" : cardStyle,
           personalityTags: tags,
           customMood: mood,
+          customFunFact: funFact,
         });
         setSaving(false);
         if (result.ok) {
@@ -126,7 +131,7 @@ export function PetdexEditorClient({
     return () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
     };
-  }, [cardStyle, tags, mood, petId, router]);
+  }, [cardStyle, tags, mood, funFact, petId, router]);
 
   // Live preview palette
   const previewPalette = paletteForStyle({ id: petId, cardStyle });
@@ -322,6 +327,44 @@ export function PetdexEditorClient({
           {mood.length}/80 caracteres
         </p>
       </Section>
+
+      {/* ── Algo especial / fun fact ───────────────────────── */}
+      <Section
+        title="Algo especial"
+        subtitle="La frase larga que aparece en Inicio en el card '✨ Algo especial'"
+        right={
+          funFact ? (
+            <button
+              type="button"
+              onClick={() => setFunFact("")}
+              className="text-[12px] font-bold"
+              style={{ color: "var(--color-brand)" }}
+            >
+              Limpiar
+            </button>
+          ) : null
+        }
+      >
+        <textarea
+          value={funFact}
+          onChange={(e) => setFunFact(e.target.value.slice(0, 240))}
+          placeholder={defaultFunFact}
+          maxLength={240}
+          rows={3}
+          className="w-full px-4 py-3 rounded-[12px] border text-[14px] font-semibold leading-relaxed outline-none resize-none transition"
+          style={{
+            background: "var(--color-surface)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-foreground)",
+          }}
+        />
+        <p
+          className="text-[11px] font-semibold mt-2"
+          style={{ color: "var(--color-muted)" }}
+        >
+          {funFact.length}/240 caracteres · vacío usa la sugerida
+        </p>
+      </Section>
     </div>
   );
 }
@@ -431,6 +474,10 @@ function ColorPicker({
       })),
     ];
 
+  const isHex =
+    typeof selected === "string" && /^hex:#[0-9a-fA-F]{6}$/.test(selected);
+  const initialHex = isHex ? selected!.slice(4) : "#ce5a2d";
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap gap-2.5">
@@ -466,7 +513,55 @@ function ColorPicker({
             </button>
           );
         })}
+
+        {/* Custom hex picker — labeled "+" */}
+        <label
+          className="relative rounded-full cursor-pointer transition"
+          style={{
+            width: 42,
+            height: 42,
+            background: isHex
+              ? initialHex
+              : `conic-gradient(from 0deg, #ff8a4c, #f4c95e, #7df291, #66c8ff, #c084fc, #ff8a4c)`,
+            border: isHex
+              ? `3px solid ${initialHex}`
+              : "2px solid color-mix(in oklab, var(--color-border) 60%, transparent)",
+            boxShadow: isHex
+              ? `0 4px 14px ${initialHex}66`
+              : "none",
+          }}
+          title="Color personalizado"
+        >
+          <input
+            type="color"
+            value={initialHex}
+            onChange={(e) => {
+              const hex = e.target.value.toLowerCase();
+              onChange(`hex:${hex}`);
+            }}
+            className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+            aria-label="Color personalizado"
+          />
+          {isHex ? (
+            <span className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
+              <Check className="h-4 w-4" strokeWidth={3} />
+            </span>
+          ) : (
+            <span
+              className="absolute inset-0 flex items-center justify-center text-white text-[20px] font-black pointer-events-none"
+              style={{ textShadow: "0 1px 3px rgba(0,0,0,0.3)" }}
+            >
+              +
+            </span>
+          )}
+        </label>
       </div>
+      <p
+        className="text-[11px] font-semibold"
+        style={{ color: "var(--color-muted)" }}
+      >
+        12 tonos preseleccionados + tu propio color con el botón circular.
+      </p>
 
       <button
         type="button"

@@ -9,6 +9,7 @@ import {
   paletteForStyle,
   parsePersonalityTags,
   personalityFor,
+  funFactFor,
   moodFor,
 } from "@/lib/pet-flavor";
 import { PersonalizarClient, type PersonalizarPayload } from "./personalizar-client";
@@ -104,8 +105,10 @@ export default async function PersonalizarPage() {
     initialPhotos: pet.photos,
     defaultMood,
     defaultPersonality,
+    defaultFunFact: funFactFor(pet),
     savedPersonalityTags: savedTags,
     customMood: pet.customMood ?? null,
+    customFunFact: pet.customFunFact ?? null,
     paletteAccent: palette.accent,
   };
 

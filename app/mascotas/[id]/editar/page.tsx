@@ -1,10 +1,10 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer, PageHeader } from "@/components/ui/page";
 import { Card, CardBody } from "@/components/ui/card";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
+import { BackLink } from "@/components/BackLink";
 import { PetForm } from "@/components/PetForm";
 import { updatePetAction } from "@/app/actions/appointments";
 
@@ -26,12 +26,12 @@ export default async function EditPetPage({
   return (
     <ClientShellServer>
       <PageContainer>
-        <Link
-          href={`/mascotas/${pet.id}`}
+        <BackLink
+          fallbackHref={`/mascotas/${pet.id}`}
           className="text-sm text-[var(--color-brand)] mb-3 inline-block"
         >
           ← Volver
-        </Link>
+        </BackLink>
         <PageHeader title="Editar información" subtitle={`Cambia los datos de ${pet.name}.`} />
         <Card>
           <CardBody>

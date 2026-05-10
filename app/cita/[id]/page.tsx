@@ -7,6 +7,7 @@ import { Card, CardBody, List, ListItem } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
+import { BackLink } from "@/components/BackLink";
 import { VetTabBar } from "@/components/VetTabBar";
 import { AdminTabBar } from "@/components/AdminTabBar";
 import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
@@ -88,9 +89,9 @@ export default async function AppointmentDetailPage({
   return (
     <Shell>
       <PageContainer>
-        <Link href={isClient ? "/inicio" : "/vet"} className="text-sm text-[var(--color-brand)] mb-3 inline-block">
+        <BackLink fallbackHref={isClient ? "/inicio" : "/vet"} className="text-sm text-[var(--color-brand)] mb-3 inline-block">
           ← Volver
-        </Link>
+        </BackLink>
         <PageHeader
           title={appt.service.name}
           subtitle={`${appt.pet.name} · ${formatDate(appt.scheduledAt)} · ${formatTime(appt.scheduledAt)}`}

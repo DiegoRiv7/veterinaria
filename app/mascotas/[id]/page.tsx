@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { PageContainer } from "@/components/ui/page";
 import { ClientShellServer } from "@/components/client/ClientShellServer";
+import { BackLink } from "@/components/BackLink";
 import { DeletePetButton } from "@/components/DeletePetButton";
 import { PetAvatarUpload } from "@/components/PetAvatarUpload";
 import { PetGallery } from "@/components/PetGallery";
@@ -142,13 +143,13 @@ export default async function PetDetailPage({
   return (
     <ClientShellServer>
       <PageContainer>
-        <Link
-          href="/mascotas"
+        <BackLink
+          fallbackHref="/inicio"
           className="text-[14px] font-bold inline-block mb-4"
           style={{ color: "var(--color-brand)" }}
         >
           ← Volver
-        </Link>
+        </BackLink>
 
         {/* Header */}
         <div className="flex items-center gap-4 mb-5">
