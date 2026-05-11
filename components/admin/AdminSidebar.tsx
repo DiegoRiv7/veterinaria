@@ -4,8 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  LayoutGrid,
-  BarChart3,
+  LayoutDashboard,
   Stethoscope,
   Users,
   Clock,
@@ -23,8 +22,7 @@ type NavItem = {
 };
 
 const NAV_ITEMS: NavItem[] = [
-  { href: "/admin", label: "Panel", icon: LayoutGrid, match: (p) => p === "/admin" },
-  { href: "/admin/reportes", label: "Reportes", icon: BarChart3 },
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard, match: (p) => p === "/admin" },
   { href: "/admin/clientes", label: "Clientes", icon: Heart },
   { href: "/admin/veterinarios", label: "Veterinarios", icon: Users },
   { href: "/admin/servicios", label: "Servicios", icon: Stethoscope },

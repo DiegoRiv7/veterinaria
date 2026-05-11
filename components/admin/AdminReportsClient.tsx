@@ -277,7 +277,7 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
             className="text-[26px] font-black tracking-tight"
             style={{ color: "var(--vet-text-1)" }}
           >
-            Reportes
+            Dashboard
           </h1>
           <p
             className="text-[13px] font-semibold"

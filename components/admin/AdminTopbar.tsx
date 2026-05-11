@@ -4,8 +4,7 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 
 const TITLES: Record<string, string> = {
-  "/admin": "Panel de administración",
-  "/admin/reportes": "Reportes",
+  "/admin": "Dashboard",
   "/admin/clientes": "Clientes",
   "/admin/veterinarios": "Veterinarios",
   "/admin/servicios": "Servicios",
