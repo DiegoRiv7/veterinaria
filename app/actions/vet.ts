@@ -36,7 +36,7 @@ export async function updateVetPhotoAction(vetId: string, photoUrl: string | nul
   revalidatePath("/perfil");
   revalidatePath("/vet/perfil");
   revalidatePath("/agendar");
-  revalidatePath("/admin/veterinarios");
+  revalidatePath("/admin/usuarios");
 }
 
 export type AccountUpdateResult = { ok: true } | { ok: false; error: string };
@@ -91,7 +91,7 @@ export async function updateVetAccountAction(
 
   revalidatePath("/vet/perfil");
   revalidatePath("/vet");
-  revalidatePath("/admin/veterinarios");
+  revalidatePath("/admin/usuarios");
   return { ok: true };
 }
 

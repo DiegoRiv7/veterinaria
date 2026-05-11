@@ -501,7 +501,7 @@ function SecuritySection({
         fd.set("id", vet.id);
         await removeVetAction(fd);
         toast.success("Veterinario eliminado");
-        router.push("/admin/veterinarios");
+        router.push("/admin/usuarios");
       } catch (e) {
         toast.error(e instanceof Error ? e.message : "Error");
       }

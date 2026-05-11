@@ -24,7 +24,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, match: (p) => p === "/admin" },
   { href: "/admin/clientes", label: "Clientes", icon: Heart },
-  { href: "/admin/veterinarios", label: "Veterinarios", icon: Users },
+  { href: "/admin/usuarios", label: "Usuarios", icon: Users },
   { href: "/admin/servicios", label: "Servicios", icon: Stethoscope },
   { href: "/admin/horario", label: "Horario", icon: Clock },
   { href: "/admin/tarifas", label: "Tarifas", icon: Tag },

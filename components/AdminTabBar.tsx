@@ -19,7 +19,7 @@ export function AdminTabBar() {
       items={[
         { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
         { href: "/admin/clientes", label: "Clientes", icon: Heart },
-        { href: "/admin/veterinarios", label: "Vets", icon: Users },
+        { href: "/admin/usuarios", label: "Usuarios", icon: Users },
         { href: "/admin/servicios", label: "Servicios", icon: Stethoscope },
         { href: "/admin/perfil", label: "Perfil", icon: User },
       ]}

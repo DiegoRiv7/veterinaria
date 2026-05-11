@@ -6,7 +6,7 @@ import { Menu } from "lucide-react";
 const TITLES: Record<string, string> = {
   "/admin": "Dashboard",
   "/admin/clientes": "Clientes",
-  "/admin/veterinarios": "Veterinarios",
+  "/admin/usuarios": "Usuarios",
   "/admin/servicios": "Servicios",
   "/admin/horario": "Horario de la clínica",
   "/admin/tarifas": "Tarifas por especie",
@@ -15,7 +15,7 @@ const TITLES: Record<string, string> = {
 
 function titleFor(pathname: string): string {
   if (TITLES[pathname]) return TITLES[pathname];
-  if (pathname.startsWith("/admin/veterinarios/")) return "Veterinario";
+  if (pathname.startsWith("/admin/usuarios/")) return "Usuario";
   if (pathname.startsWith("/admin/clientes/")) return "Cliente";
   return "Administración";
 }

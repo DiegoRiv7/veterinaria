@@ -124,7 +124,152 @@ export async function addVetAction(formData: FormData) {
       vetProfile: { create: { bio } },
     },
   });
-  revalidatePath("/admin/veterinarios");
+  revalidatePath("/admin/usuarios");
+}
+
+/* ─── Generic create-user (vet / receptionist / admin) ─────── */
+
+export type CreateUserInput = {
+  role: "VET" | "RECEPTIONIST" | "ADMIN";
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  /** Vet-only fields */
+  bio?: string;
+  workingHours?: {
+    dayOfWeek: number;
+    isWorking: boolean;
+    startMinutes: number;
+    endMinutes: number;
+  }[];
+};
+
+export async function createUserAction(
+  data: CreateUserInput
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const name = (data.name ?? "").trim();
+  const email = (data.email ?? "").trim().toLowerCase();
+  const phone = (data.phone ?? "").replace(/\D+/g, "");
+  const password = data.password ?? "";
+
+  if (!name) return { ok: false, error: "El nombre es obligatorio." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { ok: false, error: "Correo inválido." };
+  if (phone.length < 7)
+    return { ok: false, error: "Teléfono inválido (mínimo 7 dígitos)." };
+  if (password.length < 4)
+    return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+
+  const [byEmail, byPhone] = await Promise.all([
+    prisma.user.findUnique({ where: { email }, select: { id: true } }),
+    prisma.user.findUnique({ where: { phone }, select: { id: true } }),
+  ]);
+  if (byEmail) return { ok: false, error: "Correo ya registrado." };
+  if (byPhone) return { ok: false, error: "Teléfono ya registrado." };
+
+  const hash = await hashPassword(password);
+
+  if (data.role === "VET") {
+    const bio = (data.bio ?? "").trim() || null;
+    const wh = data.workingHours ?? [];
+
+    // Validate hours
+    for (const r of wh) {
+      if (
+        !Number.isInteger(r.dayOfWeek) ||
+        r.dayOfWeek < 0 ||
+        r.dayOfWeek > 6 ||
+        r.startMinutes < 0 ||
+        r.startMinutes > 1440 ||
+        r.endMinutes < 0 ||
+        r.endMinutes > 1440
+      )
+        return { ok: false, error: "Horario inválido." };
+      if (r.isWorking && r.endMinutes <= r.startMinutes)
+        return {
+          ok: false,
+          error: `La hora de fin debe ser mayor que la de inicio (día ${r.dayOfWeek}).`,
+        };
+    }
+
+    const user = await prisma.user.create({
+      data: {
+        name,
+        email,
+        phone,
+        passwordHash: hash,
+        role: "VET",
+        vetProfile: {
+          create: {
+            bio,
+            workingHours: wh.length
+              ? {
+                  create: wh.map((r) => ({
+                    dayOfWeek: r.dayOfWeek,
+                    isWorking: r.isWorking,
+                    startMinutes: r.startMinutes,
+                    endMinutes: r.endMinutes,
+                  })),
+                }
+              : undefined,
+          },
+        },
+      },
+      include: { vetProfile: { select: { id: true } } },
+    });
+    revalidatePath("/admin/usuarios");
+    revalidatePath("/agendar");
+    return { ok: true, id: user.vetProfile?.id ?? user.id };
+  }
+
+  const user = await prisma.user.create({
+    data: {
+      name,
+      email,
+      phone,
+      passwordHash: hash,
+      role: data.role,
+    },
+    select: { id: true },
+  });
+  revalidatePath("/admin/usuarios");
+  return { ok: true, id: user.id };
+}
+
+export async function removeUserAction(
+  userId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await ensureAdmin();
+  const id = (userId ?? "").trim();
+  if (!id) return { ok: false, error: "Usuario inválido." };
+  if (id === session.userId)
+    return { ok: false, error: "No puedes eliminar tu propio usuario." };
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { role: true, vetProfile: { select: { id: true } } },
+  });
+  if (!user) return { ok: false, error: "Usuario no encontrado." };
+
+  if (user.role === "CLIENT")
+    return { ok: false, error: "No se puede eliminar clientes desde aquí." };
+
+  if (user.vetProfile) {
+    const count = await prisma.appointment.count({
+      where: { vetId: user.vetProfile.id },
+    });
+    if (count > 0)
+      return {
+        ok: false,
+        error: "Este veterinario tiene citas; no se puede eliminar.",
+      };
+  }
+
+  await prisma.user.delete({ where: { id } });
+  revalidatePath("/admin/usuarios");
+  return { ok: true };
 }
 
 export async function removeVetAction(formData: FormData) {
@@ -135,7 +280,7 @@ export async function removeVetAction(formData: FormData) {
   const count = await prisma.appointment.count({ where: { vetId: id } });
   if (count > 0) throw new Error("Este veterinario tiene citas; no se puede eliminar.");
   await prisma.user.delete({ where: { id: vet.userId } });
-  revalidatePath("/admin/veterinarios");
+  revalidatePath("/admin/usuarios");
 }
 
 /* ─── Vet edit / password / schedule ───────────────────────── */
@@ -208,8 +353,8 @@ export async function updateVetAction(
       await prisma.veterinarian.update({ where: { id }, data: vetUpdate });
     }
 
-    revalidatePath("/admin/veterinarios");
-    revalidatePath(`/admin/veterinarios/${id}`);
+    revalidatePath("/admin/usuarios");
+    revalidatePath(`/admin/usuarios/${id}`);
     return { ok: true };
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : "Error" };
@@ -300,8 +445,8 @@ export async function updateVetWorkingHoursAction(
     )
   );
 
-  revalidatePath(`/admin/veterinarios/${id}`);
-  revalidatePath("/admin/veterinarios");
+  revalidatePath(`/admin/usuarios/${id}`);
+  revalidatePath("/admin/usuarios");
   revalidatePath("/agendar");
   return { ok: true };
 }

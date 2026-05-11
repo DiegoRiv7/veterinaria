@@ -76,6 +76,28 @@ const KPI_COLOR: Record<KpiKey, string> = {
   topClient: "var(--vet-amber)",
 };
 
+type ExportTable = "appointments" | "revenue" | "clients" | "vets" | "services" | "all";
+
+const TABLE_LABELS: Record<ExportTable, string> = {
+  appointments: "Citas",
+  revenue: "Ingresos",
+  clients: "Clientes",
+  vets: "Veterinarios",
+  services: "Servicios",
+  all: "Todas las tablas",
+};
+
+function formatDateTime(d: Date) {
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(d);
+}
+
 /* ─── Helpers ─────────────────────────────────────────── */
 
 function formatMxn(v: number) {
@@ -134,12 +156,18 @@ function useClickOutside<T extends HTMLElement>(
 /* ─── Main ────────────────────────────────────────────── */
 
 type Props = {
+  adminName: string;
   appointments: Appointment[];
   vets: Vet[];
   clients: Client[];
 };
 
-export function AdminReportsClient({ appointments, vets, clients }: Props) {
+export function AdminReportsClient({
+  adminName,
+  appointments,
+  vets,
+  clients,
+}: Props) {
   const now = new Date();
   const todayYear = now.getFullYear();
   const todayMonth = now.getMonth();
@@ -150,6 +178,7 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
   const [years, setYears] = useState<Selection<number>>(new Set([todayYear]));
   const [vetSel, setVetSel] = useState<Selection<string>>("all");
   const [activeKpi, setActiveKpi] = useState<KpiKey | null>(null);
+  const [exportOpen, setExportOpen] = useState(false);
 
   // Years present in data (oldest..newest)
   const availableYears = useMemo(() => {
@@ -203,71 +232,253 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
     setYears(new Set([todayYear]));
   }
 
-  function exportCsv() {
-    const header = [
-      "Fecha",
-      "Hora",
-      "Estado",
-      "Veterinario",
-      "Cliente",
-      "Mascota",
-      "Servicio",
-      "Precio",
-    ];
-    const rows = filtered.map((a) => {
-      const d = new Date(a.date);
-      return [
-        new Intl.DateTimeFormat("es-MX", {
-          day: "2-digit",
-          month: "2-digit",
-          year: "numeric",
-        }).format(d),
-        formatTime(d),
-        a.status,
-        a.vetName,
-        a.clientName,
-        a.petName,
-        a.serviceName,
-        a.priceEstimate.toString(),
-      ];
-    });
-    const summary = [
+  function runExport(table: ExportTable) {
+    const vetsLabel =
+      vetSel === "all"
+        ? "Todos"
+        : [...vetSel]
+            .map((id) => vets.find((v) => v.id === id)?.name)
+            .filter(Boolean)
+            .join(", ") || "Ninguno";
+    const meta: string[][] = [
+      ["Reporte Vetsfriend"],
+      ["Generado", formatDateTime(new Date())],
+      ["Generado por", adminName],
+      ["Rango de fechas", periodLabel(months, years)],
+      ["Veterinarios", vetsLabel],
+      [
+        "Citas en el rango",
+        `${filtered.length} (${stats.completed} atendidas, ${stats.scheduled} pendientes, ${stats.cancelled} canceladas)`,
+      ],
+      [
+        "Tabla exportada",
+        TABLE_LABELS[table],
+      ],
       [],
-      ["Resumen del periodo"],
-      ["Citas atendidas", String(stats.completed)],
-      ["Ingresos (MXN)", String(stats.revenue)],
-      [
-        "Servicio top",
-        stats.topService
-          ? `${stats.topService.name} (${stats.topService.count})`
-          : "—",
-      ],
-      [
-        "Cliente top",
-        stats.topClient
-          ? `${stats.topClient.name} (${stats.topClient.count})`
-          : "—",
-      ],
     ];
-    const all = [header, ...rows, ...summary];
+
+    const sections: string[][] = [];
+
+    if (table === "appointments" || table === "all") {
+      sections.push(
+        ["CITAS"],
+        [
+          "Fecha",
+          "Hora",
+          "Estado",
+          "Veterinario",
+          "Cliente",
+          "Mascota",
+          "Servicio",
+          "Precio",
+        ],
+        ...filtered.map((a) => {
+          const d = new Date(a.date);
+          return [
+            new Intl.DateTimeFormat("es-MX", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }).format(d),
+            formatTime(d),
+            a.status,
+            a.vetName,
+            a.clientName,
+            a.petName,
+            a.serviceName,
+            a.priceEstimate.toString(),
+          ];
+        }),
+        []
+      );
+    }
+
+    if (table === "revenue" || table === "all") {
+      const completedRows = filtered.filter((a) => a.status === "COMPLETED");
+      const totalRevenue = completedRows.reduce(
+        (acc, a) => acc + a.priceEstimate,
+        0
+      );
+      sections.push(
+        ["INGRESOS (citas atendidas)"],
+        ["Fecha", "Cliente", "Servicio", "Veterinario", "Cobro"],
+        ...completedRows.map((a) => {
+          const d = new Date(a.date);
+          return [
+            new Intl.DateTimeFormat("es-MX", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }).format(d),
+            a.clientName,
+            a.serviceName,
+            a.vetName,
+            a.priceEstimate.toString(),
+          ];
+        }),
+        ["", "", "", "TOTAL", totalRevenue.toString()],
+        []
+      );
+    }
+
+    if (table === "clients" || table === "all") {
+      const map = new Map<
+        string,
+        { name: string; visits: number; revenue: number; lastDate: string | null }
+      >();
+      for (const a of filtered) {
+        if (a.status !== "COMPLETED") continue;
+        const cur =
+          map.get(a.clientId) ?? {
+            name: a.clientName,
+            visits: 0,
+            revenue: 0,
+            lastDate: null,
+          };
+        cur.visits++;
+        cur.revenue += a.priceEstimate;
+        if (!cur.lastDate || a.date > cur.lastDate) cur.lastDate = a.date;
+        map.set(a.clientId, cur);
+      }
+      const rows = [...map.values()].sort((a, b) => b.visits - a.visits);
+      sections.push(
+        ["CLIENTES"],
+        ["Cliente", "Visitas", "Ingresos", "Última visita"],
+        ...rows.map((c) => [
+          c.name,
+          String(c.visits),
+          c.revenue.toString(),
+          c.lastDate
+            ? new Intl.DateTimeFormat("es-MX", {
+                day: "2-digit",
+                month: "2-digit",
+                year: "numeric",
+              }).format(new Date(c.lastDate))
+            : "",
+        ]),
+        []
+      );
+    }
+
+    if (table === "vets" || table === "all") {
+      const map = new Map<
+        string,
+        {
+          name: string;
+          total: number;
+          completed: number;
+          cancelled: number;
+          revenue: number;
+        }
+      >();
+      for (const v of vets)
+        map.set(v.id, {
+          name: v.name,
+          total: 0,
+          completed: 0,
+          cancelled: 0,
+          revenue: 0,
+        });
+      for (const a of filtered) {
+        const cur =
+          map.get(a.vetId) ?? {
+            name: a.vetName,
+            total: 0,
+            completed: 0,
+            cancelled: 0,
+            revenue: 0,
+          };
+        cur.total++;
+        if (a.status === "COMPLETED") {
+          cur.completed++;
+          cur.revenue += a.priceEstimate;
+        }
+        if (a.status === "CANCELLED" || a.status === "NO_SHOW")
+          cur.cancelled++;
+        map.set(a.vetId, cur);
+      }
+      const rows = [...map.values()]
+        .filter((r) => r.total > 0)
+        .sort((a, b) => b.completed - a.completed);
+      sections.push(
+        ["VETERINARIOS"],
+        [
+          "Veterinario",
+          "Citas",
+          "Atendidas",
+          "Canceladas",
+          "Ingresos",
+          "Asistencia %",
+        ],
+        ...rows.map((r) => [
+          r.name,
+          String(r.total),
+          String(r.completed),
+          String(r.cancelled),
+          r.revenue.toString(),
+          r.total > 0
+            ? `${Math.round((r.completed / r.total) * 100)}%`
+            : "0%",
+        ]),
+        []
+      );
+    }
+
+    if (table === "services" || table === "all") {
+      const map = new Map<string, { count: number; revenue: number }>();
+      for (const a of filtered) {
+        if (a.status !== "COMPLETED") continue;
+        const cur = map.get(a.serviceName) ?? { count: 0, revenue: 0 };
+        cur.count++;
+        cur.revenue += a.priceEstimate;
+        map.set(a.serviceName, cur);
+      }
+      const rows = [...map.entries()].sort((a, b) => b[1].count - a[1].count);
+      const totalCount = rows.reduce((acc, [, v]) => acc + v.count, 0);
+      sections.push(
+        ["SERVICIOS"],
+        [
+          "Servicio",
+          "Citas atendidas",
+          "% del total",
+          "Ingresos",
+          "Promedio",
+        ],
+        ...rows.map(([name, v]) => [
+          name,
+          String(v.count),
+          totalCount > 0
+            ? `${((v.count / totalCount) * 100).toFixed(1)}%`
+            : "0%",
+          v.revenue.toString(),
+          v.count > 0
+            ? Math.round(v.revenue / v.count).toString()
+            : "0",
+        ]),
+        []
+      );
+    }
+
+    const all = [...meta, ...sections];
     const csv = all
       .map((r) =>
         r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")
       )
-      .join("\n");
+      .join("\r\n");
     const blob = new Blob(["﻿" + csv], {
       type: "text/csv;charset=utf-8",
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `reporte-vetsfriend-${new Date()
+    a.download = `reporte-vetsfriend-${table}-${new Date()
       .toISOString()
       .slice(0, 10)}.csv`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setExportOpen(false);
   }
 
   return (
@@ -307,7 +518,7 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
           <VetPicker vets={vets} selected={vetSel} onChange={setVetSel} />
           <button
             type="button"
-            onClick={exportCsv}
+            onClick={() => setExportOpen(true)}
             className="inline-flex items-center gap-1.5 px-3.5 h-10 rounded-[10px] text-[13px] font-extrabold text-white transition-all hover:brightness-105"
             style={{
               background:
@@ -428,6 +639,306 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
           vets={vets}
         />
       )}
+
+      {exportOpen && (
+        <ExportModal
+          adminName={adminName}
+          periodLabelStr={periodLabel(months, years)}
+          vetCount={selectionSize(vetSel, vets.length)}
+          totalVets={vets.length}
+          counts={{
+            total: filtered.length,
+            completed: stats.completed,
+            scheduled: stats.scheduled,
+            cancelled: stats.cancelled,
+          }}
+          onCancel={() => setExportOpen(false)}
+          onConfirm={runExport}
+        />
+      )}
+    </div>
+  );
+}
+
+function ExportModal({
+  adminName,
+  periodLabelStr,
+  vetCount,
+  totalVets,
+  counts,
+  onCancel,
+  onConfirm,
+}: {
+  adminName: string;
+  periodLabelStr: string;
+  vetCount: number;
+  totalVets: number;
+  counts: {
+    total: number;
+    completed: number;
+    scheduled: number;
+    cancelled: number;
+  };
+  onCancel: () => void;
+  onConfirm: (table: ExportTable) => void;
+}) {
+  const [table, setTable] = useState<ExportTable>("all");
+
+  useEffect(() => {
+    function handle(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    document.addEventListener("keydown", handle);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handle);
+      document.body.style.overflow = prev;
+    };
+  }, [onCancel]);
+
+  const options: { key: ExportTable; label: string; desc: string }[] = [
+    {
+      key: "all",
+      label: "Todo",
+      desc: "Citas + ingresos + clientes + veterinarios + servicios en un solo archivo.",
+    },
+    {
+      key: "appointments",
+      label: "Citas",
+      desc: "Una fila por cita con fecha, vet, cliente, mascota y servicio.",
+    },
+    {
+      key: "revenue",
+      label: "Ingresos",
+      desc: "Sólo citas atendidas con su cobro, ordenadas por fecha, con total.",
+    },
+    {
+      key: "clients",
+      label: "Clientes",
+      desc: "Ranking de clientes con visitas, ingresos y última visita.",
+    },
+    {
+      key: "vets",
+      label: "Veterinarios",
+      desc: "Rendimiento por veterinario (atendidas, ingresos, asistencia %).",
+    },
+    {
+      key: "services",
+      label: "Servicios",
+      desc: "Servicios más vendidos con % del total e ingresos.",
+    },
+  ];
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6"
+      onClick={onCancel}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "color-mix(in oklab, oklch(18% 0.04 40) 60%, transparent)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+        }}
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[640px] max-h-[92vh] flex flex-col rounded-[22px] border overflow-hidden"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          boxShadow:
+            "0 30px 80px color-mix(in oklab, oklch(15% 0.05 40) 40%, transparent)",
+        }}
+      >
+        <div
+          className="flex items-center justify-between gap-3 px-6 py-4 border-b"
+          style={{
+            borderBottomColor: "var(--vet-border)",
+            background: "var(--vet-bg-mid)",
+          }}
+        >
+          <div className="min-w-0">
+            <h2
+              className="text-[17px] font-black"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              Exportar reporte
+            </h2>
+            <p
+              className="text-[12px] font-semibold mt-0.5"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Elige qué tabla quieres descargar. El archivo incluye una
+              cabecera con la fecha, quién lo generó y el rango aplicado.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Cerrar"
+            className="w-9 h-9 rounded-[10px] border flex items-center justify-center flex-shrink-0"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-2)",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-auto p-5 sm:p-6 flex flex-col gap-4">
+          {/* Context summary */}
+          <div
+            className="rounded-[12px] p-3 flex flex-col gap-1 border"
+            style={{
+              background: "var(--vet-bg-mid)",
+              borderColor: "var(--vet-border)",
+            }}
+          >
+            <p
+              className="text-[10px] font-extrabold uppercase tracking-wider"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Cabecera del archivo
+            </p>
+            <SummaryRow label="Generado" value={formatDateTime(new Date())} />
+            <SummaryRow label="Por" value={adminName} />
+            <SummaryRow label="Rango de fechas" value={periodLabelStr} />
+            <SummaryRow
+              label="Veterinarios"
+              value={
+                vetCount === totalVets ? "Todos" : `${vetCount}/${totalVets}`
+              }
+            />
+            <SummaryRow
+              label="Citas en el rango"
+              value={`${counts.total} (${counts.completed} atendidas)`}
+            />
+          </div>
+
+          {/* Options */}
+          <div className="flex flex-col gap-2">
+            <p
+              className="text-[10px] font-extrabold uppercase tracking-wider"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Tabla a exportar
+            </p>
+            {options.map((opt) => {
+              const active = table === opt.key;
+              return (
+                <button
+                  key={opt.key}
+                  type="button"
+                  onClick={() => setTable(opt.key)}
+                  className="flex items-center gap-3 p-3.5 rounded-[12px] border text-left transition-colors"
+                  style={{
+                    background: active
+                      ? "var(--vet-green-glow)"
+                      : "var(--vet-bg-mid)",
+                    borderColor: active
+                      ? "var(--vet-green)"
+                      : "var(--vet-border)",
+                  }}
+                >
+                  <span
+                    className="w-5 h-5 rounded-full border flex items-center justify-center flex-shrink-0"
+                    style={{
+                      borderColor: active
+                        ? "var(--vet-green)"
+                        : "var(--vet-text-3)",
+                      background: active ? "var(--vet-green)" : "transparent",
+                    }}
+                  >
+                    {active && (
+                      <span
+                        className="w-2 h-2 rounded-full bg-white"
+                        aria-hidden
+                      />
+                    )}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[14px] font-extrabold"
+                      style={{
+                        color: active
+                          ? "var(--vet-green)"
+                          : "var(--vet-text-1)",
+                      }}
+                    >
+                      {opt.label}
+                    </p>
+                    <p
+                      className="text-[12px] font-semibold"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      {opt.desc}
+                    </p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div
+          className="flex items-center justify-end gap-2 px-5 py-3 border-t"
+          style={{
+            borderTopColor: "var(--vet-border)",
+            background: "var(--vet-bg-mid)",
+          }}
+        >
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 px-4 rounded-[10px] border text-[13px] font-extrabold"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-2)",
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm(table)}
+            className="h-10 px-5 rounded-[10px] text-[13px] font-extrabold text-white inline-flex items-center gap-1.5"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
+              boxShadow: "0 4px 12px var(--vet-green-glow)",
+            }}
+          >
+            <Download size={14} /> Descargar CSV
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center gap-2 text-[12px]">
+      <span
+        className="font-extrabold uppercase tracking-wider text-[10px] w-28"
+        style={{ color: "var(--vet-text-3)" }}
+      >
+        {label}
+      </span>
+      <span
+        className="font-bold truncate flex-1"
+        style={{ color: "var(--vet-text-1)" }}
+      >
+        {value}
+      </span>
     </div>
   );
 }

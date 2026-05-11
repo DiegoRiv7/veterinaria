@@ -46,6 +46,7 @@ export default async function AdminDashboardPage() {
 
   return (
     <AdminReportsClient
+      adminName={session.name}
       appointments={appointments.map((a) => ({
         id: a.id,
         date: a.scheduledAt.toISOString(),

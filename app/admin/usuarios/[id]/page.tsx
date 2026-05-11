@@ -86,7 +86,7 @@ export default async function VetDetailPage({
   return (
     <div className="flex flex-col gap-5">
       <Link
-        href="/admin/veterinarios"
+        href="/admin/usuarios"
         className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
         style={{ color: "var(--vet-green)" }}
       >

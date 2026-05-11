@@ -120,8 +120,13 @@ export async function requestPasswordResetAction(
   return { ok: true };
 }
 
-function redirectByRole(role: "CLIENT" | "VET" | "ADMIN"): never {
+function redirectByRole(
+  role: "CLIENT" | "VET" | "ADMIN" | "RECEPTIONIST"
+): never {
   if (role === "VET") redirect("/vet");
   if (role === "ADMIN") redirect("/admin");
+  // Recepcionista — sin UI propia aún, lo mandamos al panel admin
+  // por ahora; ya tiene rol distinto y la lógica se construirá luego.
+  if (role === "RECEPTIONIST") redirect("/admin");
   redirect("/inicio");
 }

@@ -11,7 +11,7 @@ const secret = new TextEncoder().encode(
 
 export type SessionPayload = {
   userId: string;
-  role: "CLIENT" | "VET" | "ADMIN";
+  role: "CLIENT" | "VET" | "ADMIN" | "RECEPTIONIST";
   name: string;
 };
 

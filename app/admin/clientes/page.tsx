@@ -1,20 +1,14 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
-import { ClientsListClient } from "@/components/admin/ClientsListClient";
+import { ClientsDashboard } from "@/components/admin/ClientsDashboard";
 
 export const dynamic = "force-dynamic";
-
-function startOfMonth(d = new Date()) {
-  return new Date(d.getFullYear(), d.getMonth(), 1);
-}
 
 export default async function ClientsPage() {
   const session = await readSession();
   if (!session) redirect("/login");
   if (session.role !== "ADMIN") redirect("/inicio");
-
-  const monthStart = startOfMonth();
 
   const [clients, totalAppointments] = await Promise.all([
     prisma.user.findMany({
@@ -45,12 +39,6 @@ export default async function ClientsPage() {
   ]);
 
   const rows = clients.map((c) => {
-    const completed = c.appointments.filter((a) => a.status === "COMPLETED");
-    const totalSpent = completed.reduce((acc, a) => acc + a.priceEstimate, 0);
-    const lastVisit = c.appointments[0] ?? null;
-    const monthAppts = c.appointments.filter(
-      (a) => a.scheduledAt >= monthStart
-    ).length;
     return {
       id: c.id,
       name: c.name,
@@ -65,41 +53,20 @@ export default async function ClientsPage() {
         species: p.species,
         photoUrl: p.photoUrl ?? null,
       })),
-      totalAppts: c.appointments.length,
-      completedAppts: completed.length,
-      monthAppts,
-      totalSpent,
-      lastVisit: lastVisit
-        ? {
-            date: lastVisit.scheduledAt.toISOString(),
-            service: lastVisit.service.name,
-            status: lastVisit.status,
-          }
-        : null,
+      appointments: c.appointments.map((a) => ({
+        id: a.id,
+        status: a.status,
+        scheduledAt: a.scheduledAt.toISOString(),
+        priceEstimate: a.priceEstimate,
+        serviceName: a.service.name,
+      })),
     };
   });
 
-  // Aggregates
-  const totalSpent = rows.reduce((acc, r) => acc + r.totalSpent, 0);
-  const topClient = [...rows].sort(
-    (a, b) => b.completedAppts - a.completedAppts
-  )[0];
-  const topSpender = [...rows].sort((a, b) => b.totalSpent - a.totalSpent)[0];
-
   return (
-    <ClientsListClient
+    <ClientsDashboard
       clients={rows}
-      totals={{
-        clients: rows.length,
-        appointments: totalAppointments,
-        revenue: totalSpent,
-        topClient: topClient
-          ? { name: topClient.name, count: topClient.completedAppts }
-          : null,
-        topSpender: topSpender
-          ? { name: topSpender.name, amount: topSpender.totalSpent }
-          : null,
-      }}
+      totalAppointments={totalAppointments}
     />
   );
 }
