@@ -8,9 +8,11 @@ import {
   ChevronLeft,
   Download,
   Heart,
+  Maximize2,
   Sparkles,
   User,
   Wallet,
+  X,
 } from "lucide-react";
 
 /* ─── Types ───────────────────────────────────────────── */
@@ -422,6 +424,7 @@ export function AdminReportsClient({ appointments, vets, clients }: Props) {
           filtered={filtered}
           months={months}
           years={years}
+          availableYears={availableYears}
           vets={vets}
         />
       )}
@@ -1077,275 +1080,572 @@ function VetPicker({
 
 /* ─── Charts Grid (when no KPI is active) ─────────────── */
 
+type ChartKey = "trend" | "clients" | "services" | "vets";
+
 function ChartsGrid({
   filtered,
   months,
   years,
+  availableYears,
   vets,
 }: {
   filtered: Appointment[];
   months: Selection<number>;
   years: Selection<number>;
+  availableYears: number[];
   vets: Vet[];
 }) {
+  const [expanded, setExpanded] = useState<ChartKey | null>(null);
+
+  const charts: {
+    key: ChartKey;
+    title: string;
+    subtitle: string;
+    render: (size: "card" | "modal") => React.ReactNode;
+  }[] = [
+    {
+      key: "trend",
+      title: "Tendencia de ingresos",
+      subtitle: trendSubtitle(months, years),
+      render: (size) => (
+        <TrendChart
+          filtered={filtered}
+          months={months}
+          years={years}
+          availableYears={availableYears}
+          size={size}
+        />
+      ),
+    },
+    {
+      key: "clients",
+      title: "Top clientes por visitas",
+      subtitle: "Clientes que más veces nos han visitado en el periodo.",
+      render: (size) => <TopClientsChart filtered={filtered} size={size} />,
+    },
+    {
+      key: "services",
+      title: "Distribución por servicio",
+      subtitle: "Qué tipo de citas componen el periodo.",
+      render: (size) => <ServiceDistribution filtered={filtered} size={size} />,
+    },
+    {
+      key: "vets",
+      title: "Por veterinario",
+      subtitle: "Citas atendidas por cada doctor en el periodo.",
+      render: (size) => <PerVetChart filtered={filtered} vets={vets} size={size} />,
+    },
+  ];
+
+  const expandedChart = expanded
+    ? charts.find((c) => c.key === expanded) ?? null
+    : null;
+
   return (
-    <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
-      <ChartCard title="Tendencia">
-        <TrendChart filtered={filtered} months={months} years={years} />
-      </ChartCard>
-      <ChartCard title="Top 5 clientes por visitas">
-        <TopClientsChart filtered={filtered} />
-      </ChartCard>
-      <ChartCard title="Distribución por servicio">
-        <ServiceDistribution filtered={filtered} />
-      </ChartCard>
-      <ChartCard title="Por veterinario">
-        <PerVetChart filtered={filtered} vets={vets} />
-      </ChartCard>
-    </div>
+    <>
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-2">
+        {charts.map((c) => (
+          <ChartCard
+            key={c.key}
+            title={c.title}
+            onExpand={() => setExpanded(c.key)}
+          >
+            {c.render("card")}
+          </ChartCard>
+        ))}
+      </div>
+      {expandedChart && (
+        <ChartModal
+          title={expandedChart.title}
+          subtitle={expandedChart.subtitle}
+          onClose={() => setExpanded(null)}
+        >
+          {expandedChart.render("modal")}
+        </ChartModal>
+      )}
+    </>
   );
 }
 
 function ChartCard({
   title,
+  onExpand,
   children,
 }: {
   title: string;
+  onExpand: () => void;
   children: React.ReactNode;
 }) {
   return (
     <section
-      className="border p-5 rounded-[18px] flex flex-col gap-4"
+      className="relative border p-5 rounded-[18px] flex flex-col gap-4 cursor-pointer transition-all hover:-translate-y-0.5"
       style={{
         background: "var(--vet-bg-card)",
         borderColor: "var(--vet-border)",
         minHeight: 280,
       }}
+      onClick={onExpand}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onExpand();
+        }
+      }}
     >
-      <h3
-        className="text-[11px] font-extrabold uppercase tracking-[1.2px]"
-        style={{ color: "var(--vet-text-3)" }}
-      >
-        {title}
-      </h3>
+      <div className="flex items-center justify-between gap-2">
+        <h3
+          className="text-[11px] font-extrabold uppercase tracking-[1.2px]"
+          style={{ color: "var(--vet-text-3)" }}
+        >
+          {title}
+        </h3>
+        <span
+          aria-hidden
+          className="w-7 h-7 rounded-[8px] flex items-center justify-center transition-colors"
+          style={{
+            background: "var(--vet-bg-mid)",
+            border: "1px solid var(--vet-border)",
+            color: "var(--vet-text-3)",
+          }}
+        >
+          <Maximize2 size={12} strokeWidth={2.4} />
+        </span>
+      </div>
       <div className="flex-1 flex flex-col">{children}</div>
     </section>
   );
 }
 
-/* Trend chart — daily if 1 month + 1 year, monthly if 1 year, yearly otherwise */
-
-function TrendChart({
-  filtered,
-  months,
-  years,
+function ChartModal({
+  title,
+  subtitle,
+  onClose,
+  children,
 }: {
-  filtered: Appointment[];
-  months: Selection<number>;
-  years: Selection<number>;
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
 }) {
-  type Mode = "day" | "month" | "year";
-  const mode: Mode =
-    months !== "all" &&
-    years !== "all" &&
-    months.size === 1 &&
-    years.size === 1
-      ? "day"
-      : years !== "all" && years.size === 1
-      ? "month"
-      : "year";
-
-  let buckets: { label: string; visits: number; revenue: number }[] = [];
-
-  if (mode === "day") {
-    const m = [...(months as ReadonlySet<number>)][0];
-    const y = [...(years as ReadonlySet<number>)][0];
-    const days = new Date(y, m + 1, 0).getDate();
-    buckets = Array.from({ length: days }, (_, i) => ({
-      label: String(i + 1),
-      visits: 0,
-      revenue: 0,
-    }));
-    for (const a of filtered) {
-      if (a.status !== "COMPLETED") continue;
-      const d = new Date(a.date);
-      const idx = d.getDate() - 1;
-      buckets[idx].visits++;
-      buckets[idx].revenue += a.priceEstimate;
+  useEffect(() => {
+    function handle(e: KeyboardEvent) {
+      if (e.key === "Escape") onClose();
     }
-  } else if (mode === "month") {
-    buckets = Array.from({ length: 12 }, (_, i) => ({
-      label: MONTH_NAMES_SHORT[i],
-      visits: 0,
-      revenue: 0,
-    }));
-    for (const a of filtered) {
-      if (a.status !== "COMPLETED") continue;
-      const d = new Date(a.date);
-      const idx = d.getMonth();
-      buckets[idx].visits++;
-      buckets[idx].revenue += a.priceEstimate;
-    }
-  } else {
-    const yMap = new Map<number, { visits: number; revenue: number }>();
-    for (const a of filtered) {
-      if (a.status !== "COMPLETED") continue;
-      const d = new Date(a.date);
-      const cur = yMap.get(d.getFullYear()) ?? { visits: 0, revenue: 0 };
-      cur.visits++;
-      cur.revenue += a.priceEstimate;
-      yMap.set(d.getFullYear(), cur);
-    }
-    buckets = [...yMap.entries()]
-      .sort((a, b) => a[0] - b[0])
-      .map(([y, v]) => ({ label: String(y), ...v }));
-    if (buckets.length === 0)
-      buckets = [{ label: "—", visits: 0, revenue: 0 }];
-  }
-
-  const max = Math.max(1, ...buckets.map((b) => b.visits));
-  const maxRev = Math.max(1, ...buckets.map((b) => b.revenue));
-
-  // SVG dimensions
-  const w = 100;
-  const h = 100;
-  const pointsVisits = buckets.map((b, i) => {
-    const x = (i / Math.max(1, buckets.length - 1)) * w;
-    const y = h - (b.visits / max) * h;
-    return `${x},${y}`;
-  });
-  const pointsRevenue = buckets.map((b, i) => {
-    const x = (i / Math.max(1, buckets.length - 1)) * w;
-    const y = h - (b.revenue / maxRev) * h;
-    return `${x},${y}`;
-  });
-
-  // Show small label only on a few x ticks if many buckets
-  const showEvery = buckets.length > 14 ? Math.ceil(buckets.length / 8) : 1;
+    document.addEventListener("keydown", handle);
+    // Lock body scroll
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", handle);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [onClose]);
 
   return (
-    <div className="flex flex-col gap-2 flex-1">
-      <div className="flex items-center gap-3 text-[11px] font-bold">
-        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--vet-text-2)" }}>
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--vet-green)" }} />
-          Citas atendidas
-        </span>
-        <span className="inline-flex items-center gap-1.5" style={{ color: "var(--vet-text-2)" }}>
-          <span className="w-2.5 h-2.5 rounded-full" style={{ background: "var(--vet-blue-dim)" }} />
-          Ingresos
-        </span>
-      </div>
-      <div className="relative flex-1 min-h-[180px]">
-        <svg
-          viewBox={`0 0 ${w} ${h}`}
-          preserveAspectRatio="none"
-          className="absolute inset-0 w-full h-full"
+    <div
+      className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-6"
+      onClick={onClose}
+    >
+      <div
+        aria-hidden
+        className="absolute inset-0"
+        style={{
+          background:
+            "color-mix(in oklab, oklch(18% 0.04 40) 60%, transparent)",
+          backdropFilter: "blur(6px)",
+          WebkitBackdropFilter: "blur(6px)",
+        }}
+      />
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="relative w-full max-w-[1200px] max-h-[92vh] flex flex-col rounded-[22px] border overflow-hidden"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          boxShadow:
+            "0 30px 80px color-mix(in oklab, oklch(15% 0.05 40) 40%, transparent)",
+        }}
+      >
+        <div
+          className="flex items-start justify-between gap-3 px-6 py-4 border-b"
+          style={{
+            borderBottomColor: "var(--vet-border)",
+            background: "var(--vet-bg-mid)",
+          }}
         >
-          {/* Horizontal grid lines */}
-          {[0.25, 0.5, 0.75].map((p) => (
-            <line
-              key={p}
-              x1={0}
-              x2={w}
-              y1={h * p}
-              y2={h * p}
-              stroke="var(--vet-border)"
-              strokeWidth={0.25}
-              strokeDasharray="0.5,1"
-            />
-          ))}
-          {/* Lines */}
-          <polyline
-            fill="none"
-            stroke="var(--vet-blue-dim)"
-            strokeWidth={1.4}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-            points={pointsRevenue.join(" ")}
-          />
-          <polyline
-            fill="none"
-            stroke="var(--vet-green)"
-            strokeWidth={1.6}
-            strokeLinejoin="round"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-            points={pointsVisits.join(" ")}
-          />
-          {/* Dots on visits */}
-          {buckets.map((b, i) => {
-            const x = (i / Math.max(1, buckets.length - 1)) * w;
-            const y = h - (b.visits / max) * h;
-            return (
-              <circle
-                key={i}
-                cx={x}
-                cy={y}
-                r={1.2}
-                fill="var(--vet-green)"
-                stroke="var(--vet-bg-card)"
-                strokeWidth={0.4}
-                vectorEffect="non-scaling-stroke"
-              />
-            );
-          })}
-        </svg>
-      </div>
-      <div className="flex justify-between text-[9px] font-bold pt-1" style={{ color: "var(--vet-text-3)" }}>
-        {buckets.map((b, i) => (
-          <span key={i} className="text-center">
-            {i % showEvery === 0 || i === buckets.length - 1 ? b.label : ""}
-          </span>
-        ))}
+          <div className="min-w-0">
+            <h2
+              className="text-[18px] font-black"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              {title}
+            </h2>
+            {subtitle && (
+              <p
+                className="text-[12px] font-semibold mt-0.5"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                {subtitle}
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Cerrar"
+            className="w-9 h-9 rounded-[10px] border flex items-center justify-center transition-colors flex-shrink-0"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-2)",
+            }}
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <div className="flex-1 overflow-auto p-6 flex flex-col">
+          {children}
+        </div>
       </div>
     </div>
   );
 }
 
+function trendSubtitle(
+  months: Selection<number>,
+  years: Selection<number>
+): string {
+  if (
+    months !== "all" &&
+    years !== "all" &&
+    months.size === 1 &&
+    years.size === 1
+  )
+    return "Ingresos por semana del mes seleccionado.";
+  if (years !== "all" && years.size === 1)
+    return "Ingresos por mes del año seleccionado.";
+  return "Ingresos por mes (o año si el rango es muy amplio).";
+}
+
+/* Trend chart — revenue bars. Bucketing adapts to the selected range:
+ *  - 1 month + 1 year → weekly (4–5 bars).
+ *  - 1 year (any month subset)        → monthly (≤12 bars).
+ *  - Multiple years, month×year ≤ 36  → monthly with year suffix.
+ *  - Wider                            → yearly (1 bar per year).
+ */
+function TrendChart({
+  filtered,
+  months,
+  years,
+  availableYears,
+  size,
+}: {
+  filtered: Appointment[];
+  months: Selection<number>;
+  years: Selection<number>;
+  availableYears: number[];
+  size: "card" | "modal";
+}) {
+  const completed = filtered.filter((a) => a.status === "COMPLETED");
+
+  const monthsList: number[] =
+    months === "all"
+      ? [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
+      : [...months].sort((a, b) => a - b);
+  const yearsList: number[] =
+    years === "all"
+      ? [...availableYears].sort((a, b) => a - b)
+      : [...years].sort((a, b) => a - b);
+
+  type Mode = "week" | "month" | "year";
+  let mode: Mode = "month";
+  if (monthsList.length === 1 && yearsList.length === 1) mode = "week";
+  else if (yearsList.length * monthsList.length > 36) mode = "year";
+
+  let buckets: { label: string; sublabel?: string; revenue: number }[] = [];
+
+  if (mode === "week") {
+    const m = monthsList[0];
+    const y = yearsList[0];
+    const lastDay = new Date(y, m + 1, 0).getDate();
+    const numWeeks = Math.ceil(lastDay / 7);
+    buckets = Array.from({ length: numWeeks }, (_, i) => {
+      const start = i * 7 + 1;
+      const end = Math.min(start + 6, lastDay);
+      return {
+        label: `Sem ${i + 1}`,
+        sublabel: `${start}–${end}`,
+        revenue: 0,
+      };
+    });
+    for (const a of completed) {
+      const d = new Date(a.date);
+      const idx = Math.min(Math.floor((d.getDate() - 1) / 7), numWeeks - 1);
+      buckets[idx].revenue += a.priceEstimate;
+    }
+  } else if (mode === "year") {
+    buckets = yearsList.map((y) => ({ label: String(y), revenue: 0 }));
+    const idxMap = new Map<number, number>();
+    yearsList.forEach((y, i) => idxMap.set(y, i));
+    for (const a of completed) {
+      const y = new Date(a.date).getFullYear();
+      const i = idxMap.get(y);
+      if (i !== undefined) buckets[i].revenue += a.priceEstimate;
+    }
+  } else {
+    // Monthly across one or more years
+    const multipleYears = yearsList.length > 1;
+    for (const y of yearsList) {
+      for (const m of monthsList) {
+        buckets.push({
+          label: multipleYears
+            ? `${MONTH_NAMES_SHORT[m]} ${String(y).slice(2)}`
+            : MONTH_NAMES_SHORT[m],
+          revenue: 0,
+        });
+      }
+    }
+    const idxMap = new Map<string, number>();
+    let idx = 0;
+    for (const y of yearsList) {
+      for (const m of monthsList) {
+        idxMap.set(`${y}-${m}`, idx++);
+      }
+    }
+    for (const a of completed) {
+      const d = new Date(a.date);
+      const i = idxMap.get(`${d.getFullYear()}-${d.getMonth()}`);
+      if (i !== undefined) buckets[i].revenue += a.priceEstimate;
+    }
+  }
+
+  // Fallback when there's nothing to bucket
+  if (buckets.length === 0) {
+    return <EmptyChart />;
+  }
+
+  const max = Math.max(1, ...buckets.map((b) => b.revenue));
+  const totalRev = buckets.reduce((acc, b) => acc + b.revenue, 0);
+  const winnerIdx = buckets.findIndex((b) => b.revenue === max && b.revenue > 0);
+
+  const chartHeight = size === "modal" ? 420 : 200;
+
+  // Tick labels — show every Nth to avoid overlap
+  const labelShowEvery =
+    buckets.length > 18 ? Math.ceil(buckets.length / 10) : 1;
+
+  return (
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-3">
+        <div className="flex items-center gap-3 text-[11px] font-bold">
+          <span
+            className="inline-flex items-center gap-1.5"
+            style={{ color: "var(--vet-text-2)" }}
+          >
+            <span
+              className="w-2.5 h-2.5 rounded-sm"
+              style={{
+                background:
+                  "linear-gradient(180deg, var(--vet-green), var(--vet-green-dim))",
+              }}
+            />
+            Ingresos
+          </span>
+        </div>
+        <span
+          className="vet-mono text-[12px] font-extrabold"
+          style={{ color: "var(--vet-text-3)" }}
+        >
+          Total · {formatMxn(totalRev)}
+        </span>
+      </div>
+
+      <div
+        className="relative w-full"
+        style={{ height: chartHeight }}
+      >
+        {/* Y grid */}
+        <div className="absolute inset-0 flex flex-col justify-between pointer-events-none">
+          {[1, 0.75, 0.5, 0.25, 0].map((p) => (
+            <div
+              key={p}
+              className="flex items-center gap-2"
+              style={{ height: 0 }}
+            >
+              <span
+                className="vet-mono text-[10px] font-bold w-12 text-right -translate-y-[6px]"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                {p === 0 ? "$0" : compactMxn(max * p)}
+              </span>
+              <div
+                className="flex-1 border-t"
+                style={{
+                  borderTopStyle: p === 0 ? "solid" : "dashed",
+                  borderTopColor: "var(--vet-border)",
+                  borderTopWidth: 1,
+                }}
+              />
+            </div>
+          ))}
+        </div>
+
+        {/* Bars */}
+        <div
+          className="absolute inset-0 pl-14 flex items-end gap-[3px] sm:gap-1"
+        >
+          {buckets.map((b, i) => {
+            const heightPct = (b.revenue / max) * 100;
+            const isWinner = i === winnerIdx;
+            return (
+              <div
+                key={i}
+                className="flex-1 h-full flex items-end justify-center relative group"
+                title={`${b.label}${b.sublabel ? ` (${b.sublabel})` : ""} · ${formatMxn(b.revenue)}`}
+              >
+                <div
+                  className="w-full max-w-[42px] rounded-t-[6px] relative transition-all"
+                  style={{
+                    height: `${heightPct}%`,
+                    minHeight: b.revenue > 0 ? 3 : 0,
+                    background: isWinner
+                      ? "linear-gradient(180deg, var(--vet-green), var(--vet-green-dim))"
+                      : "linear-gradient(180deg, color-mix(in oklab, var(--vet-green) 75%, var(--vet-bg-mid)), color-mix(in oklab, var(--vet-green-dim) 65%, var(--vet-bg-mid)))",
+                  }}
+                >
+                  {size === "modal" && b.revenue > 0 && (
+                    <span
+                      className="absolute -top-5 left-1/2 -translate-x-1/2 vet-mono text-[10px] font-extrabold whitespace-nowrap"
+                      style={{ color: "var(--vet-text-2)" }}
+                    >
+                      {compactMxn(b.revenue)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* X labels */}
+      <div className="pl-14 mt-2 flex gap-[3px] sm:gap-1">
+        {buckets.map((b, i) => {
+          const show =
+            i % labelShowEvery === 0 ||
+            i === buckets.length - 1 ||
+            buckets.length === 1;
+          return (
+            <div
+              key={i}
+              className="flex-1 flex flex-col items-center text-center"
+              style={{ minWidth: 0 }}
+            >
+              {show && (
+                <>
+                  <span
+                    className="text-[10px] font-extrabold truncate w-full"
+                    style={{ color: "var(--vet-text-2)" }}
+                  >
+                    {b.label}
+                  </span>
+                  {b.sublabel && (
+                    <span
+                      className="text-[9px] font-bold"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      {b.sublabel}
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function compactMxn(v: number): string {
+  if (v >= 1_000_000) return `$${(v / 1_000_000).toFixed(1)}M`;
+  if (v >= 1_000) return `$${(v / 1_000).toFixed(v >= 10_000 ? 0 : 1)}k`;
+  return `$${Math.round(v)}`;
+}
+
 /* Top clients horizontal bars */
 
-function TopClientsChart({ filtered }: { filtered: Appointment[] }) {
-  const map = new Map<string, number>();
+function TopClientsChart({
+  filtered,
+  size,
+}: {
+  filtered: Appointment[];
+  size: "card" | "modal";
+}) {
+  const map = new Map<string, { count: number; revenue: number }>();
   for (const a of filtered) {
     if (a.status !== "COMPLETED") continue;
-    map.set(a.clientName, (map.get(a.clientName) ?? 0) + 1);
+    const cur = map.get(a.clientName) ?? { count: 0, revenue: 0 };
+    cur.count++;
+    cur.revenue += a.priceEstimate;
+    map.set(a.clientName, cur);
   }
+  const limit = size === "modal" ? 20 : 5;
   const top = [...map.entries()]
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, limit);
   if (top.length === 0) return <EmptyChart />;
-  const max = top[0][1];
+  const max = top[0][1].count;
+  const labelWidth = size === "modal" ? "w-48" : "w-28";
+  const rowHeight = size === "modal" ? "h-8" : "h-6";
   return (
     <div className="flex flex-col gap-2.5 flex-1 justify-center">
-      {top.map(([name, count]) => (
+      {top.map(([name, v], i) => (
         <div key={name} className="flex items-center gap-2">
+          {size === "modal" && (
+            <span
+              className="w-5 text-right vet-mono text-[11px] font-extrabold"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              {i + 1}
+            </span>
+          )}
           <div
-            className="w-28 truncate text-[12px] font-extrabold text-right"
+            className={`${labelWidth} truncate text-[12px] font-extrabold text-right`}
             style={{ color: "var(--vet-text-1)" }}
             title={name}
           >
             {name}
           </div>
           <div
-            className="flex-1 h-6 rounded-[6px] relative overflow-hidden"
+            className={`flex-1 ${rowHeight} rounded-[6px] relative overflow-hidden`}
             style={{ background: "var(--vet-bg-hover)" }}
           >
             <div
               className="absolute inset-y-0 left-0 rounded-[6px]"
               style={{
-                width: `${(count / max) * 100}%`,
+                width: `${(v.count / max) * 100}%`,
                 background:
                   "linear-gradient(90deg, var(--vet-amber), oklch(58% 0.16 45))",
               }}
             />
           </div>
           <div
-            className="w-8 text-right vet-mono text-[13px] font-extrabold"
+            className="w-9 text-right vet-mono text-[13px] font-extrabold"
             style={{ color: "var(--vet-amber)" }}
           >
-            {count}
+            {v.count}
           </div>
+          {size === "modal" && (
+            <div
+              className="w-24 text-right vet-mono text-[11px] font-bold"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              {formatMxn(v.revenue)}
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -1354,14 +1654,23 @@ function TopClientsChart({ filtered }: { filtered: Appointment[] }) {
 
 /* Service distribution donut */
 
-function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
-  const map = new Map<string, number>();
+function ServiceDistribution({
+  filtered,
+  size,
+}: {
+  filtered: Appointment[];
+  size: "card" | "modal";
+}) {
+  const map = new Map<string, { count: number; revenue: number }>();
   for (const a of filtered) {
     if (a.status !== "COMPLETED") continue;
-    map.set(a.serviceName, (map.get(a.serviceName) ?? 0) + 1);
+    const cur = map.get(a.serviceName) ?? { count: 0, revenue: 0 };
+    cur.count++;
+    cur.revenue += a.priceEstimate;
+    map.set(a.serviceName, cur);
   }
-  const entries = [...map.entries()].sort((a, b) => b[1] - a[1]);
-  const total = entries.reduce((acc, [, v]) => acc + v, 0);
+  const entries = [...map.entries()].sort((a, b) => b[1].count - a[1].count);
+  const total = entries.reduce((acc, [, v]) => acc + v.count, 0);
   if (total === 0) return <EmptyChart />;
 
   const palette = [
@@ -1372,6 +1681,8 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
     "var(--vet-red)",
     "oklch(56% 0.12 200)",
     "oklch(60% 0.14 280)",
+    "oklch(50% 0.13 130)",
+    "oklch(55% 0.16 5)",
   ];
 
   // Donut
@@ -1381,9 +1692,20 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
   const c = 2 * Math.PI * r;
   let offset = 0;
 
+  const donutSize = size === "modal" ? 260 : 140;
+  const legendLimit = size === "modal" ? 20 : 6;
+
   return (
-    <div className="flex items-center gap-5 flex-1 min-h-[180px]">
-      <svg viewBox="0 0 100 100" className="w-[140px] h-[140px] shrink-0">
+    <div
+      className={`flex ${
+        size === "modal" ? "flex-col sm:flex-row" : "flex-row"
+      } items-center gap-5 flex-1 min-h-[180px]`}
+    >
+      <svg
+        viewBox="0 0 100 100"
+        style={{ width: donutSize, height: donutSize }}
+        className="shrink-0"
+      >
         <circle
           cx={cx}
           cy={cy}
@@ -1393,7 +1715,7 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
           strokeWidth={12}
         />
         {entries.map(([name, v], i) => {
-          const portion = v / total;
+          const portion = v.count / total;
           const dash = portion * c;
           const seg = (
             <circle
@@ -1414,7 +1736,7 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
         })}
         <text
           x={cx}
-          y={cy - 2}
+          y={cy - 1}
           textAnchor="middle"
           className="vet-mono"
           style={{ fontSize: 14, fontWeight: 800, fill: "var(--vet-text-1)" }}
@@ -1423,15 +1745,15 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
         </text>
         <text
           x={cx}
-          y={cy + 9}
+          y={cy + 8}
           textAnchor="middle"
           style={{ fontSize: 5, fontWeight: 800, fill: "var(--vet-text-3)" }}
         >
           CITAS
         </text>
       </svg>
-      <div className="flex-1 flex flex-col gap-1.5 min-w-0">
-        {entries.slice(0, 6).map(([name, v], i) => (
+      <div className="flex-1 flex flex-col gap-1.5 min-w-0 w-full">
+        {entries.slice(0, legendLimit).map(([name, v], i) => (
           <div key={name} className="flex items-center gap-2 min-w-0">
             <span
               className="w-2.5 h-2.5 rounded-sm flex-shrink-0"
@@ -1448,22 +1770,30 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
               className="vet-mono text-[12px] font-extrabold"
               style={{ color: "var(--vet-text-2)" }}
             >
-              {v}
+              {v.count}
             </span>
             <span
               className="text-[10px] font-bold w-9 text-right"
               style={{ color: "var(--vet-text-3)" }}
             >
-              {Math.round((v / total) * 100)}%
+              {Math.round((v.count / total) * 100)}%
             </span>
+            {size === "modal" && (
+              <span
+                className="vet-mono text-[11px] font-bold w-24 text-right"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                {formatMxn(v.revenue)}
+              </span>
+            )}
           </div>
         ))}
-        {entries.length > 6 && (
+        {entries.length > legendLimit && (
           <p
             className="text-[10px] font-bold mt-1"
             style={{ color: "var(--vet-text-3)" }}
           >
-            +{entries.length - 6} servicios más
+            +{entries.length - legendLimit} servicios más
           </p>
         )}
       </div>
@@ -1476,11 +1806,16 @@ function ServiceDistribution({ filtered }: { filtered: Appointment[] }) {
 function PerVetChart({
   filtered,
   vets,
+  size,
 }: {
   filtered: Appointment[];
   vets: Vet[];
+  size: "card" | "modal";
 }) {
-  const map = new Map<string, { name: string; completed: number; revenue: number }>();
+  const map = new Map<
+    string,
+    { name: string; completed: number; revenue: number }
+  >();
   for (const v of vets)
     map.set(v.id, { name: v.name, completed: 0, revenue: 0 });
   for (const a of filtered) {
@@ -1498,19 +1833,30 @@ function PerVetChart({
   const rows = [...map.values()].sort((a, b) => b.completed - a.completed);
   const max = Math.max(1, ...rows.map((r) => r.completed));
   if (rows.every((r) => r.completed === 0)) return <EmptyChart />;
+  const limit = size === "modal" ? 20 : 6;
+  const labelWidth = size === "modal" ? "w-48" : "w-28";
+  const rowHeight = size === "modal" ? "h-8" : "h-6";
   return (
     <div className="flex flex-col gap-2.5 flex-1 justify-center">
-      {rows.slice(0, 6).map((r) => (
+      {rows.slice(0, limit).map((r, i) => (
         <div key={r.name} className="flex items-center gap-2">
+          {size === "modal" && (
+            <span
+              className="w-5 text-right vet-mono text-[11px] font-extrabold"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              {i + 1}
+            </span>
+          )}
           <div
-            className="w-28 truncate text-[12px] font-extrabold text-right"
+            className={`${labelWidth} truncate text-[12px] font-extrabold text-right`}
             style={{ color: "var(--vet-text-1)" }}
             title={r.name}
           >
             {r.name}
           </div>
           <div
-            className="flex-1 h-6 rounded-[6px] relative overflow-hidden"
+            className={`flex-1 ${rowHeight} rounded-[6px] relative overflow-hidden`}
             style={{ background: "var(--vet-bg-hover)" }}
           >
             <div
@@ -1523,19 +1869,27 @@ function PerVetChart({
             />
           </div>
           <div
-            className="w-8 text-right vet-mono text-[13px] font-extrabold"
+            className="w-9 text-right vet-mono text-[13px] font-extrabold"
             style={{ color: "var(--vet-green)" }}
           >
             {r.completed}
           </div>
+          {size === "modal" && (
+            <div
+              className="w-24 text-right vet-mono text-[11px] font-bold"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              {formatMxn(r.revenue)}
+            </div>
+          )}
         </div>
       ))}
-      {rows.length > 6 && (
+      {rows.length > limit && (
         <p
           className="text-[10px] font-bold mt-1"
           style={{ color: "var(--vet-text-3)" }}
         >
-          +{rows.length - 6} veterinarios más
+          +{rows.length - limit} veterinarios más
         </p>
       )}
     </div>
