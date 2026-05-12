@@ -21,11 +21,24 @@ export default function LoginPage() {
           className="hidden lg:flex lg:flex-col lg:w-1/2 lg:min-h-dvh relative overflow-hidden"
           style={{
             background:
-              "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(28% 0.12 38) 100%)",
+              "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
           }}
         >
-          {/* Fullbleed video. Muted + autoplay + loop + playsInline so it
-              starts silently on every browser/iOS. */}
+          {/* Subtle dot pattern — kept from the original brand panel so the
+              video doesn't completely take over the visual identity. */}
+          <div
+            aria-hidden
+            className="absolute inset-0 pointer-events-none opacity-[0.07] z-[1]"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 1px 1px, white 1px, transparent 1px)",
+              backgroundSize: "22px 22px",
+            }}
+          />
+
+          {/* Looping silhouette video. mix-blend-mode: multiply tints the
+              dark silhouettes with the terracotta gradient below — keeps the
+              animation but harmonizes the color with the brand panel. */}
           <video
             src="/login-hero.mp4"
             autoPlay
@@ -35,16 +48,22 @@ export default function LoginPage() {
             preload="auto"
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover"
+            style={{
+              mixBlendMode: "multiply",
+              filter: "saturate(1.1) contrast(1.05)",
+            }}
           />
 
-          {/* Bottom-up gradient so the white copy below stays readable
-              regardless of what frame is showing. */}
+          {/* Warm wash on top to push any remaining cool tones from the
+              video toward the brand palette. Very low opacity so the dog/
+              silhouette movement still reads. */}
           <div
             aria-hidden
-            className="absolute inset-0 pointer-events-none"
+            className="absolute inset-0 pointer-events-none z-[2]"
             style={{
               background:
-                "linear-gradient(180deg, rgba(0,0,0,0) 30%, rgba(0,0,0,0.55) 75%, rgba(15,8,4,0.85) 100%)",
+                "linear-gradient(135deg, oklch(58% 0.16 40 / 0.18) 0%, oklch(48% 0.14 38 / 0.10) 100%)",
+              mixBlendMode: "screen",
             }}
           />
 
