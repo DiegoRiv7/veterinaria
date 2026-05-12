@@ -24,8 +24,7 @@ export default function LoginPage() {
               "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
           }}
         >
-          {/* Subtle dot pattern — kept from the original brand panel so the
-              video doesn't completely take over the visual identity. */}
+          {/* Subtle dot pattern across the whole panel */}
           <div
             aria-hidden
             className="absolute inset-0 pointer-events-none opacity-[0.07] z-[1]"
@@ -36,39 +35,47 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Looping silhouette video. mix-blend-mode: multiply tints the
-              dark silhouettes with the terracotta gradient below — keeps the
-              animation but harmonizes the color with the brand panel. */}
-          <video
-            src="/login-hero.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              mixBlendMode: "multiply",
-              filter: "saturate(1.1) contrast(1.05)",
-            }}
-          />
+          {/* Top frame — video lives only in the upper 55% of the panel */}
+          <div className="basis-[55%] grow-0 shrink-0 relative overflow-hidden">
+            <video
+              src="/login-hero.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              preload="auto"
+              aria-hidden
+              className="absolute inset-0 w-full h-full object-cover"
+              style={{
+                mixBlendMode: "multiply",
+                filter: "saturate(1.1) contrast(1.05)",
+              }}
+            />
+            {/* Warm screen overlay to push the remaining cool tones toward
+                the brand palette without losing the silhouette movement. */}
+            <div
+              aria-hidden
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(58% 0.16 40 / 0.20) 0%, oklch(48% 0.14 38 / 0.10) 100%)",
+                mixBlendMode: "screen",
+              }}
+            />
+            {/* Soft fade at the bottom of the video so it transitions into
+                the welcome panel below instead of cutting hard. */}
+            <div
+              aria-hidden
+              className="absolute inset-x-0 bottom-0 h-20 pointer-events-none"
+              style={{
+                background:
+                  "linear-gradient(180deg, transparent, color-mix(in oklab, var(--vet-green-dim) 70%, transparent))",
+              }}
+            />
+          </div>
 
-          {/* Warm wash on top to push any remaining cool tones from the
-              video toward the brand palette. Very low opacity so the dog/
-              silhouette movement still reads. */}
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none z-[2]"
-            style={{
-              background:
-                "linear-gradient(135deg, oklch(58% 0.16 40 / 0.18) 0%, oklch(48% 0.14 38 / 0.10) 100%)",
-              mixBlendMode: "screen",
-            }}
-          />
-
-          {/* Welcome copy — anchored to the bottom of the panel */}
-          <div className="mt-auto flex flex-col px-12 xl:px-16 pb-14 xl:pb-16 relative z-10">
+          {/* Bottom panel — welcome copy on clean brand gradient */}
+          <div className="basis-[45%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
             <Image
               src="/vetsfriend-icon.png"
               alt="Vetsfriend"
