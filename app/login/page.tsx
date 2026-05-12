@@ -51,20 +51,24 @@ export default function LoginPage() {
             aria-hidden
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              mixBlendMode: "multiply",
-              filter: "saturate(1.1) contrast(1.05)",
+              // soft-light blends much more gently than multiply — the
+              // silhouettes mantienen su forma pero no se estampan en
+              // negro contra el panel. saturate+brightness compensan el
+              // suavizado para que el dog playing siga leyéndose.
+              mixBlendMode: "soft-light",
+              filter: "brightness(1.35) saturate(1.25) contrast(0.95)",
+              opacity: 0.85,
             }}
           />
 
-          {/* Warm wash on top to push any remaining cool tones from the
-              video toward the brand palette. Very low opacity so the dog/
-              silhouette movement still reads. */}
+          {/* Warm wash on top — sutilísimo, sólo para empujar los
+              residuales fríos del video hacia la paleta de marca. */}
           <div
             aria-hidden
             className="absolute inset-0 pointer-events-none z-[2]"
             style={{
               background:
-                "linear-gradient(135deg, oklch(58% 0.16 40 / 0.18) 0%, oklch(48% 0.14 38 / 0.10) 100%)",
+                "linear-gradient(135deg, oklch(60% 0.16 40 / 0.12) 0%, oklch(50% 0.14 38 / 0.06) 100%)",
               mixBlendMode: "screen",
             }}
           />
