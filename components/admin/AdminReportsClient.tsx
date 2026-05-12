@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import * as XLSX from "xlsx";
 import {
   Calendar,
   CheckCircle2,
@@ -240,28 +241,100 @@ export function AdminReportsClient({
             .map((id) => vets.find((v) => v.id === id)?.name)
             .filter(Boolean)
             .join(", ") || "Ninguno";
-    const meta: string[][] = [
+    const periodLabelStr = periodLabel(months, years);
+    const metaHeader: (string | number)[][] = [
       ["Reporte Vetsfriend"],
       ["Generado", formatDateTime(new Date())],
       ["Generado por", adminName],
-      ["Rango de fechas", periodLabel(months, years)],
+      ["Rango de fechas", periodLabelStr],
       ["Veterinarios", vetsLabel],
       [
         "Citas en el rango",
         `${filtered.length} (${stats.completed} atendidas, ${stats.scheduled} pendientes, ${stats.cancelled} canceladas)`,
       ],
-      [
-        "Tabla exportada",
-        TABLE_LABELS[table],
-      ],
       [],
     ];
 
-    const sections: string[][] = [];
+    const wb = XLSX.utils.book_new();
 
+    function addSheet(
+      name: string,
+      sectionTitle: string,
+      headers: string[],
+      rows: (string | number)[][],
+      totalsRow: (string | number)[] | null,
+      colWidths: number[]
+    ) {
+      const aoa: (string | number)[][] = [
+        ...metaHeader,
+        [sectionTitle],
+        headers,
+        ...rows,
+      ];
+      if (totalsRow) {
+        aoa.push([], totalsRow);
+      }
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      ws["!cols"] = colWidths.map((w) => ({ wch: w }));
+      // Freeze metadata + header rows (so columns stay visible on scroll)
+      ws["!freeze"] = { xSplit: 0, ySplit: metaHeader.length + 2 } as never;
+      XLSX.utils.book_append_sheet(wb, ws, name);
+    }
+
+    // ── Resumen sheet (only when exporting "Todo") ──
+    if (table === "all") {
+      const resumen: (string | number)[][] = [
+        ...metaHeader,
+        ["RESUMEN DEL PERIODO"],
+        ["Indicador", "Valor"],
+        ["Citas atendidas", stats.completed],
+        ["Citas pendientes", stats.scheduled],
+        ["Citas canceladas", stats.cancelled],
+        ["Ingresos (MXN)", stats.revenue],
+        ["Promedio por atendida (MXN)", stats.avgPerCompleted],
+        [
+          "Cliente con más visitas",
+          stats.topClient
+            ? `${stats.topClient.name} (${stats.topClient.count})`
+            : "—",
+        ],
+        [
+          "Servicio más solicitado",
+          stats.topService
+            ? `${stats.topService.name} (${stats.topService.count})`
+            : "—",
+        ],
+      ];
+      const ws = XLSX.utils.aoa_to_sheet(resumen);
+      ws["!cols"] = [{ wch: 32 }, { wch: 36 }];
+      XLSX.utils.book_append_sheet(wb, ws, "Resumen");
+    }
+
+    // ── Citas ──
     if (table === "appointments" || table === "all") {
-      sections.push(
-        ["CITAS"],
+      const totalRev = filtered
+        .filter((a) => a.status === "COMPLETED")
+        .reduce((acc, a) => acc + a.priceEstimate, 0);
+      const rows = filtered.map((a) => {
+        const d = new Date(a.date);
+        return [
+          new Intl.DateTimeFormat("es-MX", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }).format(d),
+          formatTime(d),
+          a.status,
+          a.vetName,
+          a.clientName,
+          a.petName,
+          a.serviceName,
+          a.priceEstimate,
+        ];
+      });
+      addSheet(
+        "Citas",
+        "DETALLE DE CITAS",
         [
           "Fecha",
           "Hora",
@@ -272,59 +345,53 @@ export function AdminReportsClient({
           "Servicio",
           "Precio",
         ],
-        ...filtered.map((a) => {
-          const d = new Date(a.date);
-          return [
-            new Intl.DateTimeFormat("es-MX", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            }).format(d),
-            formatTime(d),
-            a.status,
-            a.vetName,
-            a.clientName,
-            a.petName,
-            a.serviceName,
-            a.priceEstimate.toString(),
-          ];
-        }),
-        []
+        rows,
+        ["TOTAL", "", "", "", "", "", `${filtered.length} citas`, totalRev],
+        [12, 8, 12, 22, 26, 18, 26, 12]
       );
     }
 
+    // ── Ingresos ──
     if (table === "revenue" || table === "all") {
       const completedRows = filtered.filter((a) => a.status === "COMPLETED");
       const totalRevenue = completedRows.reduce(
         (acc, a) => acc + a.priceEstimate,
         0
       );
-      sections.push(
-        ["INGRESOS (citas atendidas)"],
+      const rows = completedRows.map((a) => {
+        const d = new Date(a.date);
+        return [
+          new Intl.DateTimeFormat("es-MX", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+          }).format(d),
+          a.clientName,
+          a.serviceName,
+          a.vetName,
+          a.priceEstimate,
+        ];
+      });
+      addSheet(
+        "Ingresos",
+        "INGRESOS (citas atendidas)",
         ["Fecha", "Cliente", "Servicio", "Veterinario", "Cobro"],
-        ...completedRows.map((a) => {
-          const d = new Date(a.date);
-          return [
-            new Intl.DateTimeFormat("es-MX", {
-              day: "2-digit",
-              month: "2-digit",
-              year: "numeric",
-            }).format(d),
-            a.clientName,
-            a.serviceName,
-            a.vetName,
-            a.priceEstimate.toString(),
-          ];
-        }),
-        ["", "", "", "TOTAL", totalRevenue.toString()],
-        []
+        rows,
+        ["TOTAL", `${completedRows.length} cobros`, "", "", totalRevenue],
+        [12, 26, 26, 22, 14]
       );
     }
 
+    // ── Clientes ──
     if (table === "clients" || table === "all") {
       const map = new Map<
         string,
-        { name: string; visits: number; revenue: number; lastDate: string | null }
+        {
+          name: string;
+          visits: number;
+          revenue: number;
+          lastDate: string | null;
+        }
       >();
       for (const a of filtered) {
         if (a.status !== "COMPLETED") continue;
@@ -340,26 +407,32 @@ export function AdminReportsClient({
         if (!cur.lastDate || a.date > cur.lastDate) cur.lastDate = a.date;
         map.set(a.clientId, cur);
       }
-      const rows = [...map.values()].sort((a, b) => b.visits - a.visits);
-      sections.push(
-        ["CLIENTES"],
+      const sorted = [...map.values()].sort((a, b) => b.visits - a.visits);
+      const totalVisits = sorted.reduce((acc, c) => acc + c.visits, 0);
+      const totalRev = sorted.reduce((acc, c) => acc + c.revenue, 0);
+      const rows = sorted.map((c) => [
+        c.name,
+        c.visits,
+        c.revenue,
+        c.lastDate
+          ? new Intl.DateTimeFormat("es-MX", {
+              day: "2-digit",
+              month: "2-digit",
+              year: "numeric",
+            }).format(new Date(c.lastDate))
+          : "",
+      ]);
+      addSheet(
+        "Clientes",
+        "RANKING DE CLIENTES",
         ["Cliente", "Visitas", "Ingresos", "Última visita"],
-        ...rows.map((c) => [
-          c.name,
-          String(c.visits),
-          c.revenue.toString(),
-          c.lastDate
-            ? new Intl.DateTimeFormat("es-MX", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric",
-              }).format(new Date(c.lastDate))
-            : "",
-        ]),
-        []
+        rows,
+        ["TOTAL", totalVisits, totalRev, ""],
+        [28, 12, 14, 16]
       );
     }
 
+    // ── Veterinarios ──
     if (table === "vets" || table === "all") {
       const map = new Map<
         string,
@@ -397,11 +470,26 @@ export function AdminReportsClient({
           cur.cancelled++;
         map.set(a.vetId, cur);
       }
-      const rows = [...map.values()]
+      const sorted = [...map.values()]
         .filter((r) => r.total > 0)
         .sort((a, b) => b.completed - a.completed);
-      sections.push(
-        ["VETERINARIOS"],
+      const totalT = sorted.reduce((acc, r) => acc + r.total, 0);
+      const totalC = sorted.reduce((acc, r) => acc + r.completed, 0);
+      const totalCanc = sorted.reduce((acc, r) => acc + r.cancelled, 0);
+      const totalRev = sorted.reduce((acc, r) => acc + r.revenue, 0);
+      const overallRate =
+        totalT > 0 ? `${Math.round((totalC / totalT) * 100)}%` : "0%";
+      const rows = sorted.map((r) => [
+        r.name,
+        r.total,
+        r.completed,
+        r.cancelled,
+        r.revenue,
+        r.total > 0 ? `${Math.round((r.completed / r.total) * 100)}%` : "0%",
+      ]);
+      addSheet(
+        "Veterinarios",
+        "RENDIMIENTO POR VETERINARIO",
         [
           "Veterinario",
           "Citas",
@@ -410,20 +498,13 @@ export function AdminReportsClient({
           "Ingresos",
           "Asistencia %",
         ],
-        ...rows.map((r) => [
-          r.name,
-          String(r.total),
-          String(r.completed),
-          String(r.cancelled),
-          r.revenue.toString(),
-          r.total > 0
-            ? `${Math.round((r.completed / r.total) * 100)}%`
-            : "0%",
-        ]),
-        []
+        rows,
+        ["TOTAL", totalT, totalC, totalCanc, totalRev, overallRate],
+        [26, 10, 12, 12, 14, 14]
       );
     }
 
+    // ── Servicios ──
     if (table === "services" || table === "all") {
       const map = new Map<string, { count: number; revenue: number }>();
       for (const a of filtered) {
@@ -433,10 +514,19 @@ export function AdminReportsClient({
         cur.revenue += a.priceEstimate;
         map.set(a.serviceName, cur);
       }
-      const rows = [...map.entries()].sort((a, b) => b[1].count - a[1].count);
-      const totalCount = rows.reduce((acc, [, v]) => acc + v.count, 0);
-      sections.push(
-        ["SERVICIOS"],
+      const sorted = [...map.entries()].sort((a, b) => b[1].count - a[1].count);
+      const totalCount = sorted.reduce((acc, [, v]) => acc + v.count, 0);
+      const totalRev = sorted.reduce((acc, [, v]) => acc + v.revenue, 0);
+      const rows = sorted.map(([name, v]) => [
+        name,
+        v.count,
+        totalCount > 0 ? `${((v.count / totalCount) * 100).toFixed(1)}%` : "0%",
+        v.revenue,
+        v.count > 0 ? Math.round(v.revenue / v.count) : 0,
+      ]);
+      addSheet(
+        "Servicios",
+        "SERVICIOS ATENDIDOS",
         [
           "Servicio",
           "Citas atendidas",
@@ -444,40 +534,22 @@ export function AdminReportsClient({
           "Ingresos",
           "Promedio",
         ],
-        ...rows.map(([name, v]) => [
-          name,
-          String(v.count),
-          totalCount > 0
-            ? `${((v.count / totalCount) * 100).toFixed(1)}%`
-            : "0%",
-          v.revenue.toString(),
-          v.count > 0
-            ? Math.round(v.revenue / v.count).toString()
-            : "0",
-        ]),
-        []
+        rows,
+        ["TOTAL", totalCount, "100%", totalRev, ""],
+        [28, 14, 12, 14, 12]
       );
     }
 
-    const all = [...meta, ...sections];
-    const csv = all
-      .map((r) =>
-        r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(",")
-      )
-      .join("\r\n");
-    const blob = new Blob(["﻿" + csv], {
-      type: "text/csv;charset=utf-8",
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `reporte-vetsfriend-${table}-${new Date()
+    // If somehow no sheets got appended, add an empty placeholder
+    if (wb.SheetNames.length === 0) {
+      const ws = XLSX.utils.aoa_to_sheet([...metaHeader, ["Sin datos"]]);
+      XLSX.utils.book_append_sheet(wb, ws, "Vacío");
+    }
+
+    const filename = `reporte-vetsfriend-${table}-${new Date()
       .toISOString()
-      .slice(0, 10)}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+      .slice(0, 10)}.xlsx`;
+    XLSX.writeFile(wb, filename);
     setExportOpen(false);
   }
 
@@ -701,12 +773,12 @@ function ExportModal({
     {
       key: "all",
       label: "Todo",
-      desc: "Citas + ingresos + clientes + veterinarios + servicios en un solo archivo.",
+      desc: "Resumen + una hoja para cada tabla (Citas, Ingresos, Clientes, Veterinarios, Servicios).",
     },
     {
       key: "appointments",
       label: "Citas",
-      desc: "Una fila por cita con fecha, vet, cliente, mascota y servicio.",
+      desc: "Una fila por cita con fecha, vet, cliente, mascota y servicio. Total al final.",
     },
     {
       key: "revenue",
@@ -773,8 +845,9 @@ function ExportModal({
               className="text-[12px] font-semibold mt-0.5"
               style={{ color: "var(--vet-text-3)" }}
             >
-              Elige qué tabla quieres descargar. El archivo incluye una
-              cabecera con la fecha, quién lo generó y el rango aplicado.
+              Elige qué tabla quieres descargar. Cada tabla va en su propia
+              hoja del archivo Excel, con cabecera (fecha, admin, rango) y
+              totales al final.
             </p>
           </div>
           <button
@@ -916,7 +989,7 @@ function ExportModal({
               boxShadow: "0 4px 12px var(--vet-green-glow)",
             }}
           >
-            <Download size={14} /> Descargar CSV
+            <Download size={14} /> Descargar Excel
           </button>
         </div>
       </div>
