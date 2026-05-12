@@ -4,6 +4,7 @@ import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { VetDetailClient } from "@/components/admin/VetDetailClient";
+import { StaffDetailClient } from "@/components/admin/StaffDetailClient";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +15,7 @@ function addMonths(d: Date, n: number) {
   return new Date(d.getFullYear(), d.getMonth() + n, 1);
 }
 
-export default async function VetDetailPage({
+export default async function UserDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -25,24 +26,86 @@ export default async function VetDetailPage({
 
   const { id } = await params;
 
-  const vet = await prisma.veterinarian.findUnique({
+  // The route's [id] is the User.id. For vets we resolve the related
+  // Veterinarian record and forward its fields to VetDetailClient.
+  const user = await prisma.user.findUnique({
     where: { id },
     include: {
-      user: { select: { id: true, name: true, email: true, phone: true } },
-      workingHours: { orderBy: { dayOfWeek: "asc" } },
-      appointments: {
-        select: {
-          status: true,
-          priceEstimate: true,
-          scheduledAt: true,
-          service: { select: { name: true } },
+      vetProfile: {
+        include: {
+          workingHours: { orderBy: { dayOfWeek: "asc" } },
+          appointments: {
+            select: {
+              status: true,
+              priceEstimate: true,
+              scheduledAt: true,
+              service: { select: { name: true } },
+            },
+          },
+          _count: { select: { appointments: true } },
         },
       },
-      _count: { select: { appointments: true } },
     },
   });
-  if (!vet) notFound();
+  if (!user) notFound();
+  if (user.role === "CLIENT") redirect("/admin/clientes");
 
+  return (
+    <div className="flex flex-col gap-5">
+      <Link
+        href="/admin/usuarios"
+        className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
+        style={{ color: "var(--vet-green)" }}
+      >
+        <ChevronLeft size={14} /> Usuarios
+      </Link>
+
+      {user.role === "VET" && user.vetProfile ? (
+        <VetView vet={user.vetProfile} user={user} />
+      ) : (
+        <StaffDetailClient
+          user={{
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            phone: user.phone,
+            photoUrl: user.photoUrl,
+            role: user.role as "ADMIN" | "RECEPTIONIST",
+            createdAt: user.createdAt.toISOString(),
+          }}
+          isSelf={user.id === session.userId}
+        />
+      )}
+    </div>
+  );
+}
+
+type VetWithRelations = {
+  id: string;
+  bio: string | null;
+  photoUrl: string | null;
+  workingHours: {
+    dayOfWeek: number;
+    isWorking: boolean;
+    startMinutes: number;
+    endMinutes: number;
+  }[];
+  appointments: {
+    status: string;
+    priceEstimate: number;
+    scheduledAt: Date;
+    service: { name: string };
+  }[];
+  _count: { appointments: number };
+};
+
+function VetView({
+  vet,
+  user,
+}: {
+  vet: VetWithRelations;
+  user: { id: string; name: string; email: string; phone: string };
+}) {
   const monthStart = startOfMonth();
   const monthEnd = addMonths(monthStart, 1);
 
@@ -62,16 +125,12 @@ export default async function VetDetailPage({
     0
   );
 
-  // Top service for this vet (all-time)
   const svcCounts = new Map<string, number>();
   for (const a of vet.appointments) {
     svcCounts.set(a.service.name, (svcCounts.get(a.service.name) ?? 0) + 1);
   }
-  const topService = [...svcCounts.entries()].sort(
-    (a, b) => b[1] - a[1]
-  )[0];
+  const topService = [...svcCounts.entries()].sort((a, b) => b[1] - a[1])[0];
 
-  // Pre-build working-hours rows for all 7 days (so the editor can show empty days too)
   const byDay = new Map(vet.workingHours.map((w) => [w.dayOfWeek, w]));
   const workingHours = [1, 2, 3, 4, 5, 6, 0].map((d) => {
     const w = byDay.get(d);
@@ -84,37 +143,27 @@ export default async function VetDetailPage({
   });
 
   return (
-    <div className="flex flex-col gap-5">
-      <Link
-        href="/admin/usuarios"
-        className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
-        style={{ color: "var(--vet-green)" }}
-      >
-        <ChevronLeft size={14} /> Veterinarios
-      </Link>
-
-      <VetDetailClient
-        vet={{
-          id: vet.id,
-          name: vet.user.name,
-          email: vet.user.email,
-          phone: vet.user.phone,
-          bio: vet.bio,
-          photoUrl: vet.photoUrl,
-        }}
-        stats={{
-          totalAppts: vet._count.appointments,
-          totalCompleted: totalCompleted.length,
-          totalRevenue,
-          monthAppts: monthAppts.length,
-          monthCompleted: monthCompleted.length,
-          monthRevenue,
-          topService: topService
-            ? { name: topService[0], count: topService[1] }
-            : null,
-        }}
-        workingHours={workingHours}
-      />
-    </div>
+    <VetDetailClient
+      vet={{
+        id: vet.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        bio: vet.bio,
+        photoUrl: vet.photoUrl,
+      }}
+      stats={{
+        totalAppts: vet._count.appointments,
+        totalCompleted: totalCompleted.length,
+        totalRevenue,
+        monthAppts: monthAppts.length,
+        monthCompleted: monthCompleted.length,
+        monthRevenue,
+        topService: topService
+          ? { name: topService[0], count: topService[1] }
+          : null,
+      }}
+      workingHours={workingHours}
+    />
   );
 }

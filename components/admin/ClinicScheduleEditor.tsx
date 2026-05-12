@@ -155,8 +155,9 @@ function DayCard({ initial }: { initial: Day }) {
           <label
             className="block text-[10px] font-extrabold uppercase tracking-wider mb-1"
             style={{ color: "var(--vet-text-3)" }}
+            title="Duración base de cada hueco en la agenda. Los clientes podrán reservar citas en bloques de este tamaño (en minutos)."
           >
-            Slot
+            Slot (min)
           </label>
           <input
             type="number"
@@ -170,6 +171,7 @@ function DayCard({ initial }: { initial: Day }) {
               borderColor: "var(--vet-border)",
               color: "var(--vet-text-1)",
             }}
+            title="Duración base de cada hueco en la agenda. 30 = citas cada 30 min."
           />
         </div>
       </div>

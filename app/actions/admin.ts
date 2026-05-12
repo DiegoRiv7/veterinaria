@@ -238,6 +238,98 @@ export async function createUserAction(
   return { ok: true, id: user.id };
 }
 
+/* ─── Staff (admin / receptionist) edit + password ──────── */
+
+export async function updateStaffAction(
+  userId: string,
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+  }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const id = (userId ?? "").trim();
+  if (!id) return { ok: false, error: "Usuario inválido." };
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, role: true },
+  });
+  if (!user) return { ok: false, error: "Usuario no encontrado." };
+  if (user.role !== "ADMIN" && user.role !== "RECEPTIONIST") {
+    return {
+      ok: false,
+      error: "Este editor sólo funciona con administradores y recepcionistas.",
+    };
+  }
+
+  const update: Record<string, unknown> = {};
+  if (data.name !== undefined) {
+    const name = data.name.trim();
+    if (!name) return { ok: false, error: "El nombre no puede estar vacío." };
+    update.name = name;
+  }
+  if (data.email !== undefined) {
+    const email = data.email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      return { ok: false, error: "Correo inválido." };
+    const dup = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+    if (dup && dup.id !== id)
+      return { ok: false, error: "Correo ya registrado." };
+    update.email = email;
+  }
+  if (data.phone !== undefined) {
+    const phone = data.phone.replace(/\D+/g, "");
+    if (phone.length < 7)
+      return { ok: false, error: "Teléfono inválido." };
+    const dup = await prisma.user.findUnique({
+      where: { phone },
+      select: { id: true },
+    });
+    if (dup && dup.id !== id)
+      return { ok: false, error: "Teléfono ya registrado." };
+    update.phone = phone;
+  }
+
+  if (Object.keys(update).length > 0) {
+    await prisma.user.update({ where: { id }, data: update });
+  }
+
+  revalidatePath("/admin/usuarios");
+  revalidatePath(`/admin/usuarios/${id}`);
+  return { ok: true };
+}
+
+export async function resetUserPasswordAction(
+  userId: string,
+  newPassword: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  await ensureAdmin();
+  const id = (userId ?? "").trim();
+  if (!id) return { ok: false, error: "Usuario inválido." };
+  if (!newPassword || newPassword.length < 4)
+    return { ok: false, error: "La contraseña debe tener al menos 4 caracteres." };
+
+  const user = await prisma.user.findUnique({
+    where: { id },
+    select: { id: true, role: true },
+  });
+  if (!user) return { ok: false, error: "Usuario no encontrado." };
+  if (user.role === "CLIENT")
+    return { ok: false, error: "No se puede resetear contraseñas de clientes desde aquí." };
+
+  const hash = await hashPassword(newPassword);
+  await prisma.user.update({
+    where: { id },
+    data: { passwordHash: hash },
+  });
+  return { ok: true };
+}
+
 export async function removeUserAction(
   userId: string
 ): Promise<{ ok: true } | { ok: false; error: string }> {

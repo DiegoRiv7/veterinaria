@@ -9,14 +9,13 @@ import {
   ChevronRight,
   Plus,
   Stethoscope,
-  Trash2,
   UserCircle2,
   Users as UsersIcon,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
 import { VetAvatar } from "@/components/VetAvatar";
-import { createUserAction, removeUserAction } from "@/app/actions/admin";
+import { createUserAction } from "@/app/actions/admin";
 import { DAY_LABEL } from "@/lib/utils";
 
 /* ─── Types ───────────────────────────────────────────── */
@@ -151,8 +150,7 @@ export function UsersPageClient({
                 u={u}
                 accent="var(--vet-amber)"
                 badge="Recepcionista"
-                canRemove
-                disabled={u.id === currentAdminId}
+                isSelf={u.id === currentAdminId}
               />
             ))}
           </div>
@@ -179,8 +177,7 @@ export function UsersPageClient({
                 u={u}
                 accent="var(--vet-violet)"
                 badge="Administrador"
-                canRemove
-                disabled={u.id === currentAdminId}
+                isSelf={u.id === currentAdminId}
               />
             ))}
           </div>
@@ -280,7 +277,7 @@ function EmptySection({ label, hint }: { label: string; hint: string }) {
 function VetCard({ v }: { v: Vet }) {
   return (
     <Link
-      href={`/admin/usuarios/${v.id}`}
+      href={`/admin/usuarios/${v.userId}`}
       className="border p-4 rounded-[16px] flex items-center gap-3 transition-all hover:-translate-y-0.5 hover:[border-color:var(--vet-green)] no-underline"
       style={{
         background: "var(--vet-bg-card)",
@@ -328,38 +325,17 @@ function StaffCard({
   u,
   accent,
   badge,
-  canRemove,
-  disabled,
+  isSelf,
 }: {
   u: StaffUser;
   accent: string;
   badge: string;
-  canRemove?: boolean;
-  disabled?: boolean;
+  isSelf?: boolean;
 }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-
-  function remove() {
-    if (disabled) {
-      toast.error("No puedes eliminar tu propio usuario.");
-      return;
-    }
-    if (!confirm(`¿Eliminar a ${u.name}?`)) return;
-    startTransition(async () => {
-      const result = await removeUserAction(u.id);
-      if (result.ok) {
-        toast.success(`${u.name} eliminado`);
-        router.refresh();
-      } else {
-        toast.error(result.error);
-      }
-    });
-  }
-
   return (
-    <div
-      className="border p-4 rounded-[16px] flex items-center gap-3"
+    <Link
+      href={`/admin/usuarios/${u.id}`}
+      className="border p-4 rounded-[16px] flex items-center gap-3 transition-all hover:-translate-y-0.5 no-underline"
       style={{
         background: "var(--vet-bg-card)",
         borderColor: "var(--vet-border)",
@@ -399,7 +375,7 @@ function StaffCard({
           >
             {u.name}
           </p>
-          {disabled && (
+          {isSelf && (
             <span
               className="text-[9px] font-extrabold uppercase tracking-wider px-1.5 py-0.5 rounded-full"
               style={{
@@ -425,23 +401,8 @@ function StaffCard({
           />
         </div>
       </div>
-      {canRemove && !disabled && (
-        <button
-          type="button"
-          onClick={remove}
-          disabled={pending}
-          aria-label="Eliminar"
-          className="w-9 h-9 rounded-[8px] border flex items-center justify-center transition-colors disabled:opacity-60"
-          style={{
-            background: "var(--vet-bg-mid)",
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-red)",
-          }}
-        >
-          <Trash2 size={14} />
-        </button>
-      )}
-    </div>
+      <ChevronRight size={18} color="var(--vet-text-3)" />
+    </Link>
   );
 }
 
