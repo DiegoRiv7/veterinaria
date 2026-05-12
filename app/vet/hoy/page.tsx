@@ -68,7 +68,7 @@ export default async function VetTodayPage({
     status: a.status,
     pet: { name: a.pet.name, species: a.pet.species },
     client: { name: a.client.name },
-    service: { name: a.service.name },
+    service: { name: a.service.name, category: a.service.category },
   }));
 
   const clientOptions = clients.map((c) => ({

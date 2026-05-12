@@ -1,12 +1,22 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Plus, Trash2, Check, X, Edit3 } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  Check,
+  X,
+  Edit3,
+  Stethoscope,
+  Scissors,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   upsertServiceAction,
   deleteServiceAction,
 } from "@/app/actions/admin";
+
+type Category = "CLINICAL" | "AESTHETIC";
 
 type Service = {
   id: string;
@@ -15,7 +25,26 @@ type Service = {
   basePrice: number;
   durationMinutes: number;
   active: boolean;
+  category: Category;
   appointmentCount: number;
+};
+
+const CATEGORY_META: Record<
+  Category,
+  { label: string; color: string; icon: React.ReactNode; subtitle: string }
+> = {
+  CLINICAL: {
+    label: "Servicios clínicos",
+    color: "var(--vet-green)",
+    icon: <Stethoscope size={14} />,
+    subtitle: "Consultas, vacunas, cirugías, desparasitación.",
+  },
+  AESTHETIC: {
+    label: "Servicios estéticos",
+    color: "var(--vet-blue-dim)",
+    icon: <Scissors size={14} />,
+    subtitle: "Baño, corte de pelo, uñas, spa.",
+  },
 };
 
 function formatMxn(v: number) {
@@ -71,29 +100,91 @@ export function ServicesEditor({ services }: { services: Service[] }) {
         />
       )}
 
-      <div className="flex flex-col gap-2.5">
-        {services.length === 0 ? (
-          <EmptyState onCreate={() => setCreating(true)} />
-        ) : (
-          services.map((s) =>
-            editingId === s.id ? (
-              <ServiceForm
-                key={s.id}
-                mode="edit"
-                initial={s}
-                onCancel={() => setEditingId(null)}
-                onSaved={() => setEditingId(null)}
-              />
-            ) : (
-              <ServiceRow
-                key={s.id}
-                svc={s}
-                onEdit={() => setEditingId(s.id)}
-              />
-            )
-          )
-        )}
-      </div>
+      {services.length === 0 ? (
+        <EmptyState onCreate={() => setCreating(true)} />
+      ) : (
+        <div className="flex flex-col gap-6">
+          {(["CLINICAL", "AESTHETIC"] as Category[]).map((cat) => {
+            const inCat = services.filter((s) => s.category === cat);
+            const meta = CATEGORY_META[cat];
+            return (
+              <section key={cat} className="flex flex-col gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span
+                    className="w-8 h-8 rounded-[10px] flex items-center justify-center"
+                    style={{
+                      background: `color-mix(in oklab, ${meta.color} 14%, transparent)`,
+                      color: meta.color,
+                    }}
+                  >
+                    {meta.icon}
+                  </span>
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-[15px] font-black"
+                      style={{ color: "var(--vet-text-1)" }}
+                    >
+                      {meta.label}
+                      <span
+                        className="vet-mono text-[11px] font-extrabold ml-2 px-1.5 py-0.5 rounded-full"
+                        style={{
+                          background: `color-mix(in oklab, ${meta.color} 14%, transparent)`,
+                          color: meta.color,
+                        }}
+                      >
+                        {inCat.length}
+                      </span>
+                    </p>
+                    <p
+                      className="text-[12px] font-semibold"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      {meta.subtitle}
+                    </p>
+                  </div>
+                </div>
+                {inCat.length === 0 ? (
+                  <div
+                    className="border-dashed border p-6 rounded-[14px] text-center"
+                    style={{
+                      borderColor: "var(--vet-border)",
+                      background: "var(--vet-bg-mid)",
+                    }}
+                  >
+                    <p
+                      className="text-[12px] font-semibold"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Aún no hay servicios{" "}
+                      {cat === "CLINICAL" ? "clínicos" : "estéticos"}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2.5">
+                    {inCat.map((s) =>
+                      editingId === s.id ? (
+                        <ServiceForm
+                          key={s.id}
+                          mode="edit"
+                          initial={s}
+                          onCancel={() => setEditingId(null)}
+                          onSaved={() => setEditingId(null)}
+                        />
+                      ) : (
+                        <ServiceRow
+                          key={s.id}
+                          svc={s}
+                          onEdit={() => setEditingId(s.id)}
+                        />
+                      )
+                    )}
+                  </div>
+                )}
+              </section>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
@@ -176,12 +267,14 @@ function ServiceRow({
         className="w-11 h-11 rounded-[12px] flex items-center justify-center flex-shrink-0"
         style={{
           background: svc.active
-            ? "var(--vet-green-glow)"
+            ? `color-mix(in oklab, ${CATEGORY_META[svc.category].color} 14%, transparent)`
             : "var(--vet-bg-hover)",
-          color: svc.active ? "var(--vet-green)" : "var(--vet-text-3)",
+          color: svc.active
+            ? CATEGORY_META[svc.category].color
+            : "var(--vet-text-3)",
         }}
       >
-        🩺
+        {CATEGORY_META[svc.category].icon}
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 flex-wrap">
@@ -278,6 +371,9 @@ function ServiceForm({
   const [basePrice, setBasePrice] = useState(initial?.basePrice ?? 500);
   const [duration, setDuration] = useState(initial?.durationMinutes ?? 30);
   const [active, setActive] = useState(initial?.active ?? true);
+  const [category, setCategory] = useState<Category>(
+    initial?.category ?? "CLINICAL"
+  );
   const [pending, startTransition] = useTransition();
 
   function save() {
@@ -292,6 +388,7 @@ function ServiceForm({
         fd.set("description", description.trim());
         fd.set("basePrice", String(basePrice));
         fd.set("durationMinutes", String(duration));
+        fd.set("category", category);
         if (active) fd.set("active", "on");
         await upsertServiceAction(fd);
         toast.success(mode === "create" ? "Servicio creado" : "Cambios guardados");
@@ -325,6 +422,33 @@ function ServiceForm({
           className={inputClass}
           style={inputStyle}
         />
+      </FormField>
+
+      <FormField label="Categoría">
+        <div className="grid grid-cols-2 gap-2">
+          {(["CLINICAL", "AESTHETIC"] as Category[]).map((c) => {
+            const meta = CATEGORY_META[c];
+            const isActive = category === c;
+            return (
+              <button
+                key={c}
+                type="button"
+                onClick={() => setCategory(c)}
+                className="flex items-center gap-2 px-3 h-11 rounded-[10px] border text-[13px] font-extrabold transition-colors"
+                style={{
+                  background: isActive
+                    ? `color-mix(in oklab, ${meta.color} 14%, transparent)`
+                    : "var(--vet-bg-card)",
+                  borderColor: isActive ? meta.color : "var(--vet-border)",
+                  color: isActive ? meta.color : "var(--vet-text-2)",
+                }}
+              >
+                {meta.icon}
+                {c === "CLINICAL" ? "Clínico" : "Estético"}
+              </button>
+            );
+          })}
+        </div>
       </FormField>
 
       <FormField label="Descripción (opcional)">

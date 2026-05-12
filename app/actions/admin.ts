@@ -17,15 +17,18 @@ export async function upsertServiceAction(formData: FormData) {
   const basePrice = Number(formData.get("basePrice") ?? 0);
   const durationMinutes = Number(formData.get("durationMinutes") ?? 30);
   const active = formData.get("active") === "on";
+  const categoryRaw = String(formData.get("category") ?? "CLINICAL");
+  const category =
+    categoryRaw === "AESTHETIC" ? "AESTHETIC" : "CLINICAL";
   if (!name || !Number.isFinite(basePrice) || basePrice < 0) throw new Error("Datos inválidos.");
   if (id) {
     await prisma.service.update({
       where: { id },
-      data: { name, description, basePrice, durationMinutes, active },
+      data: { name, description, basePrice, durationMinutes, active, category },
     });
   } else {
     await prisma.service.create({
-      data: { name, description, basePrice, durationMinutes, active },
+      data: { name, description, basePrice, durationMinutes, active, category },
     });
   }
   revalidatePath("/admin/servicios");

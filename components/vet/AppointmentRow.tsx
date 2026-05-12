@@ -9,7 +9,7 @@ type Appt = {
   status: string;
   pet: { name: string; species: string };
   client: { name: string };
-  service: { name: string };
+  service: { name: string; category?: "CLINICAL" | "AESTHETIC" };
 };
 
 function formatTimeShort(d: Date | string) {
@@ -59,7 +59,12 @@ export function AppointmentRow({ appt, compact }: { appt: Appt; compact?: boolea
             {appt.client.name}
           </span>
         </div>
-        <div className="text-[12px] font-semibold mt-0.5 truncate" style={{ color: "var(--vet-text-3)" }}>
+        <div className="text-[12px] font-semibold mt-0.5 truncate flex items-center gap-1.5" style={{ color: "var(--vet-text-3)" }}>
+          {appt.service.category === "AESTHETIC" ? (
+            <span aria-label="Estético" title="Estético">✂️</span>
+          ) : (
+            <span aria-label="Clínico" title="Clínico">🩺</span>
+          )}
           {appt.service.name}
         </div>
       </div>

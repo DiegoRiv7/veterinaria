@@ -10,10 +10,11 @@ type ApptLite = {
   status: string;
   pet: { name: string; species: string };
   client: { name: string };
-  service: { name: string };
+  service: { name: string; category?: "CLINICAL" | "AESTHETIC" };
 };
 
 type FilterValue = "todas" | "SCHEDULED" | "COMPLETED" | "CANCELLED" | "NO_SHOW";
+type CategoryFilter = "ALL" | "CLINICAL" | "AESTHETIC";
 
 const FILTERS: { value: FilterValue; label: string }[] = [
   { value: "todas", label: "Todas" },
@@ -44,7 +45,20 @@ export function TodayViewClient({
   hideHeader = false,
 }: Props) {
   const [filter, setFilter] = useState<FilterValue>(initialFilter);
-  const visible = filter === "todas" ? appts : appts.filter((a) => a.status === filter);
+  const [catFilter, setCatFilter] = useState<CategoryFilter>("ALL");
+  const clinicalCount = appts.filter(
+    (a) => (a.service.category ?? "CLINICAL") === "CLINICAL"
+  ).length;
+  const aestheticCount = appts.filter(
+    (a) => a.service.category === "AESTHETIC"
+  ).length;
+  const visible = appts
+    .filter((a) => (filter === "todas" ? true : a.status === filter))
+    .filter((a) => {
+      if (catFilter === "ALL") return true;
+      const cat = a.service.category ?? "CLINICAL";
+      return cat === catFilter;
+    });
 
   return (
     <div className="flex flex-col gap-5">
@@ -59,7 +73,48 @@ export function TodayViewClient({
         </div>
       )}
 
-      {/* Filter chips */}
+      {/* Category split (clínicos vs estéticos) */}
+      <div className="flex gap-2 flex-wrap">
+        {(
+          [
+            { value: "ALL", label: "Todos", emoji: "🐾", count: appts.length, color: "var(--vet-text-1)" },
+            { value: "CLINICAL", label: "Clínicos", emoji: "🩺", count: clinicalCount, color: "var(--vet-green)" },
+            { value: "AESTHETIC", label: "Estéticos", emoji: "✂️", count: aestheticCount, color: "var(--vet-blue-dim)" },
+          ] as { value: CategoryFilter; label: string; emoji: string; count: number; color: string }[]
+        ).map((c) => {
+          const active = catFilter === c.value;
+          return (
+            <button
+              key={c.value}
+              type="button"
+              onClick={() => setCatFilter(c.value)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-extrabold transition-colors border"
+              style={{
+                borderColor: active ? c.color : "var(--vet-border)",
+                background: active
+                  ? `color-mix(in oklab, ${c.color} 14%, transparent)`
+                  : "transparent",
+                color: active ? c.color : "var(--vet-text-2)",
+              }}
+            >
+              <span>{c.emoji}</span>
+              {c.label}
+              <span
+                className="vet-mono text-[10px] font-extrabold px-1.5 py-0.5 rounded-full"
+                style={{
+                  background: active
+                    ? `color-mix(in oklab, ${c.color} 22%, transparent)`
+                    : "var(--vet-bg-hover)",
+                }}
+              >
+                {c.count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Status filter chips */}
       <div className="flex gap-2 flex-wrap">
         {FILTERS.map((f) => {
           const active = filter === f.value;

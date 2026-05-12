@@ -31,8 +31,11 @@ export default async function ServicesPage() {
             className="text-[13px] font-semibold"
             style={{ color: "var(--vet-text-3)" }}
           >
-            Servicios disponibles, precios base y duración. El precio final aplica
-            el multiplicador por especie.
+            Separados en <b style={{ color: "var(--vet-green)" }}>clínicos</b>{" "}
+            (consultas, vacunas, cirugías) y{" "}
+            <b style={{ color: "var(--vet-blue-dim)" }}>estéticos</b> (baño,
+            corte de pelo, spa). El precio final aplica el multiplicador por
+            especie.
           </p>
         </div>
       </div>
@@ -44,6 +47,7 @@ export default async function ServicesPage() {
           basePrice: s.basePrice,
           durationMinutes: s.durationMinutes,
           active: s.active,
+          category: s.category,
           appointmentCount: s._count.appointments,
         }))}
       />
