@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { STATUS_LABEL as STATUS_LABEL_ES } from "@/lib/utils";
 import {
   Calendar,
   CheckCircle2,
@@ -324,7 +325,7 @@ export function AdminReportsClient({
             year: "numeric",
           }).format(d),
           formatTime(d),
-          a.status,
+          STATUS_LABEL_ES[a.status] ?? a.status,
           a.vetName,
           a.clientName,
           a.petName,
@@ -347,7 +348,7 @@ export function AdminReportsClient({
         ],
         rows,
         ["TOTAL", "", "", "", "", "", `${filtered.length} citas`, totalRev],
-        [12, 8, 12, 22, 26, 18, 26, 12]
+        [12, 8, 14, 22, 26, 18, 26, 12]
       );
     }
 
