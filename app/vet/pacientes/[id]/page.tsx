@@ -5,7 +5,7 @@ import { readSession } from "@/lib/auth";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
 import { PetGallery } from "@/components/PetGallery";
-import { PetVaccinesTab } from "@/components/PetVaccinesTab";
+import { PetFichaCard } from "@/components/vet/PetFichaCard";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -45,10 +45,6 @@ export default async function VetPatientDetailPage({
       photos: {
         select: { id: true, url: true },
         orderBy: { createdAt: "desc" },
-      },
-      vaccines: {
-        include: { addedBy: { select: { name: true } } },
-        orderBy: { appliedAt: "desc" },
       },
     },
   });
@@ -188,45 +184,23 @@ export default async function VetPatientDetailPage({
         ))}
       </div>
 
-      {/* Vaccines — vet can also register */}
-      <div
-        className="border p-4 sm:p-5"
-        style={{
-          background: "var(--vet-bg-card)",
-          borderColor: "var(--vet-border)",
-          borderRadius: 18,
+      {/* Ficha personalizada — same vibe the owner sees on /inicio, with
+          a direct link into the full cartilla (vaccines, deworming,
+          surgeries, history). */}
+      <PetFichaCard
+        pet={{
+          id: pet.id,
+          name: pet.name,
+          species: pet.species,
+          breed: pet.breed,
+          photoUrl: pet.photoUrl,
+          cardStyle: pet.cardStyle,
+          personalityTags: pet.personalityTags,
+          customMood: pet.customMood,
+          customFunFact: pet.customFunFact,
         }}
-      >
-        <div
-          className="text-[11px] font-extrabold uppercase tracking-wider mb-3"
-          style={{ color: "var(--vet-text-3)" }}
-        >
-          Vacunas
-        </div>
-        <PetVaccinesTab
-          petId={pet.id}
-          vaccines={pet.vaccines.map((v) => {
-            const now = Date.now();
-            let status: "al día" | "próxima" | "vencida" | "—" = "—";
-            if (v.nextAt) {
-              const days = Math.ceil((v.nextAt.getTime() - now) / 86400000);
-              status =
-                days > 60 ? "al día" : days >= 0 ? "próxima" : "vencida";
-            } else {
-              status = "al día";
-            }
-            return {
-              id: v.id,
-              name: v.name,
-              appliedAt: v.appliedAt.toISOString(),
-              nextAt: v.nextAt ? v.nextAt.toISOString() : null,
-              notes: v.notes,
-              addedByName: v.addedBy.name,
-              status,
-            };
-          })}
-        />
-      </div>
+        cartillaHref={`/vet/pacientes/${pet.id}/cartilla`}
+      />
 
       {/* Photo gallery (read-only) — owner-uploaded photos */}
       {pet.photos.length > 0 && (

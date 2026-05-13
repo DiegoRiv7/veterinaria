@@ -36,17 +36,25 @@ function parseDay(raw: string | undefined): Date {
   return d;
 }
 
+type CatFilter = "clinical" | "aesthetic" | "all";
+
+function parseCat(raw: string | undefined): CatFilter {
+  if (raw === "aesthetic" || raw === "all") return raw;
+  return "clinical";
+}
+
 export default async function VetCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ day?: string }>;
+  searchParams: Promise<{ day?: string; cat?: string }>;
 }) {
   const session = await readSession();
   if (!session) redirect("/login");
   if (session.role === "CLIENT") redirect("/inicio");
 
-  const { day: dayParam } = await searchParams;
+  const { day: dayParam, cat: catParam } = await searchParams;
   const selectedDay = parseDay(dayParam);
+  const catFilter = parseCat(catParam);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
@@ -60,16 +68,37 @@ export default async function VetCalendarPage({
   const vetProfile = await prisma.veterinarian.findUnique({ where: { userId: session.userId } });
   const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
 
+  // Apply category filter via service.category
+  const categoryWhere =
+    catFilter === "all"
+      ? {}
+      : {
+          service: {
+            category:
+              catFilter === "aesthetic"
+                ? ("AESTHETIC" as const)
+                : ("CLINICAL" as const),
+          },
+        };
+
   const [monthAppts, dayAppts, clients, services] = await Promise.all([
     prisma.appointment.findMany({
-      where: { ...vetFilter, scheduledAt: { gte: monthStart, lt: monthEnd } },
+      where: {
+        ...vetFilter,
+        ...categoryWhere,
+        scheduledAt: { gte: monthStart, lt: monthEnd },
+      },
       select: { scheduledAt: true },
     }),
     (() => {
       const selectedNext = new Date(selectedDay);
       selectedNext.setDate(selectedNext.getDate() + 1);
       return prisma.appointment.findMany({
-        where: { ...vetFilter, scheduledAt: { gte: selectedDay, lt: selectedNext } },
+        where: {
+          ...vetFilter,
+          ...categoryWhere,
+          scheduledAt: { gte: selectedDay, lt: selectedNext },
+        },
         include: { pet: true, service: true, client: true },
         orderBy: { scheduledAt: "asc" },
       });
@@ -112,8 +141,57 @@ export default async function VetCalendarPage({
   for (let i = 0; i < firstDayOfWeek; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
+  function dayHref(day: string) {
+    const params = new URLSearchParams({ day });
+    if (catFilter !== "clinical") params.set("cat", catFilter);
+    return `/vet/calendario?${params.toString()}`;
+  }
+  function catHref(cat: CatFilter) {
+    const params = new URLSearchParams();
+    if (dayParam) params.set("day", dayParam);
+    if (cat !== "clinical") params.set("cat", cat);
+    const qs = params.toString();
+    return qs ? `/vet/calendario?${qs}` : "/vet/calendario";
+  }
+
+  const CAT_OPTIONS: {
+    value: CatFilter;
+    label: string;
+    emoji: string;
+    color: string;
+  }[] = [
+    { value: "clinical", label: "Clínicos", emoji: "🩺", color: "var(--vet-green)" },
+    { value: "aesthetic", label: "Estéticos", emoji: "✂️", color: "var(--vet-blue-dim)" },
+    { value: "all", label: "Todos", emoji: "🐾", color: "var(--vet-text-1)" },
+  ];
+
   return (
-    <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+    <div className="flex flex-col gap-4">
+      {/* Category filter chips */}
+      <div className="flex gap-2 flex-wrap">
+        {CAT_OPTIONS.map((c) => {
+          const active = catFilter === c.value;
+          return (
+            <Link
+              key={c.value}
+              href={catHref(c.value)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-extrabold transition-colors border no-underline"
+              style={{
+                borderColor: active ? c.color : "var(--vet-border)",
+                background: active
+                  ? `color-mix(in oklab, ${c.color} 14%, transparent)`
+                  : "transparent",
+                color: active ? c.color : "var(--vet-text-2)",
+              }}
+            >
+              <span>{c.emoji}</span>
+              {c.label}
+            </Link>
+          );
+        })}
+      </div>
+
+      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1.2fr_1fr] lg:items-start">
       {/* Calendar */}
       <div
         className="border p-4 sm:p-6 flex flex-col gap-5 self-start"
@@ -125,7 +203,7 @@ export default async function VetCalendarPage({
       >
           <div className="flex items-center justify-between">
             <Link
-              href={`/vet/calendario?day=${toISODate(prevMonth)}`}
+              href={dayHref(toISODate(prevMonth))}
               className="p-1.5 rounded-lg"
               style={{ color: "var(--vet-text-2)" }}
               aria-label="Mes anterior"
@@ -136,7 +214,7 @@ export default async function VetCalendarPage({
               {MONTH_NAMES[month]} {year}
             </div>
             <Link
-              href={`/vet/calendario?day=${toISODate(nextMonth)}`}
+              href={dayHref(toISODate(nextMonth))}
               className="p-1.5 rounded-lg"
               style={{ color: "var(--vet-text-2)" }}
               aria-label="Mes siguiente"
@@ -171,7 +249,7 @@ export default async function VetCalendarPage({
               return (
                 <Link
                   key={iso}
-                  href={`/vet/calendario?day=${iso}`}
+                  href={dayHref(iso)}
                   className="flex flex-col items-center justify-center py-1.5 px-1 rounded-[10px] gap-1 h-[48px] sm:h-[52px]"
                   style={{
                     border: isToday ? "2px solid var(--vet-green)" : "2px solid transparent",
@@ -254,6 +332,7 @@ export default async function VetCalendarPage({
             dayAppts.map((a) => <AppointmentRow key={a.id} appt={a} compact />)
           )}
         </div>
+      </div>
       </div>
     </div>
   );
