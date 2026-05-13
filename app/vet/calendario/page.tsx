@@ -166,32 +166,7 @@ export default async function VetCalendarPage({
   ];
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Category filter chips */}
-      <div className="flex gap-2 flex-wrap">
-        {CAT_OPTIONS.map((c) => {
-          const active = catFilter === c.value;
-          return (
-            <Link
-              key={c.value}
-              href={catHref(c.value)}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-[12px] font-extrabold transition-colors border no-underline"
-              style={{
-                borderColor: active ? c.color : "var(--vet-border)",
-                background: active
-                  ? `color-mix(in oklab, ${c.color} 14%, transparent)`
-                  : "transparent",
-                color: active ? c.color : "var(--vet-text-2)",
-              }}
-            >
-              <span>{c.emoji}</span>
-              {c.label}
-            </Link>
-          );
-        })}
-      </div>
-
-      <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1.2fr_1fr] lg:items-start">
+    <div className="grid gap-5 grid-cols-1 lg:grid-cols-[1.2fr_1fr] lg:items-start">
       {/* Calendar */}
       <div
         className="border p-4 sm:p-6 flex flex-col gap-5 self-start"
@@ -298,25 +273,50 @@ export default async function VetCalendarPage({
         }}
       >
         <div
-          className="px-5 py-4 border-b flex items-center justify-between gap-3 flex-wrap"
+          className="px-5 pt-4 pb-3 border-b flex flex-col gap-3"
           style={{ borderBottomColor: "var(--vet-border)" }}
         >
-          <div>
-            <div className="font-extrabold text-[15px]" style={{ color: "var(--vet-text-1)" }}>
-              {selectedDay.getDate()} de {MONTH_NAMES[selectedDay.getMonth()]}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div>
+              <div className="font-extrabold text-[15px]" style={{ color: "var(--vet-text-1)" }}>
+                {selectedDay.getDate()} de {MONTH_NAMES[selectedDay.getMonth()]}
+              </div>
+              <div className="text-[12px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
+                {dayAppts.length === 0
+                  ? "Sin citas"
+                  : `${dayAppts.length} ${dayAppts.length === 1 ? "cita" : "citas"}`}
+              </div>
             </div>
-            <div className="text-[12px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
-              {dayAppts.length === 0
-                ? "Sin citas"
-                : `${dayAppts.length} ${dayAppts.length === 1 ? "cita" : "citas"}`}
-            </div>
+            <NewAppointmentButton
+              clients={clientOptions}
+              services={serviceOptions}
+              defaultDate={toISODate(selectedDay)}
+              label="Agendar"
+            />
           </div>
-          <NewAppointmentButton
-            clients={clientOptions}
-            services={serviceOptions}
-            defaultDate={toISODate(selectedDay)}
-            label="Agendar"
-          />
+          {/* Category filter chips — local to the day's list */}
+          <div className="flex gap-1.5 flex-wrap">
+            {CAT_OPTIONS.map((c) => {
+              const active = catFilter === c.value;
+              return (
+                <Link
+                  key={c.value}
+                  href={catHref(c.value)}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-extrabold transition-colors border no-underline"
+                  style={{
+                    borderColor: active ? c.color : "var(--vet-border)",
+                    background: active
+                      ? `color-mix(in oklab, ${c.color} 14%, transparent)`
+                      : "transparent",
+                    color: active ? c.color : "var(--vet-text-3)",
+                  }}
+                >
+                  <span>{c.emoji}</span>
+                  {c.label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
         <div className="flex-1 overflow-y-auto p-3.5 flex flex-col gap-2">
           {dayAppts.length === 0 ? (
@@ -332,7 +332,6 @@ export default async function VetCalendarPage({
             dayAppts.map((a) => <AppointmentRow key={a.id} appt={a} compact />)
           )}
         </div>
-      </div>
       </div>
     </div>
   );

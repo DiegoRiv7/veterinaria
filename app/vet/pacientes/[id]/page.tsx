@@ -184,20 +184,20 @@ export default async function VetPatientDetailPage({
         ))}
       </div>
 
-      {/* Ficha personalizada — same vibe the owner sees on /inicio, with
-          a direct link into the full cartilla (vaccines, deworming,
-          surgeries, history). */}
+      {/* Ficha clínica del paciente — datos esenciales en tabla con CTA a
+          la cartilla completa. */}
       <PetFichaCard
         pet={{
           id: pet.id,
           name: pet.name,
           species: pet.species,
           breed: pet.breed,
-          photoUrl: pet.photoUrl,
-          cardStyle: pet.cardStyle,
-          personalityTags: pet.personalityTags,
-          customMood: pet.customMood,
-          customFunFact: pet.customFunFact,
+          birthDate: pet.birthDate,
+          weightKg: pet.weightKg,
+          sex: pet.sex,
+          color: pet.color,
+          sterilized: pet.sterilized,
+          microchipId: pet.microchipId,
         }}
         cartillaHref={`/vet/pacientes/${pet.id}/cartilla`}
       />

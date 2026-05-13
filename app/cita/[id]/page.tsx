@@ -100,19 +100,38 @@ export default async function AppointmentDetailPage({
 
         <List>
           <ListItem>
-            <PetAvatar
-              size="md"
-              photoUrl={appt.pet.photoUrl}
-              species={appt.pet.species}
-              name={appt.pet.name}
-            />
-            <div className="flex-1">
-              <p className="font-medium">{appt.pet.name}</p>
-              <p className="text-[13px] text-[var(--color-muted)]">
-                {SPECIES_LABEL[appt.pet.species]}
-                {appt.pet.breed ? ` · ${appt.pet.breed}` : ""}
-              </p>
-            </div>
+            {(() => {
+              const petHref =
+                isClient
+                  ? `/mascotas/${appt.pet.id}`
+                  : `/vet/pacientes/${appt.pet.id}`;
+              return (
+                <Link
+                  href={petHref}
+                  className="flex items-center gap-3 -mx-3 -my-2 px-3 py-2 rounded-[10px] transition-colors hover:bg-[var(--color-surface-2,transparent)] no-underline flex-1"
+                >
+                  <PetAvatar
+                    size="md"
+                    photoUrl={appt.pet.photoUrl}
+                    species={appt.pet.species}
+                    name={appt.pet.name}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="font-bold inline-flex items-center gap-1.5"
+                      style={{ color: "var(--color-brand)" }}
+                    >
+                      {appt.pet.name}
+                      <span className="text-[12px]">→</span>
+                    </p>
+                    <p className="text-[13px] text-[var(--color-muted)]">
+                      {SPECIES_LABEL[appt.pet.species]}
+                      {appt.pet.breed ? ` · ${appt.pet.breed}` : ""}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })()}
           </ListItem>
           <ListItem>
             <VetAvatar
