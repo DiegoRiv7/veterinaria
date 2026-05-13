@@ -6,6 +6,7 @@ import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
 import { PetGallery } from "@/components/PetGallery";
 import { PetFichaCard } from "@/components/vet/PetFichaCard";
+import { BackLink } from "@/components/BackLink";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -73,13 +74,13 @@ export default async function VetPatientDetailPage({
 
   return (
     <div className="flex flex-col gap-5 max-w-[1100px] mx-auto w-full">
-      <Link
-        href="/vet/pacientes"
+      <BackLink
+        fallbackHref="/vet/pacientes"
         className="text-sm font-semibold no-underline inline-flex items-center gap-1"
         style={{ color: "var(--vet-green)" }}
       >
-        ← Pacientes
-      </Link>
+        ← Volver
+      </BackLink>
 
       {/* Pet header card */}
       <div

@@ -1,9 +1,9 @@
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { paletteFor } from "@/lib/pet-flavor";
+import { BackLink } from "@/components/BackLink";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -161,13 +161,13 @@ export default async function VetPetCartillaPage({
 
   return (
     <div className="flex flex-col gap-5 max-w-[1100px] mx-auto w-full">
-      <Link
-        href={`/vet/pacientes/${pet.id}`}
+      <BackLink
+        fallbackHref={`/vet/pacientes/${pet.id}`}
         className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
         style={{ color: "var(--vet-green)" }}
       >
-        <ChevronLeft size={14} /> Volver a {pet.name}
-      </Link>
+        <ChevronLeft size={14} /> Volver
+      </BackLink>
 
       {/* Pet header band */}
       <div

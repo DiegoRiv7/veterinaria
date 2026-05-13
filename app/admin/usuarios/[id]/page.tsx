@@ -1,10 +1,10 @@
 import { redirect, notFound } from "next/navigation";
-import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { VetDetailClient } from "@/components/admin/VetDetailClient";
 import { StaffDetailClient } from "@/components/admin/StaffDetailClient";
+import { BackLink } from "@/components/BackLink";
 
 export const dynamic = "force-dynamic";
 
@@ -52,13 +52,13 @@ export default async function UserDetailPage({
 
   return (
     <div className="flex flex-col gap-5">
-      <Link
-        href="/admin/usuarios"
+      <BackLink
+        fallbackHref="/admin/usuarios"
         className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
         style={{ color: "var(--vet-green)" }}
       >
-        <ChevronLeft size={14} /> Usuarios
-      </Link>
+        <ChevronLeft size={14} /> Volver
+      </BackLink>
 
       {user.role === "VET" && user.vetProfile ? (
         <VetView vet={user.vetProfile} user={user} />

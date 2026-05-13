@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
+import { BackLink } from "@/components/BackLink";
 import { Card, CardBody, List, ListItem } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
@@ -48,13 +49,13 @@ export default async function VetAppointmentEdit({
 
   return (
     <div className="flex flex-col gap-5 max-w-[860px] mx-auto w-full">
-      <Link
-        href="/vet/hoy"
+      <BackLink
+        fallbackHref="/vet/hoy"
         className="text-sm font-semibold no-underline"
         style={{ color: "var(--vet-green)" }}
       >
         ← Volver
-      </Link>
+      </BackLink>
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h1
