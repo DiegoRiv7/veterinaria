@@ -55,7 +55,7 @@ export default async function VetDashboardPage() {
       },
       include: { pet: true, service: true, client: true },
       orderBy: { scheduledAt: "asc" },
-      take: 6,
+      take: 12,
     }),
     prisma.appointment.findMany({
       where: { ...vetFilter, scheduledAt: { gte: last12Start, lt: monthEnd } },
@@ -132,6 +132,32 @@ export default async function VetDashboardPage() {
     { name: "Isoflurano", current: 1, min: 3, unit: "frascos" },
   ];
 
+  const upcomingClinical = upcoming
+    .filter((a) => a.service.category !== "AESTHETIC")
+    .slice(0, 6);
+  const upcomingAesthetic = upcoming
+    .filter((a) => a.service.category === "AESTHETIC")
+    .slice(0, 6);
+
+  const upcomingSections = [
+    {
+      title: "Veterinaria",
+      href: "/vet/calendario?cat=clinical",
+      icon: "🩺",
+      count: upcomingClinical.length,
+      color: "var(--vet-green)",
+      items: upcomingClinical,
+    },
+    {
+      title: "Estética",
+      href: "/vet/calendario?cat=aesthetic",
+      icon: "✂️",
+      count: upcomingAesthetic.length,
+      color: "var(--vet-blue-dim)",
+      items: upcomingAesthetic,
+    },
+  ];
+
   const firstName =
     session.name.split(" ").find((s) => !/^Dr/i.test(s)) ?? session.name.split(" ")[0];
 
@@ -206,7 +232,7 @@ export default async function VetDashboardPage() {
               Ver todas →
             </Link>
           </div>
-          <div className="p-3 flex flex-col gap-2 lg:flex-1 lg:overflow-y-auto">
+          <div className="p-3 lg:flex-1 lg:overflow-y-auto">
             {upcoming.length === 0 ? (
               <div
                 className="flex-1 flex items-center justify-center py-10 text-center text-[14px] font-semibold"
@@ -215,7 +241,53 @@ export default async function VetDashboardPage() {
                 Sin citas próximas
               </div>
             ) : (
-              upcoming.map((a) => <AppointmentRow key={a.id} appt={a} compact />)
+              <div className="grid gap-3 lg:grid-cols-2">
+                {upcomingSections.map((section) => (
+                  <section
+                    key={section.title}
+                    className="border p-3 flex flex-col gap-2 min-w-0"
+                    style={{
+                      background: "var(--vet-bg-mid)",
+                      borderColor: "var(--vet-border)",
+                      borderRadius: 16,
+                    }}
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="text-[16px]" aria-hidden>
+                        {section.icon}
+                      </span>
+                      <Link
+                        href={section.href}
+                        className="font-extrabold text-[13px] no-underline truncate"
+                        style={{ color: section.color }}
+                      >
+                        {section.title}
+                      </Link>
+                      <span
+                        className="ml-auto vet-mono text-[10px] font-extrabold px-2 py-0.5 rounded-full"
+                        style={{
+                          background: `color-mix(in oklab, ${section.color} 16%, transparent)`,
+                          color: section.color,
+                        }}
+                      >
+                        {section.count}
+                      </span>
+                    </div>
+                    {section.items.length === 0 ? (
+                      <div
+                        className="py-8 text-center text-[12px] font-bold"
+                        style={{ color: "var(--vet-text-3)" }}
+                      >
+                        Sin citas de {section.title.toLowerCase()}
+                      </div>
+                    ) : (
+                      section.items.map((a) => (
+                        <AppointmentRow key={a.id} appt={a} compact />
+                      ))
+                    )}
+                  </section>
+                ))}
+              </div>
             )}
           </div>
         </div>
