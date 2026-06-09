@@ -46,15 +46,7 @@ const FIELD_TYPE_META: Record<
   heading: { label: "Título", icon: "H", short: "Separador" },
 };
 
-const QUICK_TYPES: FieldType[] = [
-  "textarea",
-  "text",
-  "number",
-  "select",
-  "checkboxes",
-  "date",
-  "heading",
-];
+const INLINE_TYPES: FieldType[] = ["textarea", "text", "select", "checkboxes", "number", "date"];
 
 type Selection = { sectionId: string; fieldId: string } | null;
 type DragPayload = { sectionId: string; fieldId: string };
@@ -178,6 +170,21 @@ export function FormBuilder({
     setSelection({ sectionId, fieldId: field.id });
   }
 
+  function addNoteBlock(sectionId: string) {
+    const field = createField("textarea");
+    field.label = "Nueva nota";
+    field.placeholder = "Escribe aquí...";
+    mutate((s) => ({
+      ...s,
+      sections: s.sections.map((section) =>
+        section.id === sectionId
+          ? { ...section, fields: [...section.fields, field] }
+          : section
+      ),
+    }));
+    setSelection({ sectionId, fieldId: field.id });
+  }
+
   function updateField(
     sectionId: string,
     fieldId: string,
@@ -258,7 +265,13 @@ export function FormBuilder({
         sections: without.map((section) => {
           if (section.id !== to.sectionId) return section;
           const fields = [...section.fields];
-          const safeIndex = Math.max(0, Math.min(to.index, fields.length));
+          let safeIndex = Math.max(0, Math.min(to.index, fields.length));
+          if (from.sectionId === to.sectionId) {
+            const originalIndex = source.fields.findIndex(
+              (item) => item.id === from.fieldId
+            );
+            if (originalIndex >= 0 && originalIndex < to.index) safeIndex--;
+          }
           fields.splice(safeIndex, 0, field);
           return { ...section, fields };
         }),
@@ -269,7 +282,7 @@ export function FormBuilder({
   const firstSectionId = schema.sections[0]?.id;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)_320px] gap-4 items-start">
+    <div className="grid grid-cols-1 xl:grid-cols-[180px_minmax(0,1fr)_300px] gap-4 items-start">
       <aside className="xl:sticky xl:top-4 flex xl:flex-col gap-2 overflow-x-auto xl:overflow-visible">
         <div
           className="rounded-[16px] border p-2 flex xl:flex-col gap-2 min-w-max xl:min-w-0"
@@ -278,30 +291,19 @@ export function FormBuilder({
             borderColor: "var(--vet-border)",
           }}
         >
-          {QUICK_TYPES.map((type) => (
-            <button
-              key={type}
-              type="button"
-              onClick={() => firstSectionId && addField(firstSectionId, type)}
-              className="h-10 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[12px] font-extrabold transition-colors"
-              style={{
-                background: "var(--vet-bg-mid)",
-                borderColor: "var(--vet-border)",
-                color: "var(--vet-text-1)",
-              }}
-            >
-              <span
-                className="w-5 h-5 rounded-[6px] inline-flex items-center justify-center vet-mono text-[10px]"
-                style={{
-                  background: "var(--vet-bg-card)",
-                  color: "var(--vet-green)",
-                }}
-              >
-                {FIELD_TYPE_META[type].icon}
-              </span>
-              {FIELD_TYPE_META[type].label}
-            </button>
-          ))}
+          <button
+            type="button"
+            onClick={() => firstSectionId && addNoteBlock(firstSectionId)}
+            className="h-11 px-3 rounded-[11px] border inline-flex items-center gap-2 text-[12px] font-extrabold transition-colors text-white"
+            style={{
+              background:
+                "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
+              borderColor: "transparent",
+              boxShadow: "0 6px 16px var(--vet-green-glow)",
+            }}
+          >
+            <Plus size={15} /> Agregar cuadro
+          </button>
 
           <button
             type="button"
@@ -399,6 +401,7 @@ export function FormBuilder({
                 }
                 onDeleteSection={() => deleteSection(section.id)}
                 onAddField={(type) => addField(section.id, type)}
+                onAddNote={() => addNoteBlock(section.id)}
                 onUpdateField={(fieldId, patch) =>
                   updateField(section.id, fieldId, patch)
                 }
@@ -447,6 +450,7 @@ function CanvasSection({
   onSectionTitle,
   onDeleteSection,
   onAddField,
+  onAddNote,
   onUpdateField,
   onDuplicateField,
   onDeleteField,
@@ -462,6 +466,7 @@ function CanvasSection({
   onSectionTitle: (title: string) => void;
   onDeleteSection: () => void;
   onAddField: (type: FieldType) => void;
+  onAddNote: () => void;
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
   onDuplicateField: (fieldId: string) => void;
   onDeleteField: (fieldId: string) => void;
@@ -497,10 +502,8 @@ function CanvasSection({
         </button>
       </div>
 
-      <DropSlot active={!!dragging} onDrop={() => onDropAt(0)} />
-
       {section.fields.map((field, index) => (
-        <div key={field.id} className="flex flex-col gap-2">
+        <div key={field.id}>
           <CanvasBlock
             field={field}
             selected={selectedFieldId === field.id}
@@ -511,8 +514,9 @@ function CanvasSection({
             onDelete={() => onDeleteField(field.id)}
             onDragStart={() => onDragStart(field.id)}
             onDragEnd={onDragEnd}
+            onDrop={(after) => onDropAt(index + (after ? 1 : 0))}
+            dragging={!!dragging}
           />
-          <DropSlot active={!!dragging} onDrop={() => onDropAt(index + 1)} />
         </div>
       ))}
 
@@ -531,7 +535,7 @@ function CanvasSection({
       <div className="relative">
         <button
           type="button"
-          onClick={() => setAdderOpen((open) => !open)}
+          onClick={onAddNote}
           className="h-10 px-3 rounded-[10px] border border-dashed inline-flex items-center gap-2 text-[12px] font-extrabold"
           style={{
             background: "transparent",
@@ -540,6 +544,18 @@ function CanvasSection({
           }}
         >
           <Plus size={14} /> Agregar cuadro
+        </button>
+        <button
+          type="button"
+          onClick={() => setAdderOpen((open) => !open)}
+          className="ml-2 h-10 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[12px] font-extrabold"
+          style={{
+            background: "var(--vet-bg-mid)",
+            borderColor: "var(--vet-border)",
+            color: "var(--vet-text-2)",
+          }}
+        >
+          Más <ChevronDown size={13} />
         </button>
         {adderOpen && (
           <FieldTypeMenu
@@ -565,6 +581,8 @@ function CanvasBlock({
   onDelete,
   onDragStart,
   onDragEnd,
+  onDrop,
+  dragging,
 }: {
   field: FormField;
   selected: boolean;
@@ -575,16 +593,23 @@ function CanvasBlock({
   onDelete: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
+  onDrop: (after: boolean) => void;
+  dragging: boolean;
 }) {
   const meta = FIELD_TYPE_META[field.type];
   const visual = isVisualOnly(field.type);
 
   return (
     <article
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = "move";
-        onDragStart();
+      onDragOver={(e) => {
+        if (!dragging) return;
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        if (!dragging) return;
+        e.preventDefault();
+        const rect = e.currentTarget.getBoundingClientRect();
+        onDrop(e.clientY > rect.top + rect.height / 2);
       }}
       onDragEnd={onDragEnd}
       onClick={onSelect}
@@ -601,6 +626,13 @@ function CanvasBlock({
     >
       <div className="flex items-start gap-3">
         <div
+          draggable
+          onDragStart={(e) => {
+            e.dataTransfer.effectAllowed = "move";
+            e.dataTransfer.setData("text/plain", field.id);
+            onDragStart();
+          }}
+          onDragEnd={onDragEnd}
           className="mt-1 w-8 h-8 rounded-[10px] border inline-flex items-center justify-center flex-shrink-0"
           style={{
             background: "var(--vet-bg-mid)",
@@ -637,10 +669,17 @@ function CanvasBlock({
           <input
             value={field.label}
             onChange={(e) => onChange({ label: e.target.value })}
-            placeholder={visual ? "Título" : "Nombre del campo"}
-            className="w-full bg-transparent border-none outline-none text-[15px] sm:text-[16px] font-black"
+            placeholder={visual ? "Título" : "Escribe el título o pregunta"}
+            className="w-full bg-transparent border-none outline-none text-[16px] sm:text-[17px] font-black"
             style={{ color: "var(--vet-text-1)" }}
           />
+
+          {!visual && (
+            <InlineTypeBar
+              activeType={field.type}
+              onPick={(type) => onChange({ type })}
+            />
+          )}
 
           <BlockPreview field={field} onChange={onChange} />
         </div>
@@ -729,20 +768,31 @@ function BlockPreview({
   }
 
   return (
-    <div className="mt-2 flex items-center gap-2">
-      <input
-        value={field.placeholder ?? ""}
-        onChange={(e) => onChange({ placeholder: e.target.value })}
-        placeholder={
-          field.type === "number"
-            ? "Ej. 12.5"
-            : field.type === "date"
-              ? "Fecha"
-              : "Texto guía"
-        }
-        className="flex-1 min-w-0 h-10 px-3 rounded-[10px] border outline-none text-[13px] font-bold"
-        style={inputStyle}
-      />
+    <div className="mt-2 flex items-start gap-2">
+      {field.type === "textarea" ? (
+        <textarea
+          value={field.placeholder ?? ""}
+          onChange={(e) => onChange({ placeholder: e.target.value })}
+          placeholder="Escribe texto libre, instrucciones o la guía que verá el vet..."
+          rows={3}
+          className="flex-1 min-w-0 px-3 py-2 rounded-[10px] border outline-none text-[13px] font-bold resize-none"
+          style={inputStyle}
+        />
+      ) : (
+        <input
+          value={field.placeholder ?? ""}
+          onChange={(e) => onChange({ placeholder: e.target.value })}
+          placeholder={
+            field.type === "number"
+              ? "Ej. 12.5"
+              : field.type === "date"
+                ? "Fecha"
+                : "Texto guía"
+          }
+          className="flex-1 min-w-0 h-10 px-3 rounded-[10px] border outline-none text-[13px] font-bold"
+          style={inputStyle}
+        />
+      )}
       {field.type === "number" && (
         <input
           value={field.unit ?? ""}
@@ -752,6 +802,43 @@ function BlockPreview({
           style={inputStyle}
         />
       )}
+    </div>
+  );
+}
+
+function InlineTypeBar({
+  activeType,
+  onPick,
+}: {
+  activeType: FieldType;
+  onPick: (type: FieldType) => void;
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-1.5">
+      {INLINE_TYPES.map((type) => {
+        const active = activeType === type;
+        return (
+          <button
+            key={type}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onPick(type);
+            }}
+            className="h-7 px-2 rounded-[8px] border inline-flex items-center gap-1 text-[10px] font-extrabold"
+            style={{
+              background: active
+                ? "color-mix(in oklab, var(--vet-green) 12%, transparent)"
+                : "var(--vet-bg-mid)",
+              borderColor: active ? "var(--vet-green)" : "var(--vet-border)",
+              color: active ? "var(--vet-green)" : "var(--vet-text-2)",
+            }}
+          >
+            <span className="vet-mono">{FIELD_TYPE_META[type].icon}</span>
+            {FIELD_TYPE_META[type].label}
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -1135,33 +1222,6 @@ function FieldTypeMenu({
         </button>
       ))}
     </div>
-  );
-}
-
-function DropSlot({
-  active,
-  onDrop,
-}: {
-  active: boolean;
-  onDrop: () => void;
-}) {
-  return (
-    <div
-      onDragOver={(e) => {
-        if (!active) return;
-        e.preventDefault();
-      }}
-      onDrop={(e) => {
-        e.preventDefault();
-        onDrop();
-      }}
-      className="h-2 rounded-full transition-colors"
-      style={{
-        background: active
-          ? "color-mix(in oklab, var(--vet-green) 28%, transparent)"
-          : "transparent",
-      }}
-    />
   );
 }
 
