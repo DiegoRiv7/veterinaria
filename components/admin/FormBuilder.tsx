@@ -11,9 +11,7 @@ import {
   Layers,
   Loader2,
   Plus,
-  Pencil,
   Save,
-  Settings2,
   Trash2,
   X,
 } from "lucide-react";
@@ -315,141 +313,137 @@ export function FormBuilder({
     });
   }
 
-  const firstSectionId = schema.sections[0]?.id;
-
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)_300px] gap-4 items-start">
-      <aside className="xl:sticky xl:top-4 flex xl:flex-col gap-2 overflow-x-auto xl:overflow-visible">
-        <div
-          className="rounded-[16px] border p-2 flex xl:flex-col gap-2 min-w-max xl:min-w-0"
-          style={{
-            background: "var(--vet-bg-card)",
-            borderColor: "var(--vet-border)",
-          }}
-        >
-          <div className="hidden xl:block px-1.5 py-1">
-            <p
-              className="text-[12px] font-black"
-              style={{ color: "var(--vet-text-1)" }}
-            >
-              Piezas de la hoja
-            </p>
-            <p
-              className="text-[10px] font-bold leading-snug mt-0.5"
-              style={{ color: "var(--vet-text-3)" }}
-            >
-              Toca para agregar o arrastra al lugar exacto.
-            </p>
-          </div>
-          {PALETTE_TYPES.map((type) => (
-            <PaletteBlock
-              key={type}
-              type={type}
-              onClick={() => firstSectionId && addField(firstSectionId, type)}
-              onDragStart={() => setDragging({ kind: "new", type })}
-              onDragEnd={() => setDragging(null)}
-            />
-          ))}
-
-          <button
-            type="button"
-            onClick={addSection}
-            className="h-10 px-3 rounded-[10px] border border-dashed inline-flex items-center gap-2 text-[12px] font-extrabold"
-            style={{
-              background: "transparent",
-              borderColor: "var(--vet-green)",
-              color: "var(--vet-green)",
-            }}
-          >
-            <Plus size={14} /> Sección
-          </button>
-        </div>
-      </aside>
-
+    <div className="flex flex-col gap-3">
       <main className="min-w-0 flex flex-col gap-3">
         <div
-          className="rounded-[18px] border p-3 flex items-center justify-between gap-3 flex-wrap"
+          className="rounded-[18px] border overflow-hidden"
           style={{
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
           }}
         >
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setTemplateOpen((open) => !open)}
-              className="h-10 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[12px] font-extrabold"
-              style={{
-                background: "var(--vet-bg-mid)",
-                borderColor: "var(--vet-border)",
-                color: "var(--vet-text-1)",
-              }}
-            >
-              <Layers size={14} /> Plantilla <ChevronDown size={13} />
-            </button>
-            {templateOpen && (
-              <TemplateMenu
-                onPick={(key) => {
-                  setTemplateOpen(false);
-                  setConfirmAction({ kind: "template", key });
-                }}
-                onClose={() => setTemplateOpen(false)}
-              />
-            )}
-          </div>
-
-          <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
-            <div
-              className="inline-flex items-center rounded-[10px] border p-0.5"
-              style={{
-                background: "var(--vet-bg-mid)",
-                borderColor: "var(--vet-border)",
-              }}
-            >
-              {[
-                { value: "edit" as const, label: "Armar", icon: Pencil },
-                { value: "preview" as const, label: "Vista real", icon: Eye },
-              ].map((item) => {
-                const active = mode === item.value;
-                const Icon = item.icon;
-                return (
-                  <button
-                    key={item.value}
-                    type="button"
-                    onClick={() => setMode(item.value)}
-                    className="h-8 px-2.5 rounded-[8px] inline-flex items-center gap-1.5 text-[11px] font-extrabold"
-                    style={{
-                      background: active ? "var(--vet-bg-card)" : "transparent",
-                      color: active ? "var(--vet-green)" : "var(--vet-text-2)",
+          <div
+            className="px-3 py-2.5 border-b flex items-center justify-between gap-3 flex-wrap"
+            style={{ borderColor: "var(--vet-border)" }}
+          >
+            <div className="flex items-center gap-2">
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setTemplateOpen((open) => !open)}
+                  className="h-9 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[12px] font-extrabold"
+                  style={{
+                    background: "var(--vet-bg-mid)",
+                    borderColor: "var(--vet-border)",
+                    color: "var(--vet-text-1)",
+                  }}
+                >
+                  <Layers size={14} /> Plantilla <ChevronDown size={13} />
+                </button>
+                {templateOpen && (
+                  <TemplateMenu
+                    onPick={(key) => {
+                      setTemplateOpen(false);
+                      setConfirmAction({ kind: "template", key });
                     }}
-                  >
-                    <Icon size={13} /> {item.label}
-                  </button>
-                );
-              })}
-            </div>
-            {validation.fieldsWithIssues.size > 0 && (
-              <span
-                className="inline-flex items-center gap-1 px-2 py-1 rounded-full"
+                    onClose={() => setTemplateOpen(false)}
+                  />
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={addSection}
+                className="h-9 px-3 rounded-[10px] border border-dashed inline-flex items-center gap-2 text-[12px] font-extrabold"
                 style={{
-                  background:
-                    "color-mix(in oklab, var(--vet-red) 12%, transparent)",
-                  color: "var(--vet-red)",
+                  background: "transparent",
+                  borderColor: "var(--vet-green)",
+                  color: "var(--vet-green)",
                 }}
               >
-                <AlertCircle size={12} /> Revisar
-              </span>
-            )}
-            <SaveIndicator
-              saving={saving}
-              lastSavedAt={lastSavedAt}
-              hasIssues={validation.fieldsWithIssues.size > 0}
-            />
+                <Plus size={14} /> Sección
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
+              <div
+                className="inline-flex items-center rounded-[10px] border p-0.5"
+                style={{
+                  background: "var(--vet-bg-mid)",
+                  borderColor: "var(--vet-border)",
+                }}
+              >
+                {[
+                  { value: "edit" as const, label: "Hoja", icon: Plus },
+                  { value: "preview" as const, label: "Vista real", icon: Eye },
+                ].map((item) => {
+                  const active = mode === item.value;
+                  const Icon = item.icon;
+                  return (
+                    <button
+                      key={item.value}
+                      type="button"
+                      onClick={() => setMode(item.value)}
+                      className="h-8 px-2.5 rounded-[8px] inline-flex items-center gap-1.5 text-[11px] font-extrabold"
+                      style={{
+                        background: active ? "var(--vet-bg-card)" : "transparent",
+                        color: active ? "var(--vet-green)" : "var(--vet-text-2)",
+                      }}
+                    >
+                      <Icon size={13} /> {item.label}
+                    </button>
+                  );
+                })}
+              </div>
+              {validation.fieldsWithIssues.size > 0 && (
+                <span
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full"
+                  style={{
+                    background:
+                      "color-mix(in oklab, var(--vet-red) 12%, transparent)",
+                    color: "var(--vet-red)",
+                  }}
+                >
+                  <AlertCircle size={12} /> Revisar
+                </span>
+              )}
+              <SaveIndicator
+                saving={saving}
+                lastSavedAt={lastSavedAt}
+                hasIssues={validation.fieldsWithIssues.size > 0}
+              />
+            </div>
           </div>
+          {mode === "edit" && (
+            <div
+              className="px-3 py-2 flex items-center gap-2 overflow-x-auto"
+              style={{ background: "var(--vet-bg-mid)" }}
+            >
+              <span
+                className="text-[11px] font-extrabold uppercase tracking-wider flex-shrink-0"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Insertar
+              </span>
+              {PALETTE_TYPES.map((type) => (
+                <InsertButton
+                  key={type}
+                  type={type}
+                  onClick={() => {
+                    const firstSection = schema.sections[0];
+                    if (firstSection) addField(firstSection.id, type);
+                  }}
+                  onDragStart={() => setDragging({ kind: "new", type })}
+                  onDragEnd={() => setDragging(null)}
+                  disabled={!schema.sections[0]}
+                />
+              ))}
+            </div>
+          )}
         </div>
 
         <div
-          className="rounded-[22px] border p-3 sm:p-5"
+          className="rounded-[22px] border p-3 sm:p-6"
           style={{
             background:
               "linear-gradient(180deg, var(--vet-bg-mid), var(--vet-bg-deep))",
@@ -495,10 +489,29 @@ export function FormBuilder({
                 >
                   {mode === "preview"
                     ? "Esta vista no edita nada; solo muestra el resultado final."
-                    : "Escribe directo en cada cuadro. Lo avanzado queda en el panel derecho."}
+                    : "Escribe directo en la hoja. Al seleccionar una pieza aparece su barra de ajustes."}
                 </p>
               </div>
             </div>
+            {mode === "edit" && selected && (
+              <ContextToolbar
+                field={selected.field}
+                onChange={(patch) =>
+                  updateField(selected.section.id, selected.field.id, patch)
+                }
+                onDuplicate={() =>
+                  duplicateField(selected.section.id, selected.field.id)
+                }
+                onDelete={() =>
+                  setConfirmAction({
+                    kind: "field",
+                    sectionId: selected.section.id,
+                    fieldId: selected.field.id,
+                    title: selected.field.label || "Cuadro sin título",
+                  })
+                }
+              />
+            )}
             {mode === "preview" ? (
               <ConsultaPreview schema={schema} />
             ) : (
@@ -555,26 +568,6 @@ export function FormBuilder({
         </div>
       </main>
 
-      {mode === "edit" && (
-        <aside className="xl:sticky xl:top-4">
-          <Inspector
-            selected={selected}
-            onChange={(patch) => {
-              if (!selected) return;
-              updateField(selected.section.id, selected.field.id, patch);
-            }}
-            onDelete={() => {
-              if (!selected) return;
-              setConfirmAction({
-                kind: "field",
-                sectionId: selected.section.id,
-                fieldId: selected.field.id,
-                title: selected.field.label || "Cuadro sin título",
-              });
-            }}
-          />
-        </aside>
-      )}
       {confirmAction && (
         <ConfirmWidget
           action={confirmAction}
@@ -730,59 +723,154 @@ function CanvasSection({
   );
 }
 
-function PaletteBlock({
+function InsertButton({
   type,
   onClick,
   onDragStart,
   onDragEnd,
+  disabled,
 }: {
   type: FieldType;
   onClick: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
+  disabled?: boolean;
 }) {
   const meta = FIELD_TYPE_META[type];
   return (
     <button
       type="button"
       draggable
+      disabled={disabled}
       onDragStart={(e) => {
+        if (disabled) return;
         e.dataTransfer.effectAllowed = "copy";
         e.dataTransfer.setData("text/plain", `new:${type}`);
         onDragStart();
       }}
       onDragEnd={onDragEnd}
       onClick={onClick}
-      className="w-full min-w-[150px] xl:min-w-0 rounded-[12px] border p-2.5 text-left transition-colors hover:[border-color:var(--vet-green)]"
+      className="h-9 px-2.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[11px] font-extrabold whitespace-nowrap transition-colors disabled:opacity-50 hover:[border-color:var(--vet-green)]"
       style={{
-        background: "var(--vet-bg-mid)",
+        background: "var(--vet-bg-card)",
         borderColor: "var(--vet-border)",
         color: "var(--vet-text-1)",
       }}
     >
-      <div className="flex items-center gap-2">
-        <span
-          className="w-8 h-8 rounded-[9px] inline-flex items-center justify-center vet-mono text-[12px] font-black"
+      <span
+        className="w-5 h-5 rounded-[6px] inline-flex items-center justify-center vet-mono text-[10px] font-black"
+        style={{
+          background: "var(--vet-bg-mid)",
+          color: "var(--vet-green)",
+        }}
+      >
+        {meta.icon}
+      </span>
+      {meta.label}
+    </button>
+  );
+}
+
+function ContextToolbar({
+  field,
+  onChange,
+  onDuplicate,
+  onDelete,
+}: {
+  field: FormField;
+  onChange: (patch: Partial<FormField>) => void;
+  onDuplicate: () => void;
+  onDelete: () => void;
+}) {
+  const visual = isVisualOnly(field.type);
+  return (
+    <div
+      className="rounded-[14px] border p-2 flex items-center gap-2 overflow-x-auto"
+      style={{
+        background: "var(--vet-bg-mid)",
+        borderColor: "var(--vet-border)",
+      }}
+    >
+      <span
+        className="text-[10px] font-extrabold uppercase tracking-wider flex-shrink-0"
+        style={{ color: "var(--vet-text-3)" }}
+      >
+        Pieza seleccionada
+      </span>
+
+      <select
+        value={field.type}
+        onChange={(e) => onChange({ type: e.target.value as FieldType })}
+        className="h-9 px-2 rounded-[9px] border text-[12px] font-extrabold outline-none"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          color: "var(--vet-text-1)",
+        }}
+      >
+        {(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => (
+          <option key={type} value={type}>
+            {FIELD_TYPE_META[type].label}
+          </option>
+        ))}
+      </select>
+
+      {!visual && (
+        <label
+          className="h-9 px-2.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[11px] font-extrabold flex-shrink-0"
           style={{
             background: "var(--vet-bg-card)",
-            color: "var(--vet-green)",
+            borderColor: "var(--vet-border)",
+            color: "var(--vet-text-2)",
           }}
         >
-          {meta.icon}
-        </span>
-        <span className="min-w-0">
-          <span className="block text-[12px] font-black truncate">
-            {meta.label}
-          </span>
-          <span
-            className="block text-[10px] font-bold truncate"
-            style={{ color: "var(--vet-text-3)" }}
-          >
-            {meta.short}
-          </span>
-        </span>
-      </div>
-    </button>
+          <input
+            type="checkbox"
+            checked={!!field.required}
+            onChange={(e) => onChange({ required: e.target.checked })}
+          />
+          Obligatorio
+        </label>
+      )}
+
+      <input
+        value={field.helpText ?? ""}
+        onChange={(e) => onChange({ helpText: e.target.value })}
+        placeholder="Nota para quien atiende"
+        className="min-w-[180px] flex-1 h-9 px-2 rounded-[9px] border text-[12px] font-bold outline-none"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          color: "var(--vet-text-1)",
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={onDuplicate}
+        className="h-9 px-2.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[11px] font-extrabold flex-shrink-0"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          color: "var(--vet-text-2)",
+        }}
+      >
+        <Copy size={13} /> Duplicar
+      </button>
+
+      <button
+        type="button"
+        onClick={onDelete}
+        className="h-9 px-2.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[11px] font-extrabold flex-shrink-0"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          color: "var(--vet-red)",
+        }}
+      >
+        <Trash2 size={13} /> Quitar
+      </button>
+    </div>
   );
 }
 
@@ -1394,204 +1482,6 @@ function OptionsChips({
   );
 }
 
-function Inspector({
-  selected,
-  onChange,
-  onDelete,
-}: {
-  selected: { section: FormSection; field: FormField } | null;
-  onChange: (patch: Partial<FormField>) => void;
-  onDelete: () => void;
-}) {
-  if (!selected) {
-    return (
-      <div
-        className="rounded-[18px] border p-5"
-        style={{
-          background: "var(--vet-bg-card)",
-          borderColor: "var(--vet-border)",
-        }}
-      >
-        <p
-          className="text-[13px] font-extrabold"
-          style={{ color: "var(--vet-text-1)" }}
-        >
-          Selecciona una pieza de la hoja
-        </p>
-      </div>
-    );
-  }
-
-  const field = selected.field;
-  const visual = isVisualOnly(field.type);
-  const needsOptions = fieldNeedsOptions(field.type);
-
-  return (
-    <div
-      className="rounded-[18px] border overflow-hidden"
-      style={{
-        background: "var(--vet-bg-card)",
-        borderColor: "var(--vet-border)",
-      }}
-    >
-      <div
-        className="px-4 py-3 border-b flex items-center gap-2"
-        style={{ borderColor: "var(--vet-border)" }}
-      >
-        <Settings2 size={15} style={{ color: "var(--vet-green)" }} />
-        <p
-          className="text-[13px] font-black"
-          style={{ color: "var(--vet-text-1)" }}
-        >
-          Ajustes de la pieza
-        </p>
-      </div>
-
-      <div className="p-4 flex flex-col gap-4">
-        <PanelField label="Qué captura">
-          <div className="grid grid-cols-2 gap-1.5">
-            {(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => {
-              const active = type === field.type;
-              return (
-                <button
-                  key={type}
-                  type="button"
-                  onClick={() => onChange({ type })}
-                  className="h-9 rounded-[9px] border px-2 inline-flex items-center gap-1.5 text-[11px] font-extrabold"
-                  style={{
-                    background: active
-                      ? "color-mix(in oklab, var(--vet-green) 14%, transparent)"
-                      : "var(--vet-bg-mid)",
-                    borderColor: active ? "var(--vet-green)" : "var(--vet-border)",
-                    color: active ? "var(--vet-green)" : "var(--vet-text-2)",
-                  }}
-                >
-                  <span className="vet-mono">{FIELD_TYPE_META[type].icon}</span>
-                  <span className="truncate">{FIELD_TYPE_META[type].label}</span>
-                </button>
-              );
-            })}
-          </div>
-        </PanelField>
-
-        {!visual && (
-          <label
-            className="h-10 rounded-[10px] border px-3 inline-flex items-center gap-2 cursor-pointer"
-            style={{
-              background: "var(--vet-bg-mid)",
-              borderColor: "var(--vet-border)",
-            }}
-          >
-            <input
-              type="checkbox"
-              checked={!!field.required}
-              onChange={(e) => onChange({ required: e.target.checked })}
-            />
-            <span
-              className="text-[12px] font-extrabold"
-              style={{ color: "var(--vet-text-1)" }}
-            >
-              Obligatorio
-            </span>
-          </label>
-        )}
-
-        {!visual && (
-          <PanelField label="Nota para quien atiende">
-            <textarea
-              value={field.helpText ?? ""}
-              onChange={(e) => onChange({ helpText: e.target.value })}
-              rows={3}
-              placeholder="Ej. Revisa piel, pelaje, apetito o comportamiento."
-              className="w-full px-3 py-2 rounded-[10px] border outline-none resize-none text-[13px] font-bold"
-              style={inputStyle}
-            />
-          </PanelField>
-        )}
-
-        {needsOptions && (
-          <PanelField label="Opciones que podrá elegir">
-            <OptionsList
-              options={field.options ?? []}
-              onChange={(options) => onChange({ options })}
-            />
-          </PanelField>
-        )}
-
-        <button
-          type="button"
-          onClick={onDelete}
-          className="h-10 rounded-[10px] border inline-flex items-center justify-center gap-1.5 text-[12px] font-extrabold"
-          style={{
-            background: "var(--vet-bg-mid)",
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-red)",
-          }}
-        >
-          <Trash2 size={14} /> Quitar de la hoja
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function OptionsList({
-  options,
-  onChange,
-}: {
-  options: string[];
-  onChange: (next: string[]) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-1.5">
-      {options.map((option, index) => (
-        <div key={index} className="flex items-center gap-1.5">
-          <input
-            value={option}
-            onChange={(e) => {
-              const next = [...options];
-              next[index] = e.target.value;
-              onChange(next);
-            }}
-            placeholder={`Opción ${index + 1}`}
-            className="flex-1 min-w-0 h-9 px-3 rounded-[9px] border outline-none text-[12px] font-bold"
-            style={inputStyle}
-          />
-          <button
-            type="button"
-            onClick={() => {
-              const next = [...options];
-              next.splice(index, 1);
-              onChange(next);
-            }}
-            className="w-9 h-9 rounded-[9px] border inline-flex items-center justify-center"
-            style={{
-              background: "var(--vet-bg-mid)",
-              borderColor: "var(--vet-border)",
-              color: "var(--vet-red)",
-            }}
-            aria-label="Eliminar opción"
-          >
-            <X size={13} />
-          </button>
-        </div>
-      ))}
-      <button
-        type="button"
-        onClick={() => onChange([...options, ""])}
-        className="self-start h-8 px-2.5 rounded-[8px] border border-dashed inline-flex items-center gap-1 text-[11px] font-extrabold"
-        style={{
-          background: "transparent",
-          borderColor: "var(--vet-border)",
-          color: "var(--vet-text-2)",
-        }}
-      >
-        <Plus size={12} /> Agregar
-      </button>
-    </div>
-  );
-}
-
 function TemplateMenu({
   onPick,
   onClose,
@@ -1751,26 +1641,6 @@ function SaveIndicator({
     >
       <Check size={12} /> Listo
     </span>
-  );
-}
-
-function PanelField({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div>
-      <label
-        className="block text-[10px] font-extrabold uppercase tracking-wider mb-1.5"
-        style={{ color: "var(--vet-text-3)" }}
-      >
-        {label}
-      </label>
-      {children}
-    </div>
   );
 }
 
