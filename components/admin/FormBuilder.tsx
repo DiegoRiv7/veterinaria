@@ -54,6 +54,10 @@ type Selection = { sectionId: string; fieldId: string } | null;
 type DragPayload =
   | { kind: "existing"; sectionId: string; fieldId: string }
   | { kind: "new"; type: FieldType };
+type ConfirmAction =
+  | { kind: "template"; key: TemplateKey }
+  | { kind: "section"; sectionId: string; title: string }
+  | { kind: "field"; sectionId: string; fieldId: string; title: string };
 
 export function FormBuilder({
   schema: initialSchema,
@@ -71,6 +75,7 @@ export function FormBuilder({
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [dragging, setDragging] = useState<DragPayload | null>(null);
   const [mode, setMode] = useState<"edit" | "preview">("edit");
+  const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
 
   const dirtyRef = useRef(false);
   const lastSavedJsonRef = useRef(JSON.stringify(ensureCanvasSchema(initialSchema)));
@@ -121,7 +126,6 @@ export function FormBuilder({
 
   function applyTemplate(key: TemplateKey) {
     setTemplateOpen(false);
-    if (!confirm("Esto reemplazará el lienzo actual. ¿Continuar?")) return;
     const next = ensureCanvasSchema(templateFor(key));
     mutate(() => next);
     setSelection(firstField(next));
@@ -148,7 +152,6 @@ export function FormBuilder({
   }
 
   function deleteSection(sectionId: string) {
-    if (!confirm("¿Eliminar este grupo y sus cuadros?")) return;
     mutate((s) => {
       const sections = s.sections.filter((section) => section.id !== sectionId);
       return {
@@ -245,6 +248,20 @@ export function FormBuilder({
       ),
     }));
     if (selection?.fieldId === fieldId) setSelection(null);
+  }
+
+  function confirmPendingAction() {
+    if (!confirmAction) return;
+    if (confirmAction.kind === "template") {
+      applyTemplate(confirmAction.key);
+    } else if (confirmAction.kind === "section") {
+      deleteSection(confirmAction.sectionId);
+      toast.success("Grupo eliminado");
+    } else {
+      deleteField(confirmAction.sectionId, confirmAction.fieldId);
+      toast.success("Cuadro eliminado");
+    }
+    setConfirmAction(null);
   }
 
   function placeField(
@@ -358,7 +375,10 @@ export function FormBuilder({
             </button>
             {templateOpen && (
               <TemplateMenu
-                onPick={applyTemplate}
+                onPick={(key) => {
+                  setTemplateOpen(false);
+                  setConfirmAction({ kind: "template", key });
+                }}
                 onClose={() => setTemplateOpen(false)}
               />
             )}
@@ -446,7 +466,13 @@ export function FormBuilder({
                   onSectionTitle={(title) =>
                     updateSection(section.id, { title })
                   }
-                  onDeleteSection={() => deleteSection(section.id)}
+                  onDeleteSection={() =>
+                    setConfirmAction({
+                      kind: "section",
+                      sectionId: section.id,
+                      title: section.title || "Grupo sin título",
+                    })
+                  }
                   onAddField={(type) => addField(section.id, type)}
                   onAddNote={() => addNoteBlock(section.id)}
                   onUpdateField={(fieldId, patch) =>
@@ -455,7 +481,15 @@ export function FormBuilder({
                   onDuplicateField={(fieldId) =>
                     duplicateField(section.id, fieldId)
                   }
-                  onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
+                  onDeleteField={(fieldId) => {
+                    const field = section.fields.find((item) => item.id === fieldId);
+                    setConfirmAction({
+                      kind: "field",
+                      sectionId: section.id,
+                      fieldId,
+                      title: field?.label || "Cuadro sin título",
+                    });
+                  }}
                   onDragStart={(fieldId) =>
                     setDragging({ kind: "existing", sectionId: section.id, fieldId })
                   }
@@ -482,10 +516,22 @@ export function FormBuilder({
             }}
             onDelete={() => {
               if (!selected) return;
-              deleteField(selected.section.id, selected.field.id);
+              setConfirmAction({
+                kind: "field",
+                sectionId: selected.section.id,
+                fieldId: selected.field.id,
+                title: selected.field.label || "Cuadro sin título",
+              });
             }}
           />
         </aside>
+      )}
+      {confirmAction && (
+        <ConfirmWidget
+          action={confirmAction}
+          onCancel={() => setConfirmAction(null)}
+          onConfirm={confirmPendingAction}
+        />
       )}
     </div>
   );
@@ -674,6 +720,113 @@ function PaletteBlock({
         </span>
       </div>
     </button>
+  );
+}
+
+function ConfirmWidget({
+  action,
+  onCancel,
+  onConfirm,
+}: {
+  action: ConfirmAction;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const isTemplate = action.kind === "template";
+  const title = isTemplate
+    ? `Aplicar plantilla "${TEMPLATE_META[action.key].label}"`
+    : action.kind === "section"
+      ? `Eliminar "${action.title}"`
+      : `Eliminar "${action.title}"`;
+  const body = isTemplate
+    ? "La plantilla reemplazará el lienzo actual."
+    : action.kind === "section"
+      ? "También se eliminarán todos los cuadros dentro de este grupo."
+      : "Este cuadro se quitará del formulario.";
+  const confirmLabel = isTemplate ? "Aplicar plantilla" : "Eliminar";
+
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") onCancel();
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [onCancel]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      style={{ background: "rgba(45, 25, 15, 0.34)" }}
+      onClick={onCancel}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="w-full max-w-[360px] rounded-[18px] border p-4 shadow-xl"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          boxShadow: "0 22px 60px rgba(60, 35, 20, 0.22)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-start gap-3">
+          <div
+            className="w-10 h-10 rounded-[12px] inline-flex items-center justify-center flex-shrink-0"
+            style={{
+              background: isTemplate
+                ? "var(--vet-green-glow)"
+                : "color-mix(in oklab, var(--vet-red) 12%, transparent)",
+              color: isTemplate ? "var(--vet-green)" : "var(--vet-red)",
+            }}
+          >
+            {isTemplate ? <Layers size={17} /> : <Trash2 size={17} />}
+          </div>
+          <div className="min-w-0">
+            <p
+              className="text-[15px] font-black leading-tight"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              {title}
+            </p>
+            <p
+              className="text-[12px] font-semibold mt-1 leading-snug"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              {body}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-5">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="h-10 px-3 rounded-[10px] border text-[12px] font-extrabold"
+            style={{
+              background: "var(--vet-bg-mid)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-2)",
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            className="h-10 px-3 rounded-[10px] text-[12px] font-extrabold text-white"
+            style={{
+              background: isTemplate
+                ? "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))"
+                : "linear-gradient(135deg, var(--vet-red), color-mix(in oklab, var(--vet-red) 70%, black))",
+              boxShadow: isTemplate ? "0 8px 18px var(--vet-green-glow)" : "none",
+            }}
+          >
+            {confirmLabel}
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 
