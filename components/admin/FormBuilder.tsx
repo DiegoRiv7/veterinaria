@@ -38,14 +38,14 @@ const FIELD_TYPE_META: Record<
   FieldType,
   { label: string; icon: string; short: string }
 > = {
-  text: { label: "Texto corto", icon: "T", short: "Una línea" },
-  textarea: { label: "Nota larga", icon: "¶", short: "Párrafo" },
-  number: { label: "Número", icon: "#", short: "Cantidad" },
-  select: { label: "Opciones", icon: "▾", short: "Una elección" },
-  checkbox: { label: "Sí / No", icon: "✓", short: "Casilla" },
-  checkboxes: { label: "Checklist", icon: "☑", short: "Varias" },
-  date: { label: "Fecha", icon: "D", short: "Calendario" },
-  heading: { label: "Título", icon: "H", short: "Separador" },
+  text: { label: "Respuesta corta", icon: "T", short: "Nombre, lote, resultado" },
+  textarea: { label: "Nota clínica", icon: "¶", short: "Observaciones libres" },
+  number: { label: "Dato numérico", icon: "#", short: "Peso, temperatura, dosis" },
+  select: { label: "Elegir una opción", icon: "▾", short: "Normal, leve, grave" },
+  checkbox: { label: "Sí / No", icon: "✓", short: "Marcar si aplica" },
+  checkboxes: { label: "Lista para marcar", icon: "☑", short: "Varias opciones" },
+  date: { label: "Fecha", icon: "D", short: "Próxima visita o aplicación" },
+  heading: { label: "Título de sección", icon: "H", short: "Separar la hoja" },
 };
 
 const PALETTE_TYPES: FieldType[] = ["textarea", "text", "select", "checkboxes", "number", "date", "heading"];
@@ -135,7 +135,7 @@ export function FormBuilder({
   function addSection() {
     const section: FormSection = {
       id: newSectionId(),
-      title: "Nuevo grupo",
+      title: "Nueva sección",
       fields: [createField("textarea")],
     };
     mutate((s) => ({ ...s, sections: [...s.sections, section] }));
@@ -180,8 +180,8 @@ export function FormBuilder({
 
   function addNoteBlock(sectionId: string) {
     const field = createField("textarea");
-    field.label = "Nueva nota";
-    field.placeholder = "Escribe aquí...";
+    field.label = "Observaciones";
+    field.placeholder = "Escribe aquí lo que debe capturar el veterinario...";
     mutate((s) => ({
       ...s,
       sections: s.sections.map((section) =>
@@ -327,6 +327,20 @@ export function FormBuilder({
             borderColor: "var(--vet-border)",
           }}
         >
+          <div className="hidden xl:block px-1.5 py-1">
+            <p
+              className="text-[12px] font-black"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              Piezas de la hoja
+            </p>
+            <p
+              className="text-[10px] font-bold leading-snug mt-0.5"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Toca para agregar o arrastra al lugar exacto.
+            </p>
+          </div>
           {PALETTE_TYPES.map((type) => (
             <PaletteBlock
               key={type}
@@ -347,7 +361,7 @@ export function FormBuilder({
               color: "var(--vet-green)",
             }}
           >
-            <Plus size={14} /> Grupo
+            <Plus size={14} /> Sección
           </button>
         </div>
       </aside>
@@ -393,8 +407,8 @@ export function FormBuilder({
               }}
             >
               {[
-                { value: "edit" as const, label: "Editar", icon: Pencil },
-                { value: "preview" as const, label: "Preview", icon: Eye },
+                { value: "edit" as const, label: "Armar", icon: Pencil },
+                { value: "preview" as const, label: "Vista real", icon: Eye },
               ].map((item) => {
                 const active = mode === item.value;
                 const Icon = item.icon;
@@ -450,6 +464,41 @@ export function FormBuilder({
               boxShadow: "0 18px 45px rgba(80, 45, 25, 0.10)",
             }}
           >
+            <div
+              className="rounded-[14px] border px-3 py-2.5 flex items-center gap-2"
+              style={{
+                background: "var(--vet-bg-mid)",
+                borderColor: "var(--vet-border)",
+              }}
+            >
+              <span
+                className="w-7 h-7 rounded-[9px] inline-flex items-center justify-center text-[12px] font-black"
+                style={{
+                  background: "var(--vet-bg-card)",
+                  color: "var(--vet-green)",
+                }}
+              >
+                {mode === "preview" ? "👁" : "1"}
+              </span>
+              <div className="min-w-0">
+                <p
+                  className="text-[12px] font-black"
+                  style={{ color: "var(--vet-text-1)" }}
+                >
+                  {mode === "preview"
+                    ? "Así lo verá el veterinario durante la consulta"
+                    : "Arma la hoja clínica con piezas simples"}
+                </p>
+                <p
+                  className="text-[10px] font-bold"
+                  style={{ color: "var(--vet-text-3)" }}
+                >
+                  {mode === "preview"
+                    ? "Esta vista no edita nada; solo muestra el resultado final."
+                    : "Escribe directo en cada cuadro. Lo avanzado queda en el panel derecho."}
+                </p>
+              </div>
+            </div>
             {mode === "preview" ? (
               <ConsultaPreview schema={schema} />
             ) : (
@@ -578,7 +627,7 @@ function CanvasSection({
         <input
           value={section.title ?? ""}
           onChange={(e) => onSectionTitle(e.target.value)}
-          placeholder="Título del grupo"
+          placeholder="Título de la sección"
           className="flex-1 min-w-0 bg-transparent border-none outline-none text-[18px] sm:text-[20px] font-black"
           style={{ color: "var(--vet-text-1)" }}
         />
@@ -618,13 +667,27 @@ function CanvasSection({
 
       {section.fields.length === 0 && (
         <div
+          onDragOver={(e) => {
+            if (!dragging) return;
+            e.preventDefault();
+          }}
+          onDrop={(e) => {
+            if (!dragging) return;
+            e.preventDefault();
+            onDropAt(0);
+          }}
           className="border border-dashed rounded-[14px] p-6 text-center"
           style={{
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-text-3)",
+            borderColor: dragging ? "var(--vet-green)" : "var(--vet-border)",
+            background: dragging
+              ? "color-mix(in oklab, var(--vet-green) 8%, transparent)"
+              : "transparent",
+            color: dragging ? "var(--vet-green)" : "var(--vet-text-3)",
           }}
         >
-          <p className="text-[12px] font-bold">Grupo vacío</p>
+          <p className="text-[12px] font-bold">
+            {dragging ? "Suelta aquí" : "Sección vacía"}
+          </p>
         </div>
       )}
 
@@ -639,7 +702,7 @@ function CanvasSection({
             color: "var(--vet-text-2)",
           }}
         >
-          <Plus size={14} /> Agregar cuadro
+          <Plus size={14} /> Agregar nota
         </button>
         <button
           type="button"
@@ -651,7 +714,7 @@ function CanvasSection({
             color: "var(--vet-text-2)",
           }}
         >
-          Más <ChevronDown size={13} />
+          Más piezas <ChevronDown size={13} />
         </button>
         {adderOpen && (
           <FieldTypeMenu
@@ -877,6 +940,8 @@ function CanvasBlock({
         background: selected ? "var(--vet-bg-deep)" : "var(--vet-bg-card)",
         borderColor: hasIssue
           ? "var(--vet-red)"
+          : dragging
+            ? "color-mix(in oklab, var(--vet-green) 45%, var(--vet-border))"
           : selected
             ? "var(--vet-green)"
             : "var(--vet-border)",
@@ -928,7 +993,7 @@ function CanvasBlock({
           <input
             value={field.label}
             onChange={(e) => onChange({ label: e.target.value })}
-            placeholder={visual ? "Título" : "Escribe el título o pregunta"}
+            placeholder={visual ? "Título" : "Qué debe llenar el vet"}
             className="w-full bg-transparent border-none outline-none text-[16px] sm:text-[17px] font-black"
             style={{ color: "var(--vet-text-1)" }}
           />
@@ -973,6 +1038,16 @@ function CanvasBlock({
           </button>
         </div>
       </div>
+      {dragging && (
+        <div
+          className="mt-3 h-1 rounded-full"
+          style={{
+            background:
+              "linear-gradient(90deg, transparent, var(--vet-green), transparent)",
+            opacity: 0.55,
+          }}
+        />
+      )}
     </article>
   );
 }
@@ -980,6 +1055,37 @@ function CanvasBlock({
 function ConsultaPreview({ schema }: { schema: FormSchema }) {
   return (
     <div className="flex flex-col gap-6">
+      <div
+        className="rounded-[16px] border p-4 flex items-center justify-between gap-3"
+        style={{
+          background: "var(--vet-bg-mid)",
+          borderColor: "var(--vet-border)",
+        }}
+      >
+        <div>
+          <p
+            className="text-[11px] font-extrabold uppercase tracking-wider"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            Consulta
+          </p>
+          <p
+            className="text-[18px] font-black"
+            style={{ color: "var(--vet-text-1)" }}
+          >
+            Formato de atención
+          </p>
+        </div>
+        <span
+          className="text-[11px] font-extrabold px-2 py-1 rounded-full"
+          style={{
+            background: "var(--vet-green-glow)",
+            color: "var(--vet-green)",
+          }}
+        >
+          Vista real
+        </span>
+      </div>
       {schema.sections.map((section) => (
         <section key={section.id} className="flex flex-col gap-3">
           {section.title && (
@@ -1310,7 +1416,7 @@ function Inspector({
           className="text-[13px] font-extrabold"
           style={{ color: "var(--vet-text-1)" }}
         >
-          Selecciona un cuadro
+          Selecciona una pieza de la hoja
         </p>
       </div>
     );
@@ -1337,12 +1443,12 @@ function Inspector({
           className="text-[13px] font-black"
           style={{ color: "var(--vet-text-1)" }}
         >
-          Cuadro
+          Ajustes de la pieza
         </p>
       </div>
 
       <div className="p-4 flex flex-col gap-4">
-        <PanelField label="Tipo">
+        <PanelField label="Qué captura">
           <div className="grid grid-cols-2 gap-1.5">
             {(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => {
               const active = type === field.type;
@@ -1385,18 +1491,18 @@ function Inspector({
               className="text-[12px] font-extrabold"
               style={{ color: "var(--vet-text-1)" }}
             >
-              Requerido
+              Obligatorio
             </span>
           </label>
         )}
 
         {!visual && (
-          <PanelField label="Ayuda">
+          <PanelField label="Nota para quien atiende">
             <textarea
               value={field.helpText ?? ""}
               onChange={(e) => onChange({ helpText: e.target.value })}
               rows={3}
-              placeholder="Texto breve bajo el campo"
+              placeholder="Ej. Revisa piel, pelaje, apetito o comportamiento."
               className="w-full px-3 py-2 rounded-[10px] border outline-none resize-none text-[13px] font-bold"
               style={inputStyle}
             />
@@ -1404,7 +1510,7 @@ function Inspector({
         )}
 
         {needsOptions && (
-          <PanelField label="Opciones">
+          <PanelField label="Opciones que podrá elegir">
             <OptionsList
               options={field.options ?? []}
               onChange={(options) => onChange({ options })}
@@ -1422,7 +1528,7 @@ function Inspector({
             color: "var(--vet-red)",
           }}
         >
-          <Trash2 size={14} /> Eliminar cuadro
+          <Trash2 size={14} /> Quitar de la hoja
         </button>
       </div>
     </div>
@@ -1669,19 +1775,25 @@ function PanelField({
 }
 
 function createField(type: FieldType): FormField {
+  const labels: Record<FieldType, string> = {
+    textarea: "Observaciones",
+    text: "Dato importante",
+    number: "Valor",
+    select: "Estado",
+    checkbox: "Aplica",
+    checkboxes: "Hallazgos",
+    date: "Fecha",
+    heading: "Nueva sección",
+  };
   return {
     id: newFieldId(),
     type,
-    label:
-      type === "heading"
-        ? "Nuevo título"
-        : type === "select"
-          ? "Elegir opción"
-          : type === "checkboxes"
-            ? "Seleccionar elementos"
-            : FIELD_TYPE_META[type].label,
-    ...(fieldNeedsOptions(type) ? { options: ["Opción 1", "Opción 2"] } : {}),
+    label: labels[type],
+    ...(fieldNeedsOptions(type)
+      ? { options: type === "select" ? ["Normal", "Leve", "Grave"] : ["Piel", "Pelaje", "Oídos"] }
+      : {}),
     ...(type === "number" ? { unit: "kg" } : {}),
+    ...(type === "textarea" ? { placeholder: "Escribe aquí..." } : {}),
   };
 }
 
