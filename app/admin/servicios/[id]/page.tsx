@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import { ChevronLeft, Clock, Tag, Stethoscope, Scissors } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
@@ -142,7 +143,7 @@ export default async function ServiceDetailPage({
             </span>
           </div>
         </div>
-        <a
+        <Link
           href="/admin/servicios"
           className="inline-flex items-center justify-center px-3 h-9 rounded-[10px] text-[12px] font-extrabold border transition-colors no-underline"
           style={{
@@ -153,7 +154,7 @@ export default async function ServiceDetailPage({
           title="Editar datos básicos del servicio"
         >
           Editar datos básicos
-        </a>
+        </Link>
       </div>
 
       {/* Section heading */}
