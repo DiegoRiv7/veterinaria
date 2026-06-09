@@ -257,6 +257,117 @@ export async function updateAppointmentNotesAction(formData: FormData) {
   revalidatePath(`/vet/cita/${id}`);
 }
 
+/* ─── New: dynamic consulta data (schema-driven) ──────────────── */
+
+import { LEGACY_FIELD_IDS, type ConsultaData } from "@/lib/form-schema";
+
+export type SaveConsultaResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+/**
+ * Persist the answers from the dynamic consulta form. Also mirrors the
+ * three legacy text columns (vetNotes / instructions / medications) so
+ * the receta PDF and any existing UI keep working.
+ *
+ * If markCompleted is true, the appointment is moved to COMPLETED.
+ */
+export async function saveConsultaDataAction(
+  appointmentId: string,
+  data: ConsultaData,
+  options: { markCompleted?: boolean } = {}
+): Promise<SaveConsultaResult> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const id = (appointmentId ?? "").trim();
+  if (!id) return { ok: false, error: "Cita inválida." };
+
+  // Coerce values into JSON-safe primitives.
+  const clean: ConsultaData = {};
+  for (const [k, v] of Object.entries(data)) {
+    if (v === null || v === undefined) continue;
+    if (typeof v === "string") {
+      const trimmed = v.trim();
+      if (trimmed.length > 0) clean[k] = trimmed;
+    } else if (Array.isArray(v)) {
+      const filtered = v
+        .filter((x): x is string => typeof x === "string")
+        .map((x) => x.trim())
+        .filter((x) => x.length > 0);
+      if (filtered.length > 0) clean[k] = filtered;
+    } else if (typeof v === "boolean" || typeof v === "number") {
+      clean[k] = v;
+    }
+  }
+
+  // Mirror legacy text columns so anything that still reads them keeps
+  // working. We only treat string values as legacy mirrors.
+  const legacyMirror: Record<string, string | null> = {};
+  for (const key of ["vetNotes", "instructions", "medications"] as const) {
+    const fieldId = LEGACY_FIELD_IDS[key];
+    const v = clean[fieldId];
+    legacyMirror[key] = typeof v === "string" ? v : null;
+  }
+
+  try {
+    await prisma.appointment.update({
+      where: { id },
+      data: {
+        consultaData: JSON.stringify(clean),
+        vetNotes: legacyMirror.vetNotes,
+        instructions: legacyMirror.instructions,
+        medications: legacyMirror.medications,
+        ...(options.markCompleted ? { status: "COMPLETED" } : {}),
+      },
+    });
+  } catch (e) {
+    return {
+      ok: false,
+      error: e instanceof Error ? e.message : "No se pudo guardar.",
+    };
+  }
+
+  revalidatePath("/vet");
+  revalidatePath("/inicio");
+  revalidatePath(`/cita/${id}`);
+  revalidatePath(`/vet/cita/${id}`);
+  return { ok: true };
+}
+
+/* ─── Service form schema ─────────────────────────────────────── */
+
+import type { FormSchema } from "@/lib/form-schema";
+
+export async function updateServiceFormSchemaAction(
+  serviceId: string,
+  schema: FormSchema
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "ADMIN") return { ok: false, error: "FORBIDDEN" };
+  const id = (serviceId ?? "").trim();
+  if (!id) return { ok: false, error: "Servicio inválido." };
+
+  // Basic shape validation — we don't fully validate every field; the
+  // builder writes well-formed data and the renderer parses defensively.
+  if (
+    !schema ||
+    schema.version !== 1 ||
+    !Array.isArray(schema.sections)
+  ) {
+    return { ok: false, error: "Formato del formulario inválido." };
+  }
+
+  await prisma.service.update({
+    where: { id },
+    data: { formSchema: JSON.stringify(schema) },
+  });
+  revalidatePath("/admin/servicios");
+  revalidatePath(`/admin/servicios/${id}`);
+  return { ok: true };
+}
+
 type Species = "DOG" | "CAT" | "BIRD" | "RABBIT" | "HAMSTER" | "REPTILE" | "OTHER";
 type Sex = "MALE" | "FEMALE" | "UNKNOWN";
 

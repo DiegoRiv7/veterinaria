@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useTransition } from "react";
 import {
   Plus,
@@ -7,6 +8,7 @@ import {
   Check,
   X,
   Edit3,
+  ClipboardList,
   Stethoscope,
   Scissors,
 } from "lucide-react";
@@ -320,6 +322,19 @@ function ServiceRow({
           {formatMxn(svc.basePrice)}
         </span>
         <div className="flex gap-1">
+          <Link
+            href={`/admin/servicios/${svc.id}`}
+            className="inline-flex items-center justify-center w-8 h-8 rounded-[8px] border transition-colors no-underline"
+            style={{
+              background: "var(--vet-bg-mid)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-green)",
+            }}
+            aria-label="Editar formulario de consulta"
+            title="Editar formulario de consulta"
+          >
+            <ClipboardList size={14} />
+          </Link>
           <button
             type="button"
             onClick={onEdit}
@@ -329,8 +344,8 @@ function ServiceRow({
               borderColor: "var(--vet-border)",
               color: "var(--vet-text-2)",
             }}
-            aria-label="Editar"
-            title="Editar"
+            aria-label="Editar datos básicos"
+            title="Editar datos básicos"
           >
             <Edit3 size={14} />
           </button>

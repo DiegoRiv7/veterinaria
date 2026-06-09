@@ -177,6 +177,9 @@ model Service {
   durationMinutes Int             @default(30)
   active          Boolean         @default(true)
   category        ServiceCategory @default(CLINICAL)
+  /// JSON-stringified FormSchema (lib/form-schema.ts). When null, the vet
+  /// renderer falls back to DEFAULT_CONSULTA_SCHEMA.
+  formSchema      String?
   createdAt       DateTime        @default(now())
 
   appointments Appointment[]
@@ -215,6 +218,10 @@ model Appointment {
   vetNotes        String?
   instructions    String?
   medications     String?
+  /// JSON-stringified ConsultaData (lib/form-schema.ts). Keys are field
+  /// ids from the service's formSchema; values are the saved answers.
+  /// Stays in sync with the legacy text columns above for backward compat.
+  consultaData    String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
