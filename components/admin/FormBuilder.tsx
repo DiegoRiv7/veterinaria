@@ -6,10 +6,12 @@ import {
   Check,
   ChevronDown,
   Copy,
+  Eye,
   GripVertical,
   Layers,
   Loader2,
   Plus,
+  Pencil,
   Save,
   Settings2,
   Trash2,
@@ -46,10 +48,12 @@ const FIELD_TYPE_META: Record<
   heading: { label: "Título", icon: "H", short: "Separador" },
 };
 
-const INLINE_TYPES: FieldType[] = ["textarea", "text", "select", "checkboxes", "number", "date"];
+const PALETTE_TYPES: FieldType[] = ["textarea", "text", "select", "checkboxes", "number", "date", "heading"];
 
 type Selection = { sectionId: string; fieldId: string } | null;
-type DragPayload = { sectionId: string; fieldId: string };
+type DragPayload =
+  | { kind: "existing"; sectionId: string; fieldId: string }
+  | { kind: "new"; type: FieldType };
 
 export function FormBuilder({
   schema: initialSchema,
@@ -66,6 +70,7 @@ export function FormBuilder({
   const [saving, setSaving] = useState(false);
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
   const [dragging, setDragging] = useState<DragPayload | null>(null);
+  const [mode, setMode] = useState<"edit" | "preview">("edit");
 
   const dirtyRef = useRef(false);
   const lastSavedJsonRef = useRef(JSON.stringify(ensureCanvasSchema(initialSchema)));
@@ -242,11 +247,25 @@ export function FormBuilder({
     if (selection?.fieldId === fieldId) setSelection(null);
   }
 
-  function moveField(
+  function placeField(
     from: DragPayload,
     to: { sectionId: string; index: number }
   ) {
     mutate((s) => {
+      if (from.kind === "new") {
+        const field = createField(from.type);
+        return {
+          ...s,
+          sections: s.sections.map((section) => {
+            if (section.id !== to.sectionId) return section;
+            const fields = [...section.fields];
+            const safeIndex = Math.max(0, Math.min(to.index, fields.length));
+            fields.splice(safeIndex, 0, field);
+            return { ...section, fields };
+          }),
+        };
+      }
+
       const source = s.sections.find((section) => section.id === from.sectionId);
       const field = source?.fields.find((item) => item.id === from.fieldId);
       if (!source || !field) return s;
@@ -282,7 +301,7 @@ export function FormBuilder({
   const firstSectionId = schema.sections[0]?.id;
 
   return (
-    <div className="grid grid-cols-1 xl:grid-cols-[180px_minmax(0,1fr)_300px] gap-4 items-start">
+    <div className="grid grid-cols-1 xl:grid-cols-[220px_minmax(0,1fr)_300px] gap-4 items-start">
       <aside className="xl:sticky xl:top-4 flex xl:flex-col gap-2 overflow-x-auto xl:overflow-visible">
         <div
           className="rounded-[16px] border p-2 flex xl:flex-col gap-2 min-w-max xl:min-w-0"
@@ -291,19 +310,15 @@ export function FormBuilder({
             borderColor: "var(--vet-border)",
           }}
         >
-          <button
-            type="button"
-            onClick={() => firstSectionId && addNoteBlock(firstSectionId)}
-            className="h-11 px-3 rounded-[11px] border inline-flex items-center gap-2 text-[12px] font-extrabold transition-colors text-white"
-            style={{
-              background:
-                "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
-              borderColor: "transparent",
-              boxShadow: "0 6px 16px var(--vet-green-glow)",
-            }}
-          >
-            <Plus size={15} /> Agregar cuadro
-          </button>
+          {PALETTE_TYPES.map((type) => (
+            <PaletteBlock
+              key={type}
+              type={type}
+              onClick={() => firstSectionId && addField(firstSectionId, type)}
+              onDragStart={() => setDragging({ kind: "new", type })}
+              onDragEnd={() => setDragging(null)}
+            />
+          ))}
 
           <button
             type="button"
@@ -350,6 +365,35 @@ export function FormBuilder({
           </div>
 
           <div className="flex items-center gap-2 text-[11px] font-extrabold uppercase tracking-wider">
+            <div
+              className="inline-flex items-center rounded-[10px] border p-0.5"
+              style={{
+                background: "var(--vet-bg-mid)",
+                borderColor: "var(--vet-border)",
+              }}
+            >
+              {[
+                { value: "edit" as const, label: "Editar", icon: Pencil },
+                { value: "preview" as const, label: "Preview", icon: Eye },
+              ].map((item) => {
+                const active = mode === item.value;
+                const Icon = item.icon;
+                return (
+                  <button
+                    key={item.value}
+                    type="button"
+                    onClick={() => setMode(item.value)}
+                    className="h-8 px-2.5 rounded-[8px] inline-flex items-center gap-1.5 text-[11px] font-extrabold"
+                    style={{
+                      background: active ? "var(--vet-bg-card)" : "transparent",
+                      color: active ? "var(--vet-green)" : "var(--vet-text-2)",
+                    }}
+                  >
+                    <Icon size={13} /> {item.label}
+                  </button>
+                );
+              })}
+            </div>
             {validation.fieldsWithIssues.size > 0 && (
               <span
                 className="inline-flex items-center gap-1 px-2 py-1 rounded-full"
@@ -386,57 +430,63 @@ export function FormBuilder({
               boxShadow: "0 18px 45px rgba(80, 45, 25, 0.10)",
             }}
           >
-            {schema.sections.map((section) => (
-              <CanvasSection
-                key={section.id}
-                section={section}
-                selectedFieldId={selection?.fieldId ?? null}
-                issues={validation}
-                dragging={dragging}
-                onSelect={(fieldId) =>
-                  setSelection({ sectionId: section.id, fieldId })
-                }
-                onSectionTitle={(title) =>
-                  updateSection(section.id, { title })
-                }
-                onDeleteSection={() => deleteSection(section.id)}
-                onAddField={(type) => addField(section.id, type)}
-                onAddNote={() => addNoteBlock(section.id)}
-                onUpdateField={(fieldId, patch) =>
-                  updateField(section.id, fieldId, patch)
-                }
-                onDuplicateField={(fieldId) =>
-                  duplicateField(section.id, fieldId)
-                }
-                onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
-                onDragStart={(fieldId) =>
-                  setDragging({ sectionId: section.id, fieldId })
-                }
-                onDragEnd={() => setDragging(null)}
-                onDropAt={(index) => {
-                  if (!dragging) return;
-                  moveField(dragging, { sectionId: section.id, index });
-                  setDragging(null);
-                }}
-              />
-            ))}
+            {mode === "preview" ? (
+              <ConsultaPreview schema={schema} />
+            ) : (
+              schema.sections.map((section) => (
+                <CanvasSection
+                  key={section.id}
+                  section={section}
+                  selectedFieldId={selection?.fieldId ?? null}
+                  issues={validation}
+                  dragging={dragging}
+                  onSelect={(fieldId) =>
+                    setSelection({ sectionId: section.id, fieldId })
+                  }
+                  onSectionTitle={(title) =>
+                    updateSection(section.id, { title })
+                  }
+                  onDeleteSection={() => deleteSection(section.id)}
+                  onAddField={(type) => addField(section.id, type)}
+                  onAddNote={() => addNoteBlock(section.id)}
+                  onUpdateField={(fieldId, patch) =>
+                    updateField(section.id, fieldId, patch)
+                  }
+                  onDuplicateField={(fieldId) =>
+                    duplicateField(section.id, fieldId)
+                  }
+                  onDeleteField={(fieldId) => deleteField(section.id, fieldId)}
+                  onDragStart={(fieldId) =>
+                    setDragging({ kind: "existing", sectionId: section.id, fieldId })
+                  }
+                  onDragEnd={() => setDragging(null)}
+                  onDropAt={(index) => {
+                    if (!dragging) return;
+                    placeField(dragging, { sectionId: section.id, index });
+                    setDragging(null);
+                  }}
+                />
+              ))
+            )}
           </div>
         </div>
       </main>
 
-      <aside className="xl:sticky xl:top-4">
-        <Inspector
-          selected={selected}
-          onChange={(patch) => {
-            if (!selected) return;
-            updateField(selected.section.id, selected.field.id, patch);
-          }}
-          onDelete={() => {
-            if (!selected) return;
-            deleteField(selected.section.id, selected.field.id);
-          }}
-        />
-      </aside>
+      {mode === "edit" && (
+        <aside className="xl:sticky xl:top-4">
+          <Inspector
+            selected={selected}
+            onChange={(patch) => {
+              if (!selected) return;
+              updateField(selected.section.id, selected.field.id, patch);
+            }}
+            onDelete={() => {
+              if (!selected) return;
+              deleteField(selected.section.id, selected.field.id);
+            }}
+          />
+        </aside>
+      )}
     </div>
   );
 }
@@ -571,6 +621,62 @@ function CanvasSection({
   );
 }
 
+function PaletteBlock({
+  type,
+  onClick,
+  onDragStart,
+  onDragEnd,
+}: {
+  type: FieldType;
+  onClick: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+}) {
+  const meta = FIELD_TYPE_META[type];
+  return (
+    <button
+      type="button"
+      draggable
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setData("text/plain", `new:${type}`);
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      onClick={onClick}
+      className="w-full min-w-[150px] xl:min-w-0 rounded-[12px] border p-2.5 text-left transition-colors hover:[border-color:var(--vet-green)]"
+      style={{
+        background: "var(--vet-bg-mid)",
+        borderColor: "var(--vet-border)",
+        color: "var(--vet-text-1)",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="w-8 h-8 rounded-[9px] inline-flex items-center justify-center vet-mono text-[12px] font-black"
+          style={{
+            background: "var(--vet-bg-card)",
+            color: "var(--vet-green)",
+          }}
+        >
+          {meta.icon}
+        </span>
+        <span className="min-w-0">
+          <span className="block text-[12px] font-black truncate">
+            {meta.label}
+          </span>
+          <span
+            className="block text-[10px] font-bold truncate"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {meta.short}
+          </span>
+        </span>
+      </div>
+    </button>
+  );
+}
+
 function CanvasBlock({
   field,
   selected,
@@ -674,13 +780,6 @@ function CanvasBlock({
             style={{ color: "var(--vet-text-1)" }}
           />
 
-          {!visual && (
-            <InlineTypeBar
-              activeType={field.type}
-              onPick={(type) => onChange({ type })}
-            />
-          )}
-
           <BlockPreview field={field} onChange={onChange} />
         </div>
 
@@ -722,6 +821,172 @@ function CanvasBlock({
         </div>
       </div>
     </article>
+  );
+}
+
+function ConsultaPreview({ schema }: { schema: FormSchema }) {
+  return (
+    <div className="flex flex-col gap-6">
+      {schema.sections.map((section) => (
+        <section key={section.id} className="flex flex-col gap-3">
+          {section.title && (
+            <h2
+              className="text-[18px] font-black"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              {section.title}
+            </h2>
+          )}
+          {section.fields.length === 0 ? (
+            <p
+              className="text-[12px] font-bold"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              Sin campos
+            </p>
+          ) : (
+            section.fields.map((field) => (
+              <PreviewField key={field.id} field={field} />
+            ))
+          )}
+        </section>
+      ))}
+    </div>
+  );
+}
+
+function PreviewField({ field }: { field: FormField }) {
+  if (field.type === "heading") {
+    return (
+      <div className="pt-2">
+        <p
+          className="text-[15px] font-black"
+          style={{ color: "var(--vet-text-1)" }}
+        >
+          {field.label || "Título"}
+        </p>
+        {field.helpText && (
+          <p
+            className="text-[12px] font-semibold"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {field.helpText}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <label
+        className="text-[11px] font-extrabold uppercase tracking-wider"
+        style={{ color: "var(--vet-text-3)" }}
+      >
+        {field.label || "Campo"}
+        {field.required && <span style={{ color: "var(--vet-red)" }}> *</span>}
+      </label>
+
+      {field.type === "textarea" && (
+        <textarea
+          disabled
+          rows={4}
+          placeholder={field.placeholder ?? ""}
+          className="w-full px-3 py-2 rounded-[10px] border resize-none text-[13px] font-bold disabled:opacity-100"
+          style={inputStyle}
+        />
+      )}
+      {field.type === "text" && (
+        <input
+          disabled
+          placeholder={field.placeholder ?? ""}
+          className="h-10 px-3 rounded-[10px] border text-[13px] font-bold disabled:opacity-100"
+          style={inputStyle}
+        />
+      )}
+      {field.type === "number" && (
+        <div className="flex items-center gap-2">
+          <input
+            disabled
+            type="number"
+            placeholder={field.placeholder ?? ""}
+            className="flex-1 h-10 px-3 rounded-[10px] border text-[13px] font-bold disabled:opacity-100"
+            style={inputStyle}
+          />
+          {field.unit && (
+            <span
+              className="px-2 h-10 rounded-[10px] inline-flex items-center text-[12px] font-extrabold"
+              style={{
+                background: "var(--vet-bg-mid)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              {field.unit}
+            </span>
+          )}
+        </div>
+      )}
+      {field.type === "date" && (
+        <input
+          disabled
+          type="date"
+          className="h-10 px-3 rounded-[10px] border text-[13px] font-bold disabled:opacity-100"
+          style={inputStyle}
+        />
+      )}
+      {field.type === "select" && (
+        <select
+          disabled
+          className="h-10 px-3 rounded-[10px] border text-[13px] font-bold disabled:opacity-100"
+          style={inputStyle}
+        >
+          <option>Seleccionar</option>
+          {(field.options ?? []).map((option, index) => (
+            <option key={index}>{option}</option>
+          ))}
+        </select>
+      )}
+      {field.type === "checkbox" && (
+        <label
+          className="h-10 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[13px] font-bold"
+          style={{
+            background: "var(--vet-bg-mid)",
+            borderColor: "var(--vet-border)",
+            color: "var(--vet-text-2)",
+          }}
+        >
+          <input disabled type="checkbox" />
+          {field.placeholder || "Marcar si aplica"}
+        </label>
+      )}
+      {field.type === "checkboxes" && (
+        <div className="flex flex-wrap gap-1.5">
+          {(field.options ?? []).map((option, index) => (
+            <label
+              key={index}
+              className="px-2.5 py-1.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[12px] font-bold"
+              style={{
+                background: "var(--vet-bg-mid)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              <input disabled type="checkbox" />
+              {option}
+            </label>
+          ))}
+        </div>
+      )}
+
+      {field.helpText && (
+        <p
+          className="text-[11px] font-semibold"
+          style={{ color: "var(--vet-text-3)" }}
+        >
+          {field.helpText}
+        </p>
+      )}
+    </div>
   );
 }
 
@@ -802,43 +1067,6 @@ function BlockPreview({
           style={inputStyle}
         />
       )}
-    </div>
-  );
-}
-
-function InlineTypeBar({
-  activeType,
-  onPick,
-}: {
-  activeType: FieldType;
-  onPick: (type: FieldType) => void;
-}) {
-  return (
-    <div className="mt-2 flex flex-wrap gap-1.5">
-      {INLINE_TYPES.map((type) => {
-        const active = activeType === type;
-        return (
-          <button
-            key={type}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPick(type);
-            }}
-            className="h-7 px-2 rounded-[8px] border inline-flex items-center gap-1 text-[10px] font-extrabold"
-            style={{
-              background: active
-                ? "color-mix(in oklab, var(--vet-green) 12%, transparent)"
-                : "var(--vet-bg-mid)",
-              borderColor: active ? "var(--vet-green)" : "var(--vet-border)",
-              color: active ? "var(--vet-green)" : "var(--vet-text-2)",
-            }}
-          >
-            <span className="vet-mono">{FIELD_TYPE_META[type].icon}</span>
-            {FIELD_TYPE_META[type].label}
-          </button>
-        );
-      })}
     </div>
   );
 }
