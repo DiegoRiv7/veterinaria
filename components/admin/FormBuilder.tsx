@@ -440,60 +440,14 @@ export function FormBuilder({
               ))}
             </div>
           )}
-        </div>
-
-        <div
-          className="rounded-[22px] border p-3 sm:p-6"
-          style={{
-            background:
-              "linear-gradient(180deg, var(--vet-bg-mid), var(--vet-bg-deep))",
-            borderColor: "var(--vet-border)",
-          }}
-        >
-          <div
-            className="mx-auto w-full max-w-[760px] rounded-[20px] border p-4 sm:p-6 flex flex-col gap-5"
-            style={{
-              background: "var(--vet-bg-card)",
-              borderColor: "var(--vet-border)",
-              boxShadow: "0 18px 45px rgba(80, 45, 25, 0.10)",
-            }}
-          >
+          {mode === "edit" && selected && (
             <div
-              className="rounded-[14px] border px-3 py-2.5 flex items-center gap-2"
+              className="px-3 py-2 border-t"
               style={{
-                background: "var(--vet-bg-mid)",
+                background: "var(--vet-bg-card)",
                 borderColor: "var(--vet-border)",
               }}
             >
-              <span
-                className="w-7 h-7 rounded-[9px] inline-flex items-center justify-center text-[12px] font-black"
-                style={{
-                  background: "var(--vet-bg-card)",
-                  color: "var(--vet-green)",
-                }}
-              >
-                {mode === "preview" ? "👁" : "1"}
-              </span>
-              <div className="min-w-0">
-                <p
-                  className="text-[12px] font-black"
-                  style={{ color: "var(--vet-text-1)" }}
-                >
-                  {mode === "preview"
-                    ? "Así lo verá el veterinario durante la consulta"
-                    : "Arma la hoja clínica con piezas simples"}
-                </p>
-                <p
-                  className="text-[10px] font-bold"
-                  style={{ color: "var(--vet-text-3)" }}
-                >
-                  {mode === "preview"
-                    ? "Esta vista no edita nada; solo muestra el resultado final."
-                    : "Escribe directo en la hoja. Al seleccionar una pieza aparece su barra de ajustes."}
-                </p>
-              </div>
-            </div>
-            {mode === "edit" && selected && (
               <ContextToolbar
                 field={selected.field}
                 onChange={(patch) =>
@@ -511,7 +465,26 @@ export function FormBuilder({
                   })
                 }
               />
-            )}
+            </div>
+          )}
+        </div>
+
+        <div
+          className="rounded-[22px] border p-2 sm:p-4"
+          style={{
+            background:
+              "linear-gradient(180deg, var(--vet-bg-mid), var(--vet-bg-deep))",
+            borderColor: "var(--vet-border)",
+          }}
+        >
+          <div
+            className="mx-auto w-full max-w-[1040px] min-h-[640px] rounded-[20px] border p-4 sm:p-8 flex flex-col gap-5"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              boxShadow: "0 18px 45px rgba(80, 45, 25, 0.10)",
+            }}
+          >
             {mode === "preview" ? (
               <ConsultaPreview schema={schema} />
             ) : (
@@ -785,17 +758,16 @@ function ContextToolbar({
   const visual = isVisualOnly(field.type);
   return (
     <div
-      className="rounded-[14px] border p-2 flex items-center gap-2 overflow-x-auto"
+      className="flex items-center gap-2 overflow-x-auto"
       style={{
-        background: "var(--vet-bg-mid)",
-        borderColor: "var(--vet-border)",
+        color: "var(--vet-text-1)",
       }}
     >
       <span
         className="text-[10px] font-extrabold uppercase tracking-wider flex-shrink-0"
         style={{ color: "var(--vet-text-3)" }}
       >
-        Pieza seleccionada
+        Seleccionado
       </span>
 
       <select
