@@ -157,25 +157,6 @@ export default async function ServiceDetailPage({
         </Link>
       </div>
 
-      {/* Section heading */}
-      <div className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <h1
-            className="text-[22px] font-black tracking-tight"
-            style={{ color: "var(--vet-text-1)" }}
-          >
-            Formulario de consulta
-          </h1>
-          <p
-            className="text-[12px] font-semibold"
-            style={{ color: "var(--vet-text-3)" }}
-          >
-            Diseña los campos que el veterinario verá al atender este
-            servicio. Los cambios se guardan automáticamente.
-          </p>
-        </div>
-      </div>
-
       <FormBuilder schema={initialSchema} serviceId={service.id} />
     </div>
   );
