@@ -46,12 +46,8 @@ const FIELD_TYPE_META: Record<
   heading: { label: "Título de sección", icon: "H", short: "Separar la hoja" },
 };
 
-const PALETTE_TYPES: FieldType[] = ["textarea", "text", "select", "checkboxes", "number", "date", "heading"];
-
 type Selection = { sectionId: string; fieldId: string } | null;
-type DragPayload =
-  | { kind: "existing"; sectionId: string; fieldId: string }
-  | { kind: "new"; type: FieldType };
+type DragPayload = { kind: "existing"; sectionId: string; fieldId: string };
 type ConfirmAction =
   | { kind: "template"; key: TemplateKey }
   | { kind: "section"; sectionId: string; title: string }
@@ -163,8 +159,10 @@ export function FormBuilder({
     if (selection?.sectionId === sectionId) setSelection(null);
   }
 
-  function addField(sectionId: string, type: FieldType) {
-    const field = createField(type);
+  function addNoteBlock(sectionId: string) {
+    const field = createField("textarea");
+    field.label = "";
+    field.placeholder = "Escribe aquí...";
     mutate((s) => ({
       ...s,
       sections: s.sections.map((section) =>
@@ -176,17 +174,19 @@ export function FormBuilder({
     setSelection({ sectionId, fieldId: field.id });
   }
 
-  function addNoteBlock(sectionId: string) {
+  function addFieldAfter(sectionId: string, fieldId: string) {
     const field = createField("textarea");
-    field.label = "Observaciones";
-    field.placeholder = "Escribe aquí lo que debe capturar el veterinario...";
+    field.label = "";
+    field.placeholder = "Escribe aquí...";
     mutate((s) => ({
       ...s,
-      sections: s.sections.map((section) =>
-        section.id === sectionId
-          ? { ...section, fields: [...section.fields, field] }
-          : section
-      ),
+      sections: s.sections.map((section) => {
+        if (section.id !== sectionId) return section;
+        const index = section.fields.findIndex((item) => item.id === fieldId);
+        const fields = [...section.fields];
+        fields.splice(index >= 0 ? index + 1 : fields.length, 0, field);
+        return { ...section, fields };
+      }),
     }));
     setSelection({ sectionId, fieldId: field.id });
   }
@@ -267,20 +267,6 @@ export function FormBuilder({
     to: { sectionId: string; index: number }
   ) {
     mutate((s) => {
-      if (from.kind === "new") {
-        const field = createField(from.type);
-        return {
-          ...s,
-          sections: s.sections.map((section) => {
-            if (section.id !== to.sectionId) return section;
-            const fields = [...section.fields];
-            const safeIndex = Math.max(0, Math.min(to.index, fields.length));
-            fields.splice(safeIndex, 0, field);
-            return { ...section, fields };
-          }),
-        };
-      }
-
       const source = s.sections.find((section) => section.id === from.sectionId);
       const field = source?.fields.find((item) => item.id === from.fieldId);
       if (!source || !field) return s;
@@ -414,32 +400,6 @@ export function FormBuilder({
               />
             </div>
           </div>
-          {mode === "edit" && (
-            <div
-              className="px-3 py-2 flex items-center gap-2 overflow-x-auto"
-              style={{ background: "var(--vet-bg-mid)" }}
-            >
-              <span
-                className="text-[11px] font-extrabold uppercase tracking-wider flex-shrink-0"
-                style={{ color: "var(--vet-text-3)" }}
-              >
-                Insertar
-              </span>
-              {PALETTE_TYPES.map((type) => (
-                <InsertButton
-                  key={type}
-                  type={type}
-                  onClick={() => {
-                    const firstSection = schema.sections[0];
-                    if (firstSection) addField(firstSection.id, type);
-                  }}
-                  onDragStart={() => setDragging({ kind: "new", type })}
-                  onDragEnd={() => setDragging(null)}
-                  disabled={!schema.sections[0]}
-                />
-              ))}
-            </div>
-          )}
           {mode === "edit" && selected && (
             <div
               className="px-3 py-2 border-t"
@@ -508,8 +468,8 @@ export function FormBuilder({
                       title: section.title || "Grupo sin título",
                     })
                   }
-                  onAddField={(type) => addField(section.id, type)}
                   onAddNote={() => addNoteBlock(section.id)}
+                  onAddAfter={(fieldId) => addFieldAfter(section.id, fieldId)}
                   onUpdateField={(fieldId, patch) =>
                     updateField(section.id, fieldId, patch)
                   }
@@ -560,8 +520,8 @@ function CanvasSection({
   onSelect,
   onSectionTitle,
   onDeleteSection,
-  onAddField,
   onAddNote,
+  onAddAfter,
   onUpdateField,
   onDuplicateField,
   onDeleteField,
@@ -576,8 +536,8 @@ function CanvasSection({
   onSelect: (fieldId: string) => void;
   onSectionTitle: (title: string) => void;
   onDeleteSection: () => void;
-  onAddField: (type: FieldType) => void;
   onAddNote: () => void;
+  onAddAfter: (fieldId: string) => void;
   onUpdateField: (fieldId: string, patch: Partial<FormField>) => void;
   onDuplicateField: (fieldId: string) => void;
   onDeleteField: (fieldId: string) => void;
@@ -585,8 +545,6 @@ function CanvasSection({
   onDragEnd: () => void;
   onDropAt: (index: number) => void;
 }) {
-  const [adderOpen, setAdderOpen] = useState(false);
-
   return (
     <section className="flex flex-col gap-3">
       <div className="flex items-center gap-2">
@@ -623,6 +581,7 @@ function CanvasSection({
             onChange={(patch) => onUpdateField(field.id, patch)}
             onDuplicate={() => onDuplicateField(field.id)}
             onDelete={() => onDeleteField(field.id)}
+            onAddAfter={() => onAddAfter(field.id)}
             onDragStart={() => onDragStart(field.id)}
             onDragEnd={onDragEnd}
             onDrop={(after) => onDropAt(index + (after ? 1 : 0))}
@@ -633,6 +592,7 @@ function CanvasSection({
 
       {section.fields.length === 0 && (
         <div
+          onClick={onAddNote}
           onDragOver={(e) => {
             if (!dragging) return;
             e.preventDefault();
@@ -642,7 +602,7 @@ function CanvasSection({
             e.preventDefault();
             onDropAt(0);
           }}
-          className="border border-dashed rounded-[14px] p-6 text-center"
+          className="border border-dashed rounded-[14px] p-6 text-center cursor-text"
           style={{
             borderColor: dragging ? "var(--vet-green)" : "var(--vet-border)",
             background: dragging
@@ -652,95 +612,25 @@ function CanvasSection({
           }}
         >
           <p className="text-[12px] font-bold">
-            {dragging ? "Suelta aquí" : "Sección vacía"}
+            {dragging ? "Suelta aquí" : "Haz clic aquí y empieza a escribir"}
           </p>
         </div>
       )}
 
-      <div className="relative">
-        <button
-          type="button"
-          onClick={onAddNote}
-          className="h-10 px-3 rounded-[10px] border border-dashed inline-flex items-center gap-2 text-[12px] font-extrabold"
-          style={{
-            background: "transparent",
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-text-2)",
-          }}
-        >
-          <Plus size={14} /> Agregar nota
-        </button>
-        <button
-          type="button"
-          onClick={() => setAdderOpen((open) => !open)}
-          className="ml-2 h-10 px-3 rounded-[10px] border inline-flex items-center gap-2 text-[12px] font-extrabold"
-          style={{
-            background: "var(--vet-bg-mid)",
-            borderColor: "var(--vet-border)",
-            color: "var(--vet-text-2)",
-          }}
-        >
-          Más piezas <ChevronDown size={13} />
-        </button>
-        {adderOpen && (
-          <FieldTypeMenu
-            onPick={(type) => {
-              setAdderOpen(false);
-              onAddField(type);
-            }}
-            onClose={() => setAdderOpen(false)}
-          />
-        )}
-      </div>
-    </section>
-  );
-}
-
-function InsertButton({
-  type,
-  onClick,
-  onDragStart,
-  onDragEnd,
-  disabled,
-}: {
-  type: FieldType;
-  onClick: () => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  disabled?: boolean;
-}) {
-  const meta = FIELD_TYPE_META[type];
-  return (
-    <button
-      type="button"
-      draggable
-      disabled={disabled}
-      onDragStart={(e) => {
-        if (disabled) return;
-        e.dataTransfer.effectAllowed = "copy";
-        e.dataTransfer.setData("text/plain", `new:${type}`);
-        onDragStart();
-      }}
-      onDragEnd={onDragEnd}
-      onClick={onClick}
-      className="h-9 px-2.5 rounded-[9px] border inline-flex items-center gap-1.5 text-[11px] font-extrabold whitespace-nowrap transition-colors disabled:opacity-50 hover:[border-color:var(--vet-green)]"
-      style={{
-        background: "var(--vet-bg-card)",
-        borderColor: "var(--vet-border)",
-        color: "var(--vet-text-1)",
-      }}
-    >
-      <span
-        className="w-5 h-5 rounded-[6px] inline-flex items-center justify-center vet-mono text-[10px] font-black"
+      <div
+        onClick={onAddNote}
+        className="h-12 rounded-[12px] border border-dashed flex items-center px-4 cursor-text transition-colors"
         style={{
-          background: "var(--vet-bg-mid)",
-          color: "var(--vet-green)",
+          background: "transparent",
+          borderColor: "var(--vet-border)",
+          color: "var(--vet-text-3)",
         }}
       >
-        {meta.icon}
-      </span>
-      {meta.label}
-    </button>
+        <span className="text-[13px] font-bold">
+          Haz clic para escribir una nueva línea
+        </span>
+      </div>
+    </section>
   );
 }
 
@@ -961,6 +851,7 @@ function CanvasBlock({
   onChange,
   onDuplicate,
   onDelete,
+  onAddAfter,
   onDragStart,
   onDragEnd,
   onDrop,
@@ -973,6 +864,7 @@ function CanvasBlock({
   onChange: (patch: Partial<FormField>) => void;
   onDuplicate: () => void;
   onDelete: () => void;
+  onAddAfter: () => void;
   onDragStart: () => void;
   onDragEnd: () => void;
   onDrop: (after: boolean) => void;
@@ -1053,6 +945,12 @@ function CanvasBlock({
           <input
             value={field.label}
             onChange={(e) => onChange({ label: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              onAddAfter();
+            }}
+            autoFocus={selected && !field.label}
             placeholder={visual ? "Título" : "Qué debe llenar el vet"}
             className="w-full bg-transparent border-none outline-none text-[16px] sm:text-[17px] font-black"
             style={{ color: "var(--vet-text-1)" }}
@@ -1508,68 +1406,6 @@ function TemplateMenu({
           </button>
         ))}
       </div>
-    </div>
-  );
-}
-
-function FieldTypeMenu({
-  onPick,
-  onClose,
-}: {
-  onPick: (type: FieldType) => void;
-  onClose: () => void;
-}) {
-  useEffect(() => {
-    function handler(e: MouseEvent) {
-      const target = e.target as HTMLElement;
-      if (!target.closest("[data-field-menu]")) onClose();
-    }
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [onClose]);
-
-  return (
-    <div
-      data-field-menu
-      className="absolute top-full left-0 mt-1 z-20 w-[280px] rounded-[14px] border shadow-lg p-1.5 grid grid-cols-2 gap-1"
-      style={{
-        background: "var(--vet-bg-card)",
-        borderColor: "var(--vet-border)",
-        boxShadow: "0 14px 36px rgba(0,0,0,0.13)",
-      }}
-    >
-      {(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => (
-        <button
-          key={type}
-          type="button"
-          onClick={() => onPick(type)}
-          className="rounded-[10px] px-2 py-2 flex items-center gap-2 text-left hover:[background:var(--vet-bg-hover)]"
-        >
-          <span
-            className="w-7 h-7 rounded-[8px] inline-flex items-center justify-center vet-mono text-[11px]"
-            style={{
-              background: "var(--vet-bg-mid)",
-              color: "var(--vet-green)",
-            }}
-          >
-            {FIELD_TYPE_META[type].icon}
-          </span>
-          <span className="min-w-0">
-            <span
-              className="block text-[12px] font-extrabold truncate"
-              style={{ color: "var(--vet-text-1)" }}
-            >
-              {FIELD_TYPE_META[type].label}
-            </span>
-            <span
-              className="block text-[10px] font-bold truncate"
-              style={{ color: "var(--vet-text-3)" }}
-            >
-              {FIELD_TYPE_META[type].short}
-            </span>
-          </span>
-        </button>
-      ))}
     </div>
   );
 }
