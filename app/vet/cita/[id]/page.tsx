@@ -3,9 +3,8 @@ import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { BackLink } from "@/components/BackLink";
-import { DownloadRecetaButton } from "@/components/DownloadRecetaButton";
-import { AppointmentChat } from "@/components/AppointmentChat";
 import { PetAvatar } from "@/components/PetAvatar";
+import { AppointmentChatWidget } from "@/components/vet/AppointmentChatWidget";
 import { ConsultaForm } from "@/components/vet/ConsultaForm";
 import { StatusBadge, statusToVariant } from "@/components/vet/StatusBadge";
 import {
@@ -99,9 +98,8 @@ export default async function VetAppointmentEdit({
         {/* ─── Sidebar (desktop fixed, mobile stacked) ───────── */}
         <aside className="w-full lg:w-[320px] lg:shrink-0 lg:sticky lg:top-4 flex flex-col gap-4">
           {/* Pet card */}
-          <Link
-            href={`/vet/pacientes/${appt.pet.id}`}
-            className="block rounded-[16px] border p-5 transition no-underline hover:brightness-[1.02]"
+          <div
+            className="rounded-[16px] border p-5"
             style={{
               background: "var(--vet-bg-card)",
               borderColor: "var(--vet-border)",
@@ -131,14 +129,34 @@ export default async function VetAppointmentEdit({
                 </p>
               </div>
             </div>
-            <p
-              className="mt-3 text-[11px] font-extrabold uppercase tracking-[0.08em] inline-flex items-center gap-1"
-              style={{ color: "var(--vet-green)" }}
-            >
-              Ver expediente
-              <span aria-hidden>→</span>
-            </p>
-          </Link>
+            <div className="mt-4 grid grid-cols-2 gap-2">
+              <Link
+                href={`/vet/pacientes/${appt.pet.id}`}
+                className="h-10 rounded-[12px] border px-3 text-[11px] font-extrabold uppercase tracking-[0.06em] inline-flex items-center justify-center gap-1 no-underline transition hover:brightness-105"
+                style={{
+                  background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
+                  borderColor:
+                    "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+                  color: "var(--vet-green)",
+                }}
+              >
+                Ver expediente
+                <span aria-hidden>→</span>
+              </Link>
+              <Link
+                href={`/vet/pacientes/${appt.pet.id}/cartilla`}
+                className="h-10 rounded-[12px] border px-3 text-[11px] font-extrabold uppercase tracking-[0.06em] inline-flex items-center justify-center gap-1 no-underline transition hover:brightness-105"
+                style={{
+                  background: "var(--vet-bg-card)",
+                  borderColor: "var(--vet-border)",
+                  color: "var(--vet-text-2)",
+                }}
+              >
+                Ver cartilla
+                <span aria-hidden>→</span>
+              </Link>
+            </div>
+          </div>
 
           {/* Client card */}
           <div
@@ -182,6 +200,11 @@ export default async function VetAppointmentEdit({
                   </a>
                 )}
             </div>
+            <AppointmentChatWidget
+              messages={messages}
+              currentUserId={session.userId}
+              appointmentId={appt.id}
+            />
           </div>
 
           {/* Meta card */}
@@ -257,8 +280,6 @@ export default async function VetAppointmentEdit({
 
           {/* Action buttons */}
           <div className="flex flex-col gap-2 mt-1">
-            {isCompleted && <DownloadRecetaButton id={appt.id} />}
-
             {isScheduled && (
               <button
                 type="button"
@@ -298,29 +319,6 @@ export default async function VetAppointmentEdit({
 
         {/* ─── Main column ───────────────────────────────────── */}
         <main className="flex-1 min-w-0 w-full flex flex-col gap-6">
-          {/* Header */}
-          <header className="flex flex-col gap-2">
-            <div className="flex items-start justify-between gap-3 flex-wrap">
-              <div className="min-w-0">
-                <p
-                  className="text-[11px] font-extrabold uppercase tracking-[0.1em]"
-                  style={{ color: "var(--vet-text-3)" }}
-                >
-                  Consulta
-                </p>
-                <h1
-                  className="text-[26px] sm:text-[30px] font-black leading-tight tracking-tight"
-                  style={{ color: "var(--vet-text-1)" }}
-                >
-                  {appt.service.name}
-                </h1>
-              </div>
-              <div className="lg:hidden">
-                <StatusBadge variant={statusToVariant(appt.status)} />
-              </div>
-            </div>
-          </header>
-
           {/* Cancelled notice */}
           {isCancelled && (
             <div
@@ -345,21 +343,6 @@ export default async function VetAppointmentEdit({
             disabled={isCancelled}
             completed={isCompleted}
           />
-
-          {/* Chat */}
-          <div className="mt-2">
-            <h3
-              className="text-[12px] font-extrabold uppercase tracking-[0.08em] px-1 mb-2"
-              style={{ color: "var(--vet-text-3)" }}
-            >
-              Mensajes con el cliente
-            </h3>
-            <AppointmentChat
-              messages={messages}
-              currentUserId={session.userId}
-              appointmentId={appt.id}
-            />
-          </div>
         </main>
       </div>
     </div>

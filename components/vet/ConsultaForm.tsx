@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, Loader2 } from "lucide-react";
+import { Check, ChevronDown, FileText, Loader2 } from "lucide-react";
 import type {
   ConsultaData,
   ConsultaValue,
@@ -118,11 +118,11 @@ export function ConsultaForm({
     setValues((prev) => ({ ...prev, [id]: value }));
   }
 
-  async function handleSaveDraft() {
+  async function handleOpenSummaryPdf() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     const ok = await persist(values);
     if (ok) {
-      toast.success("Borrador guardado");
+      window.open(`/api/receta/${appointmentId}`, "_blank", "noopener,noreferrer");
       router.refresh();
     }
   }
@@ -167,33 +167,68 @@ export function ConsultaForm({
       {/* Footer actions */}
       <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2">
         {completed ? (
-          <button
-            type="button"
-            disabled
-            title="Próximamente — reabrir cita"
-            className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border opacity-60 cursor-not-allowed"
-            style={{
-              background: "var(--vet-bg-card)",
-              borderColor: "var(--vet-border)",
-              color: "var(--vet-text-2)",
-            }}
-          >
-            Reabrir cita
-          </button>
-        ) : disabled ? null : (
           <>
             <button
               type="button"
-              onClick={handleSaveDraft}
-              disabled={saving || finalizing}
-              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition disabled:opacity-60"
+              onClick={handleOpenSummaryPdf}
+              disabled={saving}
+              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
               style={{
                 background: "var(--vet-bg-card)",
                 borderColor: "var(--vet-border)",
                 color: "var(--vet-text-1)",
               }}
             >
-              {saving && !finalizing ? "Guardando…" : "Guardar borrador"}
+              {saving ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Preparando…
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  Generar resumen PDF
+                </>
+              )}
+            </button>
+            <button
+              type="button"
+              disabled
+              title="Próximamente — reabrir cita"
+              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border opacity-60 cursor-not-allowed"
+              style={{
+                background: "var(--vet-bg-card)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              Reabrir cita
+            </button>
+          </>
+        ) : disabled ? null : (
+          <>
+            <button
+              type="button"
+              onClick={handleOpenSummaryPdf}
+              disabled={saving || finalizing}
+              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
+              style={{
+                background: "var(--vet-bg-card)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-1)",
+              }}
+            >
+              {saving && !finalizing ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Preparando…
+                </>
+              ) : (
+                <>
+                  <FileText className="h-4 w-4" />
+                  Generar resumen PDF
+                </>
+              )}
             </button>
             <button
               type="button"
@@ -560,27 +595,14 @@ function FieldControl({
 
     case "select":
       return (
-        <select
+        <PrettySelect
           id={`f-${field.id}`}
-          className={`h-12 ${baseInputClass} appearance-none pr-10 bg-no-repeat`}
-          style={{
-            ...inputStyle,
-            backgroundImage:
-              "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23999' stroke-width='2'><polyline points='3 6 8 11 13 6'/></svg>\")",
-            backgroundPosition: "right 12px center",
-            backgroundSize: "16px",
-          }}
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
+          options={field.options ?? []}
+          placeholder="Selecciona"
           disabled={readOnly}
-        >
-          <option value="">— Selecciona —</option>
-          {(field.options ?? []).map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
+          onChange={onChange}
+        />
       );
 
     case "checkbox": {
@@ -667,4 +689,129 @@ function FieldControl({
     default:
       return null;
   }
+}
+
+function PrettySelect({
+  id,
+  value,
+  options,
+  placeholder,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  options: string[];
+  placeholder: string;
+  disabled: boolean;
+  onChange: (v: ConsultaValue) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = value || "";
+
+  useEffect(() => {
+    if (!open) return;
+    function close() {
+      setOpen(false);
+    }
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+
+  return (
+    <div className="relative">
+      <button
+        id={id}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          setOpen((prev) => !prev);
+        }}
+        className="h-12 w-full rounded-[12px] border px-4 pr-11 text-left text-[15px] font-bold outline-none transition focus:border-[color:var(--vet-green)] focus:ring-2 focus:ring-[color:var(--vet-green-glow)] disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in oklab, var(--vet-bg-card) 96%, white), var(--vet-bg-card))",
+          borderColor: open
+            ? "color-mix(in oklab, var(--vet-green) 46%, var(--vet-border))"
+            : "var(--vet-border)",
+          color: selected ? "var(--vet-text-1)" : "var(--vet-text-3)",
+          boxShadow: open
+            ? "0 0 0 3px var(--vet-green-glow), var(--shadow-soft-sm)"
+            : "var(--shadow-soft-sm)",
+        }}
+      >
+        <span className="block truncate">{selected || placeholder}</span>
+        <span
+          className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-[9px]"
+          style={{
+            background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
+            color: "var(--vet-green)",
+          }}
+        >
+          <ChevronDown
+            className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
+            strokeWidth={2.5}
+          />
+        </span>
+      </button>
+
+      {open && !disabled && (
+        <div
+          role="listbox"
+          aria-labelledby={id}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute z-30 mt-2 w-full overflow-hidden rounded-[14px] border p-1.5 shadow-[0_18px_45px_rgba(0,0,0,.16)]"
+          style={{
+            background: "var(--vet-bg-card)",
+            borderColor:
+              "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+          }}
+        >
+          <button
+            type="button"
+            role="option"
+            aria-selected={!selected}
+            onClick={() => {
+              onChange("");
+              setOpen(false);
+            }}
+            className="w-full rounded-[10px] px-3 py-2.5 text-left text-[14px] font-bold transition hover:brightness-95"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {placeholder}
+          </button>
+          <div className="max-h-[260px] overflow-y-auto pr-1">
+            {options.map((opt) => {
+              const active = opt === selected;
+              return (
+                <button
+                  key={opt}
+                  type="button"
+                  role="option"
+                  aria-selected={active}
+                  onClick={() => {
+                    onChange(opt);
+                    setOpen(false);
+                  }}
+                  className="mt-1 flex w-full items-center justify-between gap-3 rounded-[10px] px-3 py-2.5 text-left text-[14px] font-extrabold transition"
+                  style={{
+                    background: active
+                      ? "color-mix(in oklab, var(--vet-green) 14%, transparent)"
+                      : "transparent",
+                    color: active ? "var(--vet-green-dim)" : "var(--vet-text-1)",
+                  }}
+                >
+                  <span className="truncate">{opt}</span>
+                  {active && <Check className="h-4 w-4 shrink-0" />}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
