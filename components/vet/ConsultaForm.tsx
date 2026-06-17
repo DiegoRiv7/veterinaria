@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Check, ChevronDown, FileText, Loader2 } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
 import type {
   ConsultaData,
   ConsultaValue,
@@ -149,11 +149,6 @@ export function ConsultaForm({
 
   return (
     <div className="flex flex-col gap-6">
-      {/* Save indicator pill */}
-      <div className="flex items-center justify-end min-h-[20px]">
-        <SaveIndicator saving={saving} savedAt={savedAt} disabled={readOnly} />
-      </div>
-
       {schema.sections.map((section) => (
         <SectionBlock
           key={section.id}
@@ -165,7 +160,11 @@ export function ConsultaForm({
       ))}
 
       {/* Footer actions */}
-      <div className="flex flex-col-reverse sm:flex-row gap-3 sm:justify-end pt-2">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-h-[20px]">
+          <SaveIndicator saving={saving} savedAt={savedAt} disabled={readOnly} />
+        </div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
         {completed ? (
           <>
             <button
@@ -237,8 +236,9 @@ export function ConsultaForm({
               className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold text-white transition disabled:opacity-60 inline-flex items-center justify-center gap-2"
               style={{
                 background:
-                  "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
+                  "linear-gradient(135deg, color-mix(in oklab, var(--vet-green-dim) 82%, black), var(--vet-green-dim))",
                 boxShadow: "0 10px 24px var(--vet-green-glow)",
+                color: "#fff",
               }}
             >
               {finalizing ? (
@@ -255,6 +255,7 @@ export function ConsultaForm({
             </button>
           </>
         )}
+        </div>
       </div>
     </div>
   );
@@ -582,14 +583,11 @@ function FieldControl({
 
     case "date":
       return (
-        <input
+        <PrettyDatePicker
           id={`f-${field.id}`}
-          type="date"
-          className={`h-12 ${baseInputClass}`}
-          style={inputStyle}
           value={typeof value === "string" ? value : ""}
-          onChange={(e) => onChange(e.target.value)}
           disabled={readOnly}
+          onChange={onChange}
         />
       );
 
@@ -814,4 +812,237 @@ function PrettySelect({
       )}
     </div>
   );
+}
+
+function PrettyDatePicker({
+  id,
+  value,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  value: string;
+  disabled: boolean;
+  onChange: (v: ConsultaValue) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [viewDate, setViewDate] = useState(() => parseISODate(value) ?? new Date());
+  const selected = parseISODate(value);
+
+  useEffect(() => {
+    if (!open) return;
+    function close() {
+      setOpen(false);
+    }
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [open]);
+
+  const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
+  const monthLabel = new Intl.DateTimeFormat("es-MX", {
+    month: "long",
+    year: "numeric",
+  }).format(monthStart);
+  const days = calendarDays(monthStart);
+
+  return (
+    <div className="relative">
+      <button
+        id={id}
+        type="button"
+        disabled={disabled}
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!open && selected) setViewDate(selected);
+          setOpen((prev) => !prev);
+        }}
+        className="h-12 w-full rounded-[12px] border px-4 pr-11 text-left text-[15px] font-bold outline-none transition focus:border-[color:var(--vet-green)] focus:ring-2 focus:ring-[color:var(--vet-green-glow)] disabled:cursor-not-allowed disabled:opacity-60"
+        style={{
+          background:
+            "linear-gradient(180deg, color-mix(in oklab, var(--vet-bg-card) 96%, white), var(--vet-bg-card))",
+          borderColor: open
+            ? "color-mix(in oklab, var(--vet-green) 46%, var(--vet-border))"
+            : "var(--vet-border)",
+          color: value ? "var(--vet-text-1)" : "var(--vet-text-3)",
+          boxShadow: open
+            ? "0 0 0 3px var(--vet-green-glow), var(--shadow-soft-sm)"
+            : "var(--shadow-soft-sm)",
+        }}
+      >
+        <span className="block truncate">
+          {selected ? formatDateLabel(selected) : "Selecciona fecha"}
+        </span>
+        <span
+          className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-[9px]"
+          style={{
+            background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
+            color: "var(--vet-green)",
+          }}
+        >
+          <CalendarDays className="h-4 w-4" strokeWidth={2.5} />
+        </span>
+      </button>
+
+      {open && !disabled && (
+        <div
+          role="dialog"
+          aria-labelledby={`${id}-month`}
+          onClick={(e) => e.stopPropagation()}
+          className="absolute z-40 mt-2 w-[min(100%,340px)] rounded-[16px] border p-3 shadow-[0_18px_45px_rgba(0,0,0,.16)]"
+          style={{
+            background: "var(--vet-bg-card)",
+            borderColor:
+              "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+          }}
+        >
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <button
+              type="button"
+              aria-label="Mes anterior"
+              onClick={() =>
+                setViewDate((d) => new Date(d.getFullYear(), d.getMonth() - 1, 1))
+              }
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border transition hover:brightness-95"
+              style={{
+                background: "var(--vet-bg-card)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </button>
+            <p
+              id={`${id}-month`}
+              className="text-[14px] font-black capitalize"
+              style={{ color: "var(--vet-text-1)" }}
+            >
+              {monthLabel}
+            </p>
+            <button
+              type="button"
+              aria-label="Mes siguiente"
+              onClick={() =>
+                setViewDate((d) => new Date(d.getFullYear(), d.getMonth() + 1, 1))
+              }
+              className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border transition hover:brightness-95"
+              style={{
+                background: "var(--vet-bg-card)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
+
+          <div
+            className="grid grid-cols-7 gap-1 text-center text-[11px] font-extrabold uppercase"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {["L", "M", "M", "J", "V", "S", "D"].map((d, index) => (
+              <span key={`${d}-${index}`} className="py-1">
+                {d}
+              </span>
+            ))}
+          </div>
+          <div className="mt-1 grid grid-cols-7 gap-1">
+            {days.map((day) => {
+              const inMonth = day.getMonth() === viewDate.getMonth();
+              const iso = toISODate(day);
+              const active = iso === value;
+              const today = iso === toISODate(new Date());
+              return (
+                <button
+                  key={iso}
+                  type="button"
+                  onClick={() => {
+                    onChange(iso);
+                    setOpen(false);
+                  }}
+                  className="aspect-square rounded-[10px] text-[13px] font-extrabold transition hover:brightness-95"
+                  style={{
+                    background: active
+                      ? "linear-gradient(135deg, color-mix(in oklab, var(--vet-green-dim) 84%, black), var(--vet-green-dim))"
+                      : today
+                        ? "color-mix(in oklab, var(--vet-green) 10%, transparent)"
+                        : "transparent",
+                    border: today && !active ? "1px solid var(--vet-border)" : "1px solid transparent",
+                    color: active
+                      ? "#fff"
+                      : inMonth
+                        ? "var(--vet-text-1)"
+                        : "var(--vet-text-3)",
+                    opacity: inMonth ? 1 : 0.45,
+                  }}
+                >
+                  {day.getDate()}
+                </button>
+              );
+            })}
+          </div>
+
+          {value && (
+            <button
+              type="button"
+              onClick={() => {
+                onChange("");
+                setOpen(false);
+              }}
+              className="mt-3 h-10 w-full rounded-[11px] border text-[13px] font-extrabold transition hover:brightness-95"
+              style={{
+                background: "var(--vet-bg-card)",
+                borderColor: "var(--vet-border)",
+                color: "var(--vet-text-2)",
+              }}
+            >
+              Limpiar fecha
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function parseISODate(value: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(year, month - 1, day);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return null;
+  }
+  return date;
+}
+
+function toISODate(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDateLabel(date: Date): string {
+  return new Intl.DateTimeFormat("es-MX", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function calendarDays(monthStart: Date): Date[] {
+  const start = new Date(monthStart);
+  const mondayBasedOffset = (start.getDay() + 6) % 7;
+  start.setDate(start.getDate() - mondayBasedOffset);
+
+  return Array.from({ length: 42 }, (_, index) => {
+    const d = new Date(start);
+    d.setDate(start.getDate() + index);
+    return d;
+  });
 }

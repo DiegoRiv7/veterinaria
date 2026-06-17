@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Maximize2, MessageCircle, Minimize2, X } from "lucide-react";
+import { useRef, useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 import { AppointmentChat } from "@/components/AppointmentChat";
 
 type ChatMessage = {
@@ -13,6 +13,12 @@ type ChatMessage = {
   vetPhotoUrl?: string | null;
 };
 
+type WindowBox = { x: number; y: number; width: number; height: number };
+type ResizeEdge = "n" | "s" | "e" | "w" | "ne" | "nw" | "se" | "sw";
+
+const MIN_W = 360;
+const MIN_H = 420;
+
 export function AppointmentChatWidget({
   messages,
   currentUserId,
@@ -23,13 +29,88 @@ export function AppointmentChatWidget({
   appointmentId: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [large, setLarge] = useState(false);
+  const [box, setBox] = useState<WindowBox>({ x: 0, y: 0, width: 430, height: 620 });
+  const initialized = useRef(false);
+
+  function openWindow() {
+    if (!initialized.current && typeof window !== "undefined") {
+      const width = Math.min(430, window.innerWidth - 32);
+      const height = Math.min(620, window.innerHeight - 32);
+      setBox({
+        width,
+        height,
+        x: Math.max(16, window.innerWidth - width - 16),
+        y: Math.max(16, window.innerHeight - height - 16),
+      });
+      initialized.current = true;
+    }
+    setOpen(true);
+  }
+
+  function startDrag(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startBox = box;
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    function move(ev: PointerEvent) {
+      setBox((current) =>
+        clampBox({
+          ...current,
+          x: startBox.x + ev.clientX - startX,
+          y: startBox.y + ev.clientY - startY,
+        }),
+      );
+    }
+    function stop() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop, { once: true });
+  }
+
+  function startResize(edge: ResizeEdge, e: React.PointerEvent<HTMLButtonElement>) {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const startBox = box;
+    e.currentTarget.setPointerCapture(e.pointerId);
+
+    function move(ev: PointerEvent) {
+      const dx = ev.clientX - startX;
+      const dy = ev.clientY - startY;
+      const next = { ...startBox };
+
+      if (edge.includes("e")) next.width = startBox.width + dx;
+      if (edge.includes("s")) next.height = startBox.height + dy;
+      if (edge.includes("w")) {
+        next.x = startBox.x + dx;
+        next.width = startBox.width - dx;
+      }
+      if (edge.includes("n")) {
+        next.y = startBox.y + dy;
+        next.height = startBox.height - dy;
+      }
+
+      setBox(clampBox(next));
+    }
+    function stop() {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    }
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop, { once: true });
+  }
 
   return (
     <>
       <button
         type="button"
-        onClick={() => setOpen(true)}
+        onClick={openWindow}
         className="mt-3 inline-flex h-10 w-full items-center justify-center gap-2 rounded-[12px] border text-[13px] font-extrabold transition hover:brightness-105"
         style={{
           background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
@@ -43,19 +124,20 @@ export function AppointmentChatWidget({
 
       {open && (
         <div className="fixed inset-0 z-50 pointer-events-none">
-          <div
-            className={`pointer-events-auto fixed bottom-4 right-4 flex max-h-[calc(100vh-2rem)] flex-col overflow-hidden rounded-[18px] border shadow-[0_22px_70px_rgba(0,0,0,.22)] ${
-              large
-                ? "left-4 top-4 sm:left-auto sm:top-auto sm:w-[720px]"
-                : "left-4 sm:left-auto sm:w-[420px]"
-            }`}
+          <section
+            className="pointer-events-auto fixed flex min-h-[360px] min-w-[320px] flex-col overflow-hidden rounded-[18px] border shadow-[0_22px_70px_rgba(0,0,0,.22)]"
             style={{
+              left: box.x,
+              top: box.y,
+              width: box.width,
+              height: box.height,
               background: "var(--vet-bg-card)",
               borderColor: "var(--vet-border)",
             }}
           >
             <div
-              className="flex items-center justify-between gap-3 border-b px-4 py-3"
+              onPointerDown={startDrag}
+              className="flex cursor-move select-none items-center justify-between gap-3 border-b px-4 py-3"
               style={{
                 borderColor: "var(--vet-border)",
                 background: "var(--vet-bg-mid)",
@@ -75,45 +157,82 @@ export function AppointmentChatWidget({
                   {messages.length} mensaje{messages.length === 1 ? "" : "s"}
                 </p>
               </div>
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={() => setLarge((prev) => !prev)}
-                  aria-label={large ? "Hacer más pequeña" : "Hacer más grande"}
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border transition hover:brightness-105"
-                  style={{
-                    background: "var(--vet-bg-card)",
-                    borderColor: "var(--vet-border)",
-                    color: "var(--vet-text-2)",
-                  }}
-                >
-                  {large ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setOpen(false)}
-                  aria-label="Cerrar conversación"
-                  className="inline-flex h-9 w-9 items-center justify-center rounded-[10px] border transition hover:brightness-105"
-                  style={{
-                    background: "var(--vet-bg-card)",
-                    borderColor: "var(--vet-border)",
-                    color: "var(--vet-text-2)",
-                  }}
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={() => setOpen(false)}
+                onPointerDown={(e) => e.stopPropagation()}
+                aria-label="Cerrar conversación"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[10px] border transition hover:brightness-105"
+                style={{
+                  background: "var(--vet-bg-card)",
+                  borderColor: "var(--vet-border)",
+                  color: "var(--vet-text-2)",
+                }}
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
-            <div className="min-h-0 overflow-y-auto p-3">
+
+            <div className="min-h-0 flex-1 overflow-y-auto p-3">
               <AppointmentChat
                 messages={messages}
                 currentUserId={currentUserId}
                 appointmentId={appointmentId}
               />
             </div>
-          </div>
+
+            {(["n", "s", "e", "w", "ne", "nw", "se", "sw"] as ResizeEdge[]).map(
+              (edge) => (
+                <ResizeHandle
+                  key={edge}
+                  edge={edge}
+                  onPointerDown={(e) => startResize(edge, e)}
+                />
+              ),
+            )}
+          </section>
         </div>
       )}
     </>
   );
+}
+
+function ResizeHandle({
+  edge,
+  onPointerDown,
+}: {
+  edge: ResizeEdge;
+  onPointerDown: (e: React.PointerEvent<HTMLButtonElement>) => void;
+}) {
+  const classByEdge: Record<ResizeEdge, string> = {
+    n: "left-4 right-4 top-0 h-2 cursor-ns-resize",
+    s: "bottom-0 left-4 right-4 h-2 cursor-ns-resize",
+    e: "bottom-4 right-0 top-4 w-2 cursor-ew-resize",
+    w: "bottom-4 left-0 top-4 w-2 cursor-ew-resize",
+    ne: "right-0 top-0 h-4 w-4 cursor-nesw-resize",
+    nw: "left-0 top-0 h-4 w-4 cursor-nwse-resize",
+    se: "bottom-0 right-0 h-4 w-4 cursor-nwse-resize",
+    sw: "bottom-0 left-0 h-4 w-4 cursor-nesw-resize",
+  };
+
+  return (
+    <button
+      type="button"
+      aria-label={`Redimensionar ${edge}`}
+      onPointerDown={onPointerDown}
+      className={`absolute ${classByEdge[edge]}`}
+    />
+  );
+}
+
+function clampBox(box: WindowBox): WindowBox {
+  if (typeof window === "undefined") return box;
+  const padding = 12;
+  const maxW = Math.max(MIN_W, window.innerWidth - padding * 2);
+  const maxH = Math.max(MIN_H, window.innerHeight - padding * 2);
+  const width = Math.min(Math.max(box.width, Math.min(MIN_W, maxW)), maxW);
+  const height = Math.min(Math.max(box.height, Math.min(MIN_H, maxH)), maxH);
+  const x = Math.min(Math.max(box.x, padding), window.innerWidth - width - padding);
+  const y = Math.min(Math.max(box.y, padding), window.innerHeight - height - padding);
+  return { x, y, width, height };
 }

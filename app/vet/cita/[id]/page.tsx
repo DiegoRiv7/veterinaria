@@ -134,10 +134,9 @@ export default async function VetAppointmentEdit({
                 href={`/vet/pacientes/${appt.pet.id}`}
                 className="h-10 rounded-[12px] border px-3 text-[11px] font-extrabold uppercase tracking-[0.06em] inline-flex items-center justify-center gap-1 no-underline transition hover:brightness-105"
                 style={{
-                  background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
-                  borderColor:
-                    "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
-                  color: "var(--vet-green)",
+                  background: "var(--vet-bg-card)",
+                  borderColor: "var(--vet-border)",
+                  color: "var(--vet-text-2)",
                 }}
               >
                 Ver expediente
