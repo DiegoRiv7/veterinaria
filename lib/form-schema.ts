@@ -204,22 +204,22 @@ export const TEMPLATE_META: Record<
   vacunacion: {
     label: "Vacunación",
     icon: "💉",
-    subtitle: "Biológico aplicado, lote, vía, próximas fechas.",
+    subtitle: "Biológico, aplicación, vencimiento y próxima vacuna.",
   },
   desparasitacion_interna: {
     label: "Desparasitación interna",
     icon: "💊",
-    subtitle: "Producto, dosis, vía, próxima dosis.",
+    subtitle: "Producto, aplicación, vencimiento y próxima dosis.",
   },
   desparasitacion_externa: {
     label: "Desparasitación externa",
     icon: "🕷️",
-    subtitle: "Producto, presentación, próxima aplicación.",
+    subtitle: "Producto, aplicación, vencimiento y próxima dosis.",
   },
   laboratorio: {
     label: "Laboratorio",
     icon: "🧪",
-    subtitle: "Muestra, análisis, resultados.",
+    subtitle: "Muestra, análisis clínico y tests.",
   },
   imagenologia: {
     label: "Imagenología",
@@ -249,7 +249,7 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Historia clínica",
+            title: "Consulta",
             fields: [
               {
                 id: newFieldId(),
@@ -259,73 +259,20 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Síntomas relatados por el cliente, tiempo de evolución, antecedentes.",
               },
               {
-                id: newFieldId(),
-                label: "Motivo de la visita",
-                type: "text",
-                placeholder: "Razón principal por la que vino el paciente.",
-              },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Examen físico",
-            fields: [
-              {
-                id: newFieldId(),
-                label: "Peso",
-                type: "number",
-                unit: "kg",
-              },
-              {
-                id: newFieldId(),
-                label: "Temperatura",
-                type: "number",
-                unit: "°C",
-              },
-              {
-                id: newFieldId(),
-                label: "Frecuencia cardíaca",
-                type: "number",
-                unit: "lpm",
-              },
-              {
-                id: newFieldId(),
-                label: "Frecuencia respiratoria",
-                type: "number",
-                unit: "rpm",
-              },
-              {
-                id: newFieldId(),
-                label: "Hidratación",
-                type: "select",
-                options: ["Normal", "5%", "7%", "10%", "Severa"],
-              },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Diagnóstico",
-            fields: [
-              {
-                id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Observaciones / hallazgos",
+                id: LEGACY_FIELD_IDS.instructions,
+                label: "Indicaciones para el cliente",
                 type: "textarea",
-                placeholder: "Hallazgos del examen físico, comportamiento.",
+                placeholder: "Cuidados, dieta, reposo, señales de alarma o próxima visita.",
               },
               {
-                id: newFieldId(),
-                label: "Diagnósticos diferenciales",
+                id: LEGACY_FIELD_IDS.medications,
+                label: "Medicamentos o receta",
                 type: "textarea",
-                placeholder: "Lista de posibles diagnósticos a descartar.",
+                placeholder: "Medicamento, dosis, vía, frecuencia y duración.",
               },
               {
                 id: newFieldId(),
-                label: "Diagnóstico definitivo",
-                type: "text",
-              },
-              {
-                id: newFieldId(),
-                label: "Estudios solicitados",
+                label: "Estudios autorizados",
                 type: "checkboxes",
                 options: [
                   "BHC",
@@ -335,30 +282,26 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Radiografía",
                   "Ultrasonido",
                   "Cultivo",
+                  "Test rápido",
+                  "Otro",
                 ],
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Tratamiento",
-            fields: [
               {
-                id: LEGACY_FIELD_IDS.medications,
-                label: "Medicamentos / receta",
+                id: LEGACY_FIELD_IDS.vetNotes,
+                label: "Observaciones",
                 type: "textarea",
-                placeholder: "Fármaco, dosis, vía, frecuencia, duración.",
-              },
-              {
-                id: LEGACY_FIELD_IDS.instructions,
-                label: "Indicaciones para el cliente",
-                type: "textarea",
-                placeholder: "Dieta, reposo, curaciones, próxima visita.",
+                placeholder: "Hallazgos, evolución y notas para expediente individual.",
               },
               {
                 id: newFieldId(),
-                label: "Próxima visita",
-                type: "date",
+                label: "Diagnósticos diferenciales",
+                type: "textarea",
+                placeholder: "Posibles diagnósticos a descartar.",
+              },
+              {
+                id: newFieldId(),
+                label: "Diagnóstico definitivo",
+                type: "text",
               },
             ],
           },
@@ -371,11 +314,11 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Aplicación",
+            title: "Vacunación",
             fields: [
               {
                 id: newFieldId(),
-                label: "Biológico aplicado",
+                label: "Tipo de biológico",
                 type: "select",
                 required: true,
                 options: [
@@ -388,18 +331,7 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Giardia",
                   "Otro",
                 ],
-              },
-              {
-                id: newFieldId(),
-                label: "Lote",
-                type: "text",
-                placeholder: "Número de lote del biológico.",
-              },
-              {
-                id: newFieldId(),
-                label: "Vía de administración",
-                type: "select",
-                options: ["Subcutánea", "Intramuscular", "Oral", "Intranasal"],
+                helpText: "La lista se puede editar para registrar nuevos biológicos.",
               },
               {
                 id: newFieldId(),
@@ -409,45 +341,24 @@ export function templateFor(key: TemplateKey): FormSchema {
               },
               {
                 id: newFieldId(),
-                label: "Fecha de vencimiento del biológico",
+                label: "Fecha de vencimiento",
                 type: "date",
               },
               {
                 id: newFieldId(),
-                label: "Próxima vacuna",
+                label: "Fecha de próxima vacuna",
                 type: "date",
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Observaciones",
-            fields: [
               {
                 id: newFieldId(),
-                label: "Reacciones adversas",
-                type: "checkboxes",
-                options: [
-                  "Ninguna",
-                  "Letargo",
-                  "Fiebre",
-                  "Inflamación local",
-                  "Vómito",
-                  "Reacción alérgica",
-                ],
+                label: "Agregar al carnet virtual",
+                type: "checkbox",
+                helpText: "Marcar si debe aparecer en el carnet descargable del cliente.",
               },
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Notas",
+                label: "Observaciones",
                 type: "textarea",
-                placeholder: "Comportamiento del paciente, observaciones.",
-              },
-              {
-                id: LEGACY_FIELD_IDS.instructions,
-                label: "Indicaciones para el cliente",
-                type: "textarea",
-                placeholder:
-                  "Vigilar 24h, evitar baño 3 días, retorno si reacción.",
               },
             ],
           },
@@ -460,11 +371,11 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Aplicación",
+            title: "Desparasitación interna",
             fields: [
               {
                 id: newFieldId(),
-                label: "Producto aplicado",
+                label: "Tipo de desparasitante",
                 type: "select",
                 required: true,
                 options: [
@@ -475,18 +386,7 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Panacur (Fenbendazol)",
                   "Otro",
                 ],
-              },
-              {
-                id: newFieldId(),
-                label: "Dosis",
-                type: "text",
-                placeholder: "Cantidad / peso (ej. 1 comp / 10 kg)",
-              },
-              {
-                id: newFieldId(),
-                label: "Vía",
-                type: "select",
-                options: ["Oral", "Inyectable"],
+                helpText: "La lista se puede editar para registrar nuevos desparasitantes.",
               },
               {
                 id: newFieldId(),
@@ -501,23 +401,18 @@ export function templateFor(key: TemplateKey): FormSchema {
               },
               {
                 id: newFieldId(),
-                label: "Próxima desparasitación",
+                label: "Fecha próxima de desparasitación",
                 type: "date",
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Observaciones",
-            fields: [
+              {
+                id: newFieldId(),
+                label: "Anexar al carnet de vacunas",
+                type: "checkbox",
+                helpText: "Marcar si esta aplicación debe anexarse al carnet.",
+              },
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
                 label: "Observaciones",
-                type: "textarea",
-              },
-              {
-                id: LEGACY_FIELD_IDS.instructions,
-                label: "Indicaciones para el cliente",
                 type: "textarea",
               },
             ],
@@ -531,11 +426,11 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Aplicación",
+            title: "Desparasitación externa",
             fields: [
               {
                 id: newFieldId(),
-                label: "Producto aplicado",
+                label: "Tipo de desparasitante",
                 type: "select",
                 required: true,
                 options: [
@@ -546,12 +441,7 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Simparica",
                   "Otro",
                 ],
-              },
-              {
-                id: newFieldId(),
-                label: "Presentación",
-                type: "select",
-                options: ["Pipeta", "Comprimido", "Collar", "Spray", "Champú"],
+                helpText: "La lista se puede editar para registrar nuevos productos.",
               },
               {
                 id: newFieldId(),
@@ -561,35 +451,23 @@ export function templateFor(key: TemplateKey): FormSchema {
               },
               {
                 id: newFieldId(),
-                label: "Duración del efecto / vencimiento",
+                label: "Fecha de vencimiento",
                 type: "date",
               },
               {
                 id: newFieldId(),
-                label: "Próxima aplicación",
+                label: "Fecha próxima de desparasitación externa",
                 type: "date",
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Hallazgos",
-            fields: [
               {
                 id: newFieldId(),
-                label: "Pulgas",
-                type: "select",
-                options: ["No", "Sí - leve", "Sí - moderada", "Sí - severa"],
-              },
-              {
-                id: newFieldId(),
-                label: "Garrapatas",
-                type: "select",
-                options: ["No", "Sí"],
+                label: "Anexar al carnet de vacunación",
+                type: "checkbox",
+                helpText: "Marcar si esta aplicación debe anexarse al carnet.",
               },
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Notas",
+                label: "Observaciones",
                 type: "textarea",
               },
             ],
@@ -603,7 +481,7 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Muestra",
+            title: "Laboratorio",
             fields: [
               {
                 id: newFieldId(),
@@ -619,22 +497,11 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Líquido cefalorraquídeo",
                   "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevas muestras.",
               },
               {
                 id: newFieldId(),
-                label: "Fecha de toma",
-                type: "date",
-                required: true,
-              },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Estudios",
-            fields: [
-              {
-                id: newFieldId(),
-                label: "Tipo de análisis",
+                label: "Tipo de análisis clínico",
                 type: "checkboxes",
                 options: [
                   "BHC (Biometría hemática completa)",
@@ -645,11 +512,13 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Coproparasitoscópico",
                   "Citología",
                   "Cultivo + antibiograma",
+                  "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevos estudios.",
               },
               {
                 id: newFieldId(),
-                label: "Tests específicos",
+                label: "Tipo de test",
                 type: "checkboxes",
                 options: [
                   "Ehrlichia",
@@ -660,22 +529,13 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "FIV / FeLV",
                   "Dirofilaria",
                   "Giardia",
+                  "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevos tests.",
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Resultados",
-            fields: [
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Hallazgos / resultados",
-                type: "textarea",
-              },
-              {
-                id: LEGACY_FIELD_IDS.instructions,
-                label: "Recomendaciones para el cliente",
+                label: "Observaciones",
                 type: "textarea",
               },
             ],
@@ -689,11 +549,11 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Estudio",
+            title: "Imagenología",
             fields: [
               {
                 id: newFieldId(),
-                label: "Técnica",
+                label: "Tipo de técnica",
                 type: "select",
                 required: true,
                 options: [
@@ -704,12 +564,7 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Endoscopia",
                   "Ecocardiografía",
                 ],
-              },
-              {
-                id: newFieldId(),
-                label: "Zona / región estudiada",
-                type: "text",
-                placeholder: "Ej. Abdomen completo, tórax, cráneo, rodilla.",
+                helpText: "La lista se puede editar para registrar nuevas técnicas.",
               },
               {
                 id: newFieldId(),
@@ -717,17 +572,11 @@ export function templateFor(key: TemplateKey): FormSchema {
                 type: "date",
                 required: true,
               },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Interpretación",
-            fields: [
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Observaciones / hallazgos",
+                label: "Observaciones",
                 type: "textarea",
-                placeholder: "Descripción de lo encontrado en las imágenes.",
+                placeholder: "Descripción de lo encontrado en el estudio.",
               },
               {
                 id: newFieldId(),
@@ -738,11 +587,6 @@ export function templateFor(key: TemplateKey): FormSchema {
                 id: newFieldId(),
                 label: "Diagnóstico definitivo",
                 type: "text",
-              },
-              {
-                id: LEGACY_FIELD_IDS.instructions,
-                label: "Recomendaciones",
-                type: "textarea",
               },
             ],
           },
@@ -837,7 +681,7 @@ export function templateFor(key: TemplateKey): FormSchema {
         sections: [
           {
             id: newSectionId(),
-            title: "Servicio realizado",
+            title: "Estética",
             fields: [
               {
                 id: newFieldId(),
@@ -851,7 +695,9 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Corte estilizado",
                   "Spa completo",
                   "Sólo corte de uñas",
+                  "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevos tipos de servicio.",
               },
               {
                 id: newFieldId(),
@@ -864,23 +710,13 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Hidratante",
                   "Calmante",
                   "Antipulgas medicado",
+                  "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevos baños dermatológicos.",
               },
               {
                 id: newFieldId(),
-                label: "Productos utilizados",
-                type: "textarea",
-                placeholder: "Shampoo, acondicionador, productos extra.",
-              },
-            ],
-          },
-          {
-            id: newSectionId(),
-            title: "Observaciones",
-            fields: [
-              {
-                id: newFieldId(),
-                label: "Personalidad observada",
+                label: "Personalidad del perro",
                 type: "checkboxes",
                 options: [
                   "Tranquilo",
@@ -889,37 +725,34 @@ export function templateFor(key: TemplateKey): FormSchema {
                   "Tímido",
                   "Juguetón",
                   "Cooperativo",
+                  "Otro",
                 ],
+                helpText: "La lista se puede editar para registrar nuevas opciones.",
               },
               {
                 id: newFieldId(),
-                label: "Presenta pulgas",
+                label: "Pulgas",
                 type: "select",
                 options: ["No", "Sí"],
               },
               {
                 id: newFieldId(),
-                label: "Presenta garrapatas",
+                label: "Garrapatas",
                 type: "select",
                 options: ["No", "Sí"],
               },
               {
                 id: newFieldId(),
-                label: "Lesiones en piel",
+                label: "Lesiones de piel",
                 type: "select",
                 options: ["No", "Sí"],
-              },
-              {
-                id: newFieldId(),
-                label: "Descripción de hallazgos",
-                type: "textarea",
-                placeholder:
-                  "Si hay pulgas, garrapatas o lesiones, describir aquí.",
               },
               {
                 id: LEGACY_FIELD_IDS.vetNotes,
-                label: "Notas adicionales",
+                label: "Observaciones",
                 type: "textarea",
+                placeholder:
+                  "Notas de la visita, productos usados o hallazgos de piel/pelaje.",
               },
             ],
           },

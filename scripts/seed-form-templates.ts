@@ -3,9 +3,12 @@
  * services that the partnering vet asked for in his services document.
  *
  *   npx tsx scripts/seed-form-templates.ts
+ *   npx tsx scripts/seed-form-templates.ts --force
  *
- * - Idempotent: only writes formSchema where missing, only creates
- *   services that aren't already present (matched by exact name).
+ * - Idempotent by default: only writes formSchema where missing, only
+ *   creates services that aren't already present (matched by exact name).
+ * - With --force or FORCE_FORM_TEMPLATE_REFRESH=1, refreshes the matching
+ *   services so the trial database can receive the latest approved fields.
  * - Existing services keep their data; we just attach a starter schema
  *   so the new dynamic renderer has something to work with.
  */
@@ -24,6 +27,8 @@ const adapter = new PrismaLibSql({
   authToken: process.env.DATABASE_AUTH_TOKEN,
 });
 const prisma = new PrismaClient({ adapter });
+const FORCE_REFRESH =
+  process.argv.includes("--force") || process.env.FORCE_FORM_TEMPLATE_REFRESH === "1";
 
 type ServiceSeed = {
   name: string;
@@ -95,14 +100,28 @@ const VET_REQUESTED_SERVICES: ServiceSeed[] = [
 
 async function main() {
   console.log("🐾 Sembrando templates de consulta…\n");
+  if (FORCE_REFRESH) {
+    console.log("  Modo refresh: se actualizarán plantillas existentes.\n");
+  }
 
   /* ── 1. Ensure the vet's requested services exist ───────────── */
   let created = 0;
+  let refreshedRequested = 0;
   for (const svc of VET_REQUESTED_SERVICES) {
     const existing = await prisma.service.findFirst({
       where: { name: svc.name },
     });
-    if (existing) continue;
+    if (existing) {
+      if (FORCE_REFRESH) {
+        await prisma.service.update({
+          where: { id: existing.id },
+          data: { formSchema: JSON.stringify(templateFor(svc.template)) },
+        });
+        refreshedRequested++;
+        console.log(`  ~ Actualizado: ${svc.name}`);
+      }
+      continue;
+    }
     await prisma.service.create({
       data: {
         name: svc.name,
@@ -117,6 +136,9 @@ async function main() {
     console.log(`  + Creado: ${svc.name}`);
   }
   if (created === 0) console.log("  Todos los servicios ya existían.");
+  if (FORCE_REFRESH && refreshedRequested === 0) {
+    console.log("  Ningún servicio solicitado necesitó refresh.");
+  }
 
   /* ── 2. Attach a template to existing services that don't have one ── */
   const services = await prisma.service.findMany();
@@ -133,7 +155,11 @@ async function main() {
   }
   if (patched === 0) console.log("  Todos los servicios ya tenían plantilla.");
 
-  console.log(`\n✅ Listo. Servicios creados: ${created}, plantillas aplicadas: ${patched}.`);
+  console.log(
+    `\n✅ Listo. Servicios creados: ${created}, plantillas actualizadas: ${
+      refreshedRequested + patched
+    }.`,
+  );
 }
 
 main()
