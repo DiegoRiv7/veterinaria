@@ -761,6 +761,122 @@ export function templateFor(key: TemplateKey): FormSchema {
   }
 }
 
+/* ─── Carnet de vacunación: extracción al completar la consulta ── */
+
+/**
+ * When a consulta is marked as attended and the vet checked the
+ * "Agregar/Anexar al carnet" box, the answers are mirrored into the pet's
+ * permanent records (Vaccine / Deworming) so they show up in the cartilla
+ * and in the passport-style carnet de vacunación.
+ *
+ * Field ids are random per service, so fields are resolved by label —
+ * the same labels the built-in templates use. Admin-customized forms keep
+ * working as long as the relevant labels still contain the keywords below.
+ */
+export type CarnetEntry =
+  | {
+      kind: "vaccine";
+      name: string;
+      appliedAt: Date | null;
+      nextAt: Date | null;
+      weightKg: number | null;
+      notes: string | null;
+    }
+  | {
+      kind: "deworming";
+      product: string;
+      dewormKind: "Interna" | "Externa" | null;
+      appliedAt: Date | null;
+      nextAt: Date | null;
+      notes: string | null;
+    };
+
+function parseDateValue(v: ConsultaValue | undefined): Date | null {
+  if (typeof v !== "string" || !v.trim()) return null;
+  // Date inputs produce "YYYY-MM-DD"; anchor at noon to avoid TZ day-shift.
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(v.trim())
+    ? new Date(`${v.trim()}T12:00:00`)
+    : new Date(v);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+export function extractCarnetEntry(
+  schema: FormSchema | null,
+  data: ConsultaData,
+  serviceName: string
+): CarnetEntry | null {
+  if (!schema) return null;
+
+  const fields = schema.sections.flatMap((s) => s.fields);
+  const byLabel = (re: RegExp, types?: FieldType[]) =>
+    fields.find(
+      (f) => re.test(f.label) && (!types || types.includes(f.type))
+    );
+  const valueOf = (f: FormField | undefined): ConsultaValue | undefined =>
+    f ? data[f.id] : undefined;
+
+  // 1. The vet must have ticked the carnet checkbox.
+  const carnetField = byLabel(/carnet/i, ["checkbox"]);
+  if (!carnetField || data[carnetField.id] !== true) return null;
+
+  // 2. Classify the service. Deworming first: its checkbox label also
+  //    mentions "carnet de vacunas", so the service/section text decides.
+  const haystack = [
+    serviceName,
+    ...schema.sections.map((s) => s.title ?? ""),
+  ].join(" ");
+  const isDeworm = /desparasit|antiparasit/i.test(haystack);
+  const isVaccine = !isDeworm && /vacun|biol[óo]gico/i.test(haystack);
+  if (!isDeworm && !isVaccine) return null;
+
+  // 3. Product / biológico name.
+  const nameField =
+    byLabel(/biol[óo]gico|desparasitante|producto|vacuna/i, [
+      "select",
+      "text",
+    ]) ?? fields.find((f) => f.type === "select" && typeof data[f.id] === "string");
+  const nameValue = valueOf(nameField);
+  const name = typeof nameValue === "string" ? nameValue.trim() : "";
+  if (!name) return null;
+
+  // 4. Dates, weight and notes.
+  const appliedAt = parseDateValue(valueOf(byLabel(/aplicaci[óo]n/i, ["date"])));
+  const nextAt = parseDateValue(valueOf(byLabel(/pr[óo]xim/i, ["date"])));
+  const expiresAt = parseDateValue(valueOf(byLabel(/vencimiento/i, ["date"])));
+
+  const weightRaw = valueOf(byLabel(/peso/i, ["number"]));
+  const weightKg =
+    typeof weightRaw === "number" && Number.isFinite(weightRaw)
+      ? weightRaw
+      : null;
+
+  const notesRaw =
+    valueOf(byLabel(/observacion/i, ["textarea", "text"])) ??
+    data[LEGACY_FIELD_IDS.vetNotes];
+  const notesParts: string[] = [];
+  if (typeof notesRaw === "string" && notesRaw.trim())
+    notesParts.push(notesRaw.trim());
+  if (expiresAt)
+    notesParts.push(
+      `Vencimiento del producto: ${expiresAt.toLocaleDateString("es-MX", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })}`
+    );
+  const notes = notesParts.length > 0 ? notesParts.join("\n") : null;
+
+  if (isDeworm) {
+    const dewormKind = /extern/i.test(haystack)
+      ? "Externa"
+      : /intern/i.test(haystack)
+        ? "Interna"
+        : null;
+    return { kind: "deworming", product: name, dewormKind, appliedAt, nextAt, notes };
+  }
+  return { kind: "vaccine", name, appliedAt, nextAt, weightKg, notes };
+}
+
 /* ─── Auto-pick a template based on the service name ───────────── */
 
 export function templateKeyForServiceName(name: string): TemplateKey {

@@ -154,6 +154,18 @@ export default async function VetAppointmentEdit({
                 Ver cartilla
                 <span aria-hidden>→</span>
               </Link>
+              <Link
+                href={`/vet/pacientes/${appt.pet.id}/carnet`}
+                className="col-span-2 h-10 rounded-[12px] border px-3 text-[11px] font-extrabold uppercase tracking-[0.06em] inline-flex items-center justify-center gap-1 no-underline transition hover:brightness-105"
+                style={{
+                  background: "var(--vet-bg-card)",
+                  borderColor: "var(--vet-border)",
+                  color: "var(--vet-text-2)",
+                }}
+              >
+                Ver carnet de vacunación
+                <span aria-hidden>→</span>
+              </Link>
             </div>
           </div>
 

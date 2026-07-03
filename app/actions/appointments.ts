@@ -259,7 +259,12 @@ export async function updateAppointmentNotesAction(formData: FormData) {
 
 /* ─── New: dynamic consulta data (schema-driven) ──────────────── */
 
-import { LEGACY_FIELD_IDS, type ConsultaData } from "@/lib/form-schema";
+import {
+  LEGACY_FIELD_IDS,
+  extractCarnetEntry,
+  parseFormSchema,
+  type ConsultaData,
+} from "@/lib/form-schema";
 
 export type SaveConsultaResult =
   | { ok: true }
@@ -312,6 +317,18 @@ export async function saveConsultaDataAction(
   }
 
   try {
+    const appt = await prisma.appointment.findUnique({
+      where: { id },
+      select: {
+        status: true,
+        petId: true,
+        scheduledAt: true,
+        service: { select: { name: true, formSchema: true } },
+        pet: { select: { weightKg: true } },
+      },
+    });
+    if (!appt) return { ok: false, error: "Cita no encontrada." };
+
     await prisma.appointment.update({
       where: { id },
       data: {
@@ -322,6 +339,48 @@ export async function saveConsultaDataAction(
         ...(options.markCompleted ? { status: "COMPLETED" } : {}),
       },
     });
+
+    // On the transition to COMPLETED (never on re-saves), mirror the
+    // vacunación/desparasitación answers into the pet's permanent records
+    // if the vet ticked the "agregar al carnet" checkbox — this is what
+    // feeds the cartilla and the carnet de vacunación.
+    if (options.markCompleted && appt.status !== "COMPLETED") {
+      const entry = extractCarnetEntry(
+        parseFormSchema(appt.service.formSchema),
+        clean,
+        appt.service.name
+      );
+      if (entry?.kind === "vaccine") {
+        await prisma.vaccine.create({
+          data: {
+            petId: appt.petId,
+            name: entry.name,
+            appliedAt: entry.appliedAt ?? appt.scheduledAt,
+            nextAt: entry.nextAt,
+            weightKg: entry.weightKg ?? appt.pet.weightKg,
+            notes: entry.notes,
+            addedByUserId: session.userId,
+          },
+        });
+      } else if (entry?.kind === "deworming") {
+        await prisma.deworming.create({
+          data: {
+            petId: appt.petId,
+            product: entry.product,
+            kind: entry.dewormKind,
+            appliedAt: entry.appliedAt ?? appt.scheduledAt,
+            nextAt: entry.nextAt,
+            notes: entry.notes,
+            addedByUserId: session.userId,
+          },
+        });
+      }
+      if (entry) {
+        revalidatePath(`/vet/pacientes/${appt.petId}/cartilla`);
+        revalidatePath(`/vet/pacientes/${appt.petId}/carnet`);
+        revalidatePath("/salud/cartilla");
+      }
+    }
   } catch (e) {
     return {
       ok: false,

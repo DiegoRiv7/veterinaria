@@ -96,6 +96,7 @@ model Vaccine {
   name          String
   appliedAt     DateTime
   nextAt        DateTime?
+  weightKg      Float?
   notes         String?
   addedByUserId String
   addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "VaccineAddedBy")
