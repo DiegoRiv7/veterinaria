@@ -320,3 +320,17 @@ html { background-color: #fceadb; }
     padding-bottom: env(safe-area-inset-bottom);
   }
 }
+
+/* ─── Carnet de vacunación (pasaporte digital) ─────────────────── */
+@keyframes passportSpreadIn {
+  0% { opacity: 0; transform: perspective(1400px) rotateY(-16deg) scale(0.97); }
+  100% { opacity: 1; transform: perspective(1400px) rotateY(0deg) scale(1); }
+}
+@keyframes passportPageSettle {
+  0% { transform: perspective(1200px) rotateY(-58deg); opacity: 0.35; }
+  100% { transform: perspective(1200px) rotateY(0deg); opacity: 1; }
+}
+@keyframes passportCoverIn {
+  0% { opacity: 0; transform: perspective(1400px) rotateY(24deg) scale(0.96); }
+  100% { opacity: 1; transform: perspective(1400px) rotateY(0deg) scale(1); }
+}
