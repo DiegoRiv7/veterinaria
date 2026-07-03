@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { Pill, Syringe, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, Pill, Syringe, X } from "lucide-react";
 
 /* Paleta muestreada del pasaporte impreso de Vetsfriend */
 const BRAND = {
@@ -14,20 +14,7 @@ const BRAND = {
   inkSoft: "#A5A5A5",
 };
 
-export type CarnetPet = {
-  id: string;
-  name: string;
-  speciesLabel: string;
-  emoji: string;
-  photoUrl: string | null;
-  breed: string | null;
-  sexLabel: string;
-  birth: string | null; // ISO
-  age: string;
-  weightKg: number | null;
-  microchipId: string | null;
-  ownerName: string | null;
-};
+const MIN_ROWS = 5;
 
 export type CarnetVaccine = {
   id: string;
@@ -62,30 +49,19 @@ function fmt(iso: string | null): string {
     .replace(".", "");
 }
 
-/** Línea tipo MRZ (la zona de lectura mecánica de un pasaporte real). */
-function mrz(raw: string, len = 34): string {
-  const clean = raw
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .toUpperCase()
-    .replace(/[^A-Z0-9]+/g, "<");
-  return (clean + "<".repeat(len)).slice(0, len);
-}
-
 export function PassportCarnet({
-  pet,
+  petName,
   vaccines,
   dewormings,
   initialOpen = false,
 }: {
-  pet: CarnetPet;
+  petName: string;
   vaccines: CarnetVaccine[];
   dewormings: CarnetDeworming[];
   initialOpen?: boolean;
 }) {
   const [open, setOpen] = useState(initialOpen);
   const [opening, setOpening] = useState(false);
-  const [tab, setTab] = useState<"vac" | "dew">("vac");
 
   function openPassport() {
     if (open || opening) return;
@@ -93,26 +69,35 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setOpening(false);
       setOpen(true);
-    }, 320);
+    }, 340);
   }
+
+  // Al entrar a la página el pasaporte se abre solo: se alcanza a ver la
+  // portada un instante y enseguida corre la animación de apertura.
+  useEffect(() => {
+    if (initialOpen) return;
+    const t = window.setTimeout(openPassport, 750);
+    return () => window.clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /* ─── Cerrado: la portada ───────────────────────────────────── */
   if (!open) {
     return (
-      <div className="flex flex-col items-center py-4">
+      <div className="flex flex-col items-center py-6">
         <button
           type="button"
           onClick={openPassport}
           aria-label="Abrir carnet de vacunación"
-          className="group relative w-[320px] max-w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.6deg]"
+          className="group relative w-[420px] max-w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.5deg]"
           style={{
             transformOrigin: "left center",
             animation: "passportCoverIn 0.5s ease-out both",
             ...(opening
               ? {
-                  transition: "transform 0.32s ease-in, opacity 0.32s ease-in",
-                  transform: "perspective(1200px) rotateY(-70deg)",
-                  opacity: 0.25,
+                  transition: "transform 0.34s ease-in, opacity 0.34s ease-in",
+                  transform: "perspective(1400px) rotateY(-72deg)",
+                  opacity: 0.2,
                 }
               : {}),
           }}
@@ -120,55 +105,55 @@ export function PassportCarnet({
           {/* hojas asomando por el canto derecho */}
           <div
             aria-hidden
-            className="absolute top-[6px] bottom-[6px] -right-[5px] w-[10px] rounded-r-[6px]"
+            className="absolute top-[8px] bottom-[8px] -right-[6px] w-[12px] rounded-r-[7px]"
             style={{
               background:
                 "repeating-linear-gradient(to bottom, #fffdf9 0 3px, #efdccb 3px 4px)",
-              boxShadow: "2px 2px 8px rgba(0,0,0,0.12)",
+              boxShadow: "2px 2px 10px rgba(0,0,0,0.12)",
             }}
           />
           <div
-            className="relative rounded-r-[14px] rounded-l-[8px] px-6 pt-10 pb-8 flex flex-col items-center overflow-hidden"
+            className="relative rounded-r-[18px] rounded-l-[10px] px-8 pt-14 pb-11 flex flex-col items-center overflow-hidden"
             style={{
               background: BRAND.cream,
               boxShadow:
-                "0 18px 40px -18px rgba(122, 51, 16, 0.45), inset -14px 0 24px -20px rgba(122,51,16,0.5), inset 3px 0 0 rgba(122,51,16,0.18)",
+                "0 22px 48px -18px rgba(122, 51, 16, 0.45), inset -16px 0 28px -22px rgba(122,51,16,0.5), inset 4px 0 0 rgba(122,51,16,0.18)",
             }}
           >
             <p
-              className="text-[30px] font-black leading-none"
+              className="text-[40px] font-black leading-none"
               style={{ color: BRAND.orange, letterSpacing: "0.05em" }}
             >
               PASAPORTE
             </p>
             <p
-              className="text-[11px] font-extrabold mt-1.5"
+              className="text-[13px] font-extrabold mt-2"
               style={{
                 color: BRAND.goldText,
-                letterSpacing: "0.5em",
-                textIndent: "0.5em",
+                letterSpacing: "0.52em",
+                textIndent: "0.52em",
               }}
             >
               PASSPORT
             </p>
 
-            <PassportSeal className="w-[196px] my-8" />
+            <PassportSeal className="w-[250px] my-10" />
 
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/vetsfriend-wordmark.png"
               alt="Vetsfriend"
-              className="h-8 w-auto"
+              className="h-10 w-auto"
             />
             <p
-              className="text-[9px] font-extrabold mt-0.5"
-              style={{ color: BRAND.goldText, letterSpacing: "0.14em" }}
+              className="text-[10px] font-extrabold mt-1"
+              style={{ color: BRAND.goldText, letterSpacing: "0.15em" }}
             >
               Clínica &amp; Grooming
             </p>
 
             <span
-              className="mt-6 inline-flex items-center gap-1.5 h-8 px-4 rounded-full text-[11px] font-extrabold uppercase tracking-[0.08em] transition group-hover:brightness-105"
+              className="mt-8 inline-flex items-center gap-1.5 h-9 px-5 rounded-full text-[12px] font-extrabold uppercase tracking-[0.08em] transition group-hover:brightness-105"
               style={{
                 background: BRAND.orange,
                 color: "#fff",
@@ -183,283 +168,209 @@ export function PassportCarnet({
           className="mt-3 text-[12px] font-semibold"
           style={{ color: "var(--vet-text-3)" }}
         >
-          Carnet de {pet.name} · toca la portada para abrirlo
+          Carnet de {petName} · toca la portada para abrirlo
         </p>
       </div>
     );
   }
 
-  /* ─── Abierto: spread de dos páginas ────────────────────────── */
+  /* ─── Abierto: spread Vacunación + Desparasitación ──────────── */
   return (
     <div
-      className="relative rounded-[20px] overflow-hidden"
+      className="relative rounded-[22px] overflow-hidden"
       style={{
         background: BRAND.cream,
-        boxShadow: "0 22px 48px -20px rgba(122, 51, 16, 0.4)",
-        animation: "passportSpreadIn 0.45s ease-out both",
+        boxShadow: "0 24px 52px -20px rgba(122, 51, 16, 0.4)",
+        animation: "passportSpreadIn 0.5s ease-out both",
       }}
     >
-      {/* Cerrar */}
       <button
         type="button"
         onClick={() => setOpen(false)}
         aria-label="Cerrar carnet"
-        className="absolute top-3 right-3 z-20 w-8 h-8 rounded-full inline-flex items-center justify-center transition hover:brightness-110"
+        className="absolute top-3.5 right-3.5 z-20 w-9 h-9 rounded-full inline-flex items-center justify-center transition hover:brightness-110"
         style={{ background: "rgba(188,78,32,0.12)", color: BRAND.orange }}
       >
-        <X size={15} strokeWidth={3} />
+        <X size={16} strokeWidth={3} />
       </button>
 
-      <div className="grid md:grid-cols-2 relative">
+      <div className="grid md:grid-cols-2 relative items-stretch">
         {/* Lomo central (solo desktop) */}
         <div
           aria-hidden
-          className="hidden md:block absolute inset-y-0 left-1/2 w-[46px] -translate-x-1/2 z-10 pointer-events-none"
+          className="hidden md:block absolute inset-y-0 left-1/2 w-[52px] -translate-x-1/2 z-10 pointer-events-none"
           style={{
             background:
-              "linear-gradient(to right, transparent, rgba(122,51,16,0.16) 46%, rgba(122,51,16,0.22) 50%, rgba(122,51,16,0.16) 54%, transparent)",
+              "linear-gradient(to right, transparent, rgba(122,51,16,0.15) 46%, rgba(122,51,16,0.22) 50%, rgba(122,51,16,0.15) 54%, transparent)",
           }}
         />
 
-        {/* ── Página izquierda: identidad ── */}
+        {/* ── Página izquierda: Vacunación (clic = cerrar) ── */}
         <div
-          className="relative px-6 sm:px-8 py-7 flex flex-col"
+          onClick={() => setOpen(false)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") setOpen(false);
+          }}
+          aria-label="Cerrar carnet"
+          title="Toca esta página para cerrar el carnet"
+          className="relative px-6 sm:px-8 pt-6 pb-8 flex flex-col gap-4 cursor-pointer select-none"
           style={{
             transformOrigin: "right center",
-            animation: "passportPageSettle 0.55s ease-out both",
+            animation: "passportPageSettle 0.6s ease-out both",
           }}
         >
-          {/* sello de agua */}
-          <PassportSeal
-            aria-hidden
-            className="absolute w-[340px] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 opacity-[0.06] pointer-events-none"
+          <span
+            className="self-start inline-flex items-center gap-1 h-7 px-3 rounded-full text-[10px] font-extrabold uppercase tracking-[0.08em]"
+            style={{ background: "rgba(188,78,32,0.10)", color: BRAND.orange }}
+          >
+            <ChevronLeft size={12} strokeWidth={3} /> Cerrar carnet
+          </span>
+
+          <SectionBand title="Vacunación" titleEn="Vaccination">
+            <Syringe size={20} strokeWidth={2.6} />
+          </SectionBand>
+
+          <ColumnLegend
+            cols={[
+              ["Fecha", "Date"],
+              ["Vacuna · Peso", "Vaccine · Weight"],
+              ["Firma · Próxima", "Signature · Booster"],
+            ]}
           />
 
-          <p
-            className="text-[11px] font-extrabold uppercase"
-            style={{ color: BRAND.orange, letterSpacing: "0.18em" }}
-          >
-            Datos de la mascota
-          </p>
-          <p
-            className="text-[9px] font-bold uppercase mb-5"
-            style={{ color: BRAND.goldText, letterSpacing: "0.22em" }}
-          >
-            Pet data
-          </p>
-
-          <div className="flex gap-5 items-start">
-            {/* Foto tipo pasaporte */}
-            <div
-              className="w-[96px] h-[118px] rounded-[8px] overflow-hidden shrink-0 flex items-center justify-center text-[44px]"
-              style={{
-                border: `2px solid ${BRAND.gold}`,
-                background: "#fff",
-                boxShadow: "0 4px 10px -6px rgba(122,51,16,0.35)",
-              }}
-            >
-              {pet.photoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={pet.photoUrl}
-                  alt={pet.name}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span>{pet.emoji}</span>
-              )}
-            </div>
-
-            <div className="grid grid-cols-1 gap-2.5 flex-1 min-w-0">
-              <IdField es="Nombre" en="Name" value={pet.name} big />
-              <div className="grid grid-cols-2 gap-2.5">
-                <IdField es="Especie" en="Species" value={pet.speciesLabel} />
-                <IdField es="Raza" en="Breed" value={pet.breed ?? "—"} />
-              </div>
-            </div>
+          <div className="flex flex-col gap-2.5">
+            {vaccines.map((v, i) => (
+              <RecordRow key={v.id} alt={i % 2 === 1}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p
+                    className="text-[15px] font-extrabold leading-tight truncate"
+                    style={{ color: BRAND.ink }}
+                  >
+                    {v.name}
+                  </p>
+                  <DateChip value={fmt(v.appliedAt)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
+                  <MiniStat
+                    es="Peso"
+                    en="Weight"
+                    value={v.weightKg != null ? `${v.weightKg} kg` : "—"}
+                  />
+                  <MiniStat
+                    es="Próxima"
+                    en="Booster"
+                    value={fmt(v.nextAt)}
+                    highlight={Boolean(v.nextAt)}
+                  />
+                </div>
+                {v.notes && (
+                  <p
+                    className="text-[11.5px] font-semibold mt-1.5 whitespace-pre-line"
+                    style={{ color: BRAND.inkSoft }}
+                  >
+                    {v.notes}
+                  </p>
+                )}
+                <Signature name={v.vetName} />
+              </RecordRow>
+            ))}
+            {Array.from({
+              length: Math.max(0, MIN_ROWS - vaccines.length),
+            }).map((_, i) => (
+              <EmptyRow key={`e-${i}`} alt={(vaccines.length + i) % 2 === 1} />
+            ))}
           </div>
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-4">
-            <IdField es="Sexo" en="Sex" value={pet.sexLabel} />
-            <IdField es="Nacimiento" en="Date of birth" value={fmt(pet.birth)} />
-            <IdField es="Edad" en="Age" value={pet.age} />
-            <IdField
-              es="Peso"
-              en="Weight"
-              value={pet.weightKg != null ? `${pet.weightKg} kg` : "—"}
-            />
-            <IdField
-              es="Microchip"
-              en="Microchip"
-              value={pet.microchipId ?? "—"}
-            />
-            <IdField es="Tutor" en="Owner" value={pet.ownerName ?? "—"} />
-          </div>
-
-          {/* Zona MRZ, como pasaporte real */}
-          <div
-            className="mt-auto pt-6 select-none"
-            aria-hidden
-            style={{ color: "rgba(188,78,32,0.5)" }}
-          >
-            <p className="font-mono text-[11px] leading-[1.5] tracking-[0.08em] whitespace-nowrap overflow-hidden">
-              {mrz(`P<VETSFRIEND<${pet.name}<<${pet.breed ?? pet.speciesLabel}`)}
-            </p>
-            <p className="font-mono text-[11px] leading-[1.5] tracking-[0.08em] whitespace-nowrap overflow-hidden">
-              {mrz(`${pet.id.slice(-10)}<${pet.speciesLabel}<<${pet.age}`)}
-            </p>
-          </div>
+          {vaccines.length === 0 && <FillHint kind="vacunación" />}
         </div>
 
-        {/* ── Página derecha: registros ── */}
-        <div className="px-6 sm:px-8 py-7 flex flex-col gap-4 min-w-0">
-          {/* Tabs */}
-          <div className="flex gap-2 pr-10">
-            <TabPill
-              active={tab === "vac"}
-              onClick={() => setTab("vac")}
-              icon={<Syringe size={14} strokeWidth={2.6} />}
-              label="Vacunación"
-              count={vaccines.length}
-            />
-            <TabPill
-              active={tab === "dew"}
-              onClick={() => setTab("dew")}
-              icon={<Pill size={14} strokeWidth={2.6} />}
-              label="Desparasitación"
-              count={dewormings.length}
-            />
-          </div>
+        {/* ── Página derecha: Desparasitación ── */}
+        <div className="px-6 sm:px-8 pt-6 pb-8 flex flex-col gap-4">
+          <div className="h-7 hidden md:block" aria-hidden />
 
-          {/* Encabezado bilingüe de la sección */}
-          <div
-            className="rounded-[8px] h-11 px-4 flex items-center justify-between text-white shrink-0"
-            style={{ background: BRAND.orange }}
-          >
-            <p className="text-[15px] font-extrabold leading-none">
-              {tab === "vac" ? "Vacunación" : "Desparasitación"}
-              <span className="font-semibold opacity-80 text-[13px]">
-                {" "}
-                / {tab === "vac" ? "Vaccination" : "Deworming"}
-              </span>
-            </p>
-            {tab === "vac" ? (
-              <Syringe size={17} strokeWidth={2.6} />
-            ) : (
-              <Pill size={17} strokeWidth={2.6} />
-            )}
-          </div>
+          <SectionBand title="Desparasitación" titleEn="Deworming">
+            <Pill size={20} strokeWidth={2.6} />
+          </SectionBand>
 
-          {/* Registros */}
-          <div className="flex flex-col gap-2">
-            {tab === "vac" &&
-              (vaccines.length === 0 ? (
-                <EmptyState
-                  emoji="💉"
-                  title="Sin vacunas en el carnet"
-                  hint="Se anexan al terminar una consulta de vacunación con la casilla “Agregar al carnet” marcada."
-                />
-              ) : (
-                vaccines.map((v, i) => (
-                  <RecordCard key={v.id} alt={i % 2 === 1}>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p
-                        className="text-[14px] font-extrabold leading-tight truncate"
-                        style={{ color: BRAND.ink }}
+          <ColumnLegend
+            cols={[
+              ["Fecha", "Date"],
+              ["Productos · Dosis", "Product · Dosage"],
+              ["Próxima", "Next"],
+            ]}
+          />
+
+          <div className="flex flex-col gap-2.5">
+            {dewormings.map((d, i) => (
+              <RecordRow key={d.id} alt={i % 2 === 1}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <p
+                    className="text-[15px] font-extrabold leading-tight truncate"
+                    style={{ color: BRAND.ink }}
+                  >
+                    {d.product}
+                    {d.kind && (
+                      <span
+                        className="ml-2 align-middle inline-flex h-[19px] px-2 rounded-full text-[9.5px] font-extrabold uppercase tracking-[0.06em] items-center"
+                        style={{
+                          background: "rgba(188,78,32,0.10)",
+                          color: BRAND.orange,
+                        }}
                       >
-                        {v.name}
-                      </p>
-                      <p
-                        className="text-[12px] font-bold shrink-0"
-                        style={{ color: BRAND.ink }}
-                      >
-                        {fmt(v.appliedAt)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-                      <MiniStat es="Peso" value={v.weightKg != null ? `${v.weightKg} kg` : "—"} />
-                      <MiniStat es="Próxima" value={fmt(v.nextAt)} />
-                    </div>
-                    {v.notes && (
-                      <p
-                        className="text-[11px] font-semibold mt-1.5 whitespace-pre-line"
-                        style={{ color: BRAND.inkSoft }}
-                      >
-                        {v.notes}
-                      </p>
+                        {d.kind}
+                      </span>
                     )}
-                    <Signature name={v.vetName} />
-                  </RecordCard>
-                ))
-              ))}
-
-            {tab === "dew" &&
-              (dewormings.length === 0 ? (
-                <EmptyState
-                  emoji="💊"
-                  title="Sin desparasitaciones en el carnet"
-                  hint="Se anexan al terminar una consulta de desparasitación con la casilla “Anexar al carnet” marcada."
-                />
-              ) : (
-                dewormings.map((d, i) => (
-                  <RecordCard key={d.id} alt={i % 2 === 1}>
-                    <div className="flex items-baseline justify-between gap-3">
-                      <p
-                        className="text-[14px] font-extrabold leading-tight truncate"
-                        style={{ color: BRAND.ink }}
-                      >
-                        {d.product}
-                        {d.kind && (
-                          <span
-                            className="ml-2 align-middle inline-flex h-[18px] px-2 rounded-full text-[9px] font-extrabold uppercase tracking-[0.06em] items-center"
-                            style={{
-                              background: "rgba(188,78,32,0.10)",
-                              color: BRAND.orange,
-                            }}
-                          >
-                            {d.kind}
-                          </span>
-                        )}
-                      </p>
-                      <p
-                        className="text-[12px] font-bold shrink-0"
-                        style={{ color: BRAND.ink }}
-                      >
-                        {fmt(d.appliedAt)}
-                      </p>
-                    </div>
-                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1.5">
-                      <MiniStat es="Próxima" value={fmt(d.nextAt)} />
-                    </div>
-                    {d.notes && (
-                      <p
-                        className="text-[11px] font-semibold mt-1.5 whitespace-pre-line"
-                        style={{ color: BRAND.inkSoft }}
-                      >
-                        {d.notes}
-                      </p>
-                    )}
-                    <Signature name={d.vetName} />
-                  </RecordCard>
-                ))
-              ))}
+                  </p>
+                  <DateChip value={fmt(d.appliedAt)} />
+                </div>
+                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
+                  <MiniStat
+                    es="Próxima"
+                    en="Next"
+                    value={fmt(d.nextAt)}
+                    highlight={Boolean(d.nextAt)}
+                  />
+                </div>
+                {d.notes && (
+                  <p
+                    className="text-[11.5px] font-semibold mt-1.5 whitespace-pre-line"
+                    style={{ color: BRAND.inkSoft }}
+                  >
+                    {d.notes}
+                  </p>
+                )}
+                <Signature name={d.vetName} />
+              </RecordRow>
+            ))}
+            {Array.from({
+              length: Math.max(0, MIN_ROWS - dewormings.length),
+            }).map((_, i) => (
+              <EmptyRow
+                key={`e-${i}`}
+                alt={(dewormings.length + i) % 2 === 1}
+              />
+            ))}
           </div>
+
+          {dewormings.length === 0 && <FillHint kind="desparasitación" />}
         </div>
       </div>
 
       {/* Banda inferior de marca */}
       <div
-        className="h-12 flex flex-col items-center justify-center gap-0"
+        className="h-14 flex flex-col items-center justify-center gap-0.5"
         style={{ background: BRAND.orange }}
       >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/vetsfriend-wordmark-white.png"
           alt="Vetsfriend"
-          className="h-5 w-auto"
+          className="h-6 w-auto"
         />
         <p
-          className="text-[7px] font-extrabold"
+          className="text-[8px] font-extrabold"
           style={{ color: BRAND.goldText, letterSpacing: "0.18em" }}
         >
           Clínica &amp; Grooming
@@ -471,74 +382,53 @@ export function PassportCarnet({
 
 /* ─── Piezas ────────────────────────────────────────────────────── */
 
-function IdField({
-  es,
-  en,
-  value,
-  big = false,
+function SectionBand({
+  title,
+  titleEn,
+  children,
 }: {
-  es: string;
-  en: string;
-  value: string;
-  big?: boolean;
+  title: string;
+  titleEn: string;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="min-w-0">
-      <p
-        className="text-[8.5px] font-extrabold uppercase leading-tight"
-        style={{ color: BRAND.goldText, letterSpacing: "0.14em" }}
-      >
-        {es} <span style={{ opacity: 0.75 }}>/ {en}</span>
+    <div
+      className="rounded-[10px] min-h-[52px] px-5 flex items-center justify-between text-white shrink-0"
+      style={{ background: BRAND.orange }}
+    >
+      <p className="text-[19px] font-extrabold leading-none">
+        {title}
+        <span className="font-semibold opacity-80 text-[15px]"> / {titleEn}</span>
       </p>
-      <p
-        className={`${big ? "text-[19px]" : "text-[13px]"} font-black leading-tight truncate`}
-        style={{ color: BRAND.ink }}
-      >
-        {value}
-      </p>
+      {children}
     </div>
   );
 }
 
-function TabPill({
-  active,
-  onClick,
-  icon,
-  label,
-  count,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ReactNode;
-  label: string;
-  count: number;
-}) {
+function ColumnLegend({ cols }: { cols: [string, string][] }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-extrabold transition"
-      style={{
-        background: active ? BRAND.orange : "rgba(188,78,32,0.08)",
-        color: active ? "#fff" : BRAND.orange,
-        boxShadow: active ? "0 6px 12px -6px rgba(122,51,16,0.5)" : "none",
-      }}
-    >
-      {icon}
-      {label}
-      <span
-        className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full text-[10px] font-black"
-        style={{
-          background: active ? "rgba(255,255,255,0.22)" : "rgba(188,78,32,0.12)",
-        }}
-      >
-        {count}
-      </span>
-    </button>
+    <div className="flex items-center justify-between gap-3 px-1">
+      {cols.map(([es, en]) => (
+        <div key={es} className="text-center">
+          <p
+            className="text-[10.5px] font-extrabold uppercase leading-tight"
+            style={{ color: BRAND.ink, letterSpacing: "0.04em" }}
+          >
+            {es}
+          </p>
+          <p
+            className="text-[9.5px] font-semibold uppercase leading-tight"
+            style={{ color: BRAND.inkSoft }}
+          >
+            {en}
+          </p>
+        </div>
+      ))}
+    </div>
   );
 }
 
-function RecordCard({
+function RecordRow({
   children,
   alt,
 }: {
@@ -547,7 +437,7 @@ function RecordCard({
 }) {
   return (
     <div
-      className="rounded-[10px] px-3.5 py-3"
+      className="rounded-[12px] px-4 py-3"
       style={{
         border: `1.5px solid ${BRAND.gold}`,
         background: alt ? BRAND.creamRow : "#ffffff",
@@ -558,40 +448,51 @@ function RecordCard({
   );
 }
 
-function EmptyState({
-  emoji,
-  title,
-  hint,
-}: {
-  emoji: string;
-  title: string;
-  hint: string;
-}) {
+function EmptyRow({ alt }: { alt: boolean }) {
   return (
     <div
-      className="rounded-[10px] px-5 py-8 text-center"
-      style={{ border: `1.5px dashed ${BRAND.gold}`, background: "#fff" }}
-    >
-      <p className="text-[28px] mb-1">{emoji}</p>
-      <p className="text-[13px] font-extrabold" style={{ color: BRAND.ink }}>
-        {title}
-      </p>
-      <p
-        className="text-[11px] font-semibold mt-1 max-w-[300px] mx-auto"
-        style={{ color: BRAND.inkSoft }}
-      >
-        {hint}
-      </p>
-    </div>
+      aria-hidden
+      className="rounded-[12px] h-[56px]"
+      style={{
+        border: `1.5px solid ${BRAND.gold}`,
+        background: alt ? BRAND.creamRow : "#ffffff",
+        opacity: 0.75,
+      }}
+    />
   );
 }
 
-function MiniStat({ es, value }: { es: string; value: string }) {
+function DateChip({ value }: { value: string }) {
   return (
-    <p className="text-[11px] font-bold" style={{ color: BRAND.ink }}>
+    <span
+      className="shrink-0 inline-flex items-center h-[24px] px-2.5 rounded-full text-[11.5px] font-extrabold"
+      style={{ background: "rgba(235,183,71,0.22)", color: BRAND.orange }}
+    >
+      {value}
+    </span>
+  );
+}
+
+function MiniStat({
+  es,
+  en,
+  value,
+  highlight = false,
+}: {
+  es: string;
+  en: string;
+  value: string;
+  highlight?: boolean;
+}) {
+  return (
+    <p
+      className="text-[12.5px] font-bold"
+      style={{ color: highlight ? BRAND.orange : BRAND.ink }}
+    >
       <span
-        className="text-[8.5px] font-extrabold uppercase mr-1"
+        className="text-[9px] font-extrabold uppercase mr-1.5"
         style={{ color: BRAND.goldText, letterSpacing: "0.1em" }}
+        title={en}
       >
         {es}
       </span>
@@ -604,7 +505,7 @@ function Signature({ name }: { name: string }) {
   return (
     <div className="flex items-baseline justify-end gap-2 mt-1.5">
       <span
-        className="text-[15px] leading-none"
+        className="text-[16px] leading-none"
         style={{
           color: BRAND.ink,
           fontFamily:
@@ -623,15 +524,21 @@ function Signature({ name }: { name: string }) {
   );
 }
 
+function FillHint({ kind }: { kind: string }) {
+  return (
+    <p
+      className="text-[11.5px] font-semibold text-center"
+      style={{ color: BRAND.inkSoft }}
+    >
+      Este carnet se llena automáticamente al terminar una consulta de {kind}{" "}
+      con la casilla “Agregar al carnet” marcada.
+    </p>
+  );
+}
+
 /* ─── Sello circular ────────────────────────────────────────────── */
 
-function PassportSeal({
-  className,
-  "aria-hidden": ariaHidden,
-}: {
-  className?: string;
-  "aria-hidden"?: boolean;
-}) {
+function PassportSeal({ className }: { className?: string }) {
   const paw = (
     <g fill="none" stroke={BRAND.orange} strokeWidth={2.4} strokeLinecap="round">
       <circle cx="11" cy="4" r="2" />
@@ -645,11 +552,8 @@ function PassportSeal({
     <svg
       viewBox="0 0 320 320"
       className={className}
-      role={ariaHidden ? undefined : "img"}
-      aria-hidden={ariaHidden}
-      aria-label={
-        ariaHidden ? undefined : "Cartilla de vacunación — Vaccine certificate"
-      }
+      role="img"
+      aria-label="Cartilla de vacunación — Vaccine certificate"
     >
       <defs>
         <clipPath id="carnet-seal-center">

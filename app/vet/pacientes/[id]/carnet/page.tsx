@@ -3,17 +3,13 @@ import { ChevronLeft } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { BackLink } from "@/components/BackLink";
+import { PetAvatar } from "@/components/PetAvatar";
 import {
   PassportCarnet,
   type CarnetDeworming,
   type CarnetVaccine,
 } from "@/components/vet/PassportCarnet";
-import {
-  SPECIES_LABEL,
-  SPECIES_EMOJI,
-  SEX_LABEL,
-  ageFromBirthDate,
-} from "@/lib/utils";
+import { SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +42,8 @@ export default async function VetPetCarnetPage({
   });
   if (!pet) notFound();
 
+  const age = ageFromBirthDate(pet.birthDate) ?? "—";
+
   const vaccines: CarnetVaccine[] = pet.vaccines.map((v) => ({
     id: v.id,
     name: v.name,
@@ -67,7 +65,7 @@ export default async function VetPetCarnetPage({
   }));
 
   return (
-    <div className="flex flex-col gap-5 max-w-[900px] mx-auto w-full pb-8">
+    <div className="flex flex-col gap-5 max-w-[1150px] mx-auto w-full pb-10">
       <BackLink
         fallbackHref={`/vet/pacientes/${pet.id}`}
         className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"
@@ -76,21 +74,47 @@ export default async function VetPetCarnetPage({
         <ChevronLeft size={14} /> Volver
       </BackLink>
 
-      <PassportCarnet
-        pet={{
-          id: pet.id,
-          name: pet.name,
-          speciesLabel: SPECIES_LABEL[pet.species] ?? pet.species,
-          emoji: SPECIES_EMOJI[pet.species] ?? "🐾",
-          photoUrl: pet.photoUrl,
-          breed: pet.breed,
-          sexLabel: SEX_LABEL[pet.sex] ?? pet.sex,
-          birth: pet.birthDate ? pet.birthDate.toISOString() : null,
-          age: ageFromBirthDate(pet.birthDate) ?? "—",
-          weightKg: pet.weightKg,
-          microchipId: pet.microchipId,
-          ownerName: pet.owner?.name ?? null,
+      {/* Identidad de la mascota */}
+      <div
+        className="rounded-[16px] border p-4 flex items-center gap-3"
+        style={{
+          background: "var(--vet-bg-card)",
+          borderColor: "var(--vet-border)",
+          boxShadow: "var(--shadow-soft-sm)",
         }}
+      >
+        <PetAvatar
+          photoUrl={pet.photoUrl}
+          species={pet.species}
+          name={pet.name}
+          size="lg"
+        />
+        <div className="min-w-0">
+          <p
+            className="text-[11px] font-extrabold uppercase tracking-[0.08em]"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            Carnet de vacunación
+          </p>
+          <p
+            className="text-[18px] font-black leading-tight truncate"
+            style={{ color: "var(--vet-text-1)" }}
+          >
+            {pet.name}
+          </p>
+          <p
+            className="text-[12px] font-semibold truncate"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            {SPECIES_LABEL[pet.species]}
+            {pet.breed ? ` · ${pet.breed}` : ""} · {age}
+            {pet.owner ? ` · 👤 ${pet.owner.name}` : ""}
+          </p>
+        </div>
+      </div>
+
+      <PassportCarnet
+        petName={pet.name}
         vaccines={vaccines}
         dewormings={dewormings}
         initialOpen={abierto === "1"}
