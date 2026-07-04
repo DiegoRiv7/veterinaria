@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ChevronLeft, Pill, Syringe, X } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, ChevronLeft, ChevronRight, Pill, Syringe, X } from "lucide-react";
+import {
+  saveCarnetVaccineAction,
+  saveCarnetDewormingAction,
+} from "@/app/actions/carnet";
 
 /* Paleta muestreada del pasaporte impreso de Vetsfriend */
 const BRAND = {
@@ -14,7 +19,33 @@ const BRAND = {
   inkSoft: "#A5A5A5",
 };
 
-const MIN_ROWS = 5;
+const PAGE_SIZE = 5;
+const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
+
+const VACCINE_OPTIONS = [
+  "Pentavalente",
+  "Antirrábica",
+  "Triple felina",
+  "Leucemia felina",
+  "Bordetella (KC)",
+  "Influenza canina",
+  "Giardia",
+];
+
+const DEWORM_OPTIONS = [
+  "Drontal Plus",
+  "Milbemax",
+  "Endogard",
+  "Cestal Plus",
+  "Panacur (Fenbendazol)",
+  "Frontline Plus",
+  "Bravecto",
+  "NexGard",
+  "Advantix",
+  "Simparica",
+];
+
+const OTHER = "__otro__";
 
 export type CarnetVaccine = {
   id: string;
@@ -36,6 +67,28 @@ export type CarnetDeworming = {
   vetName: string;
 };
 
+type Section = "vac" | "dew";
+
+type Draft = {
+  name: string; // valor del select (o OTHER)
+  nameOther: string;
+  kind: string;
+  appliedAt: string; // YYYY-MM-DD
+  nextAt: string;
+  weightKg: string;
+  notes: string;
+};
+
+const EMPTY_DRAFT: Draft = {
+  name: "",
+  nameOther: "",
+  kind: "",
+  appliedAt: "",
+  nextAt: "",
+  weightKg: "",
+  notes: "",
+};
+
 function fmt(iso: string | null): string {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -49,19 +102,41 @@ function fmt(iso: string | null): string {
     .replace(".", "");
 }
 
+function toDateInput(iso: string | null): string {
+  if (!iso) return "";
+  return iso.slice(0, 10);
+}
+
+function todayInput(): string {
+  const d = new Date();
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
 export function PassportCarnet({
+  petId,
   petName,
   vaccines,
   dewormings,
   initialOpen = false,
 }: {
+  petId: string;
   petName: string;
   vaccines: CarnetVaccine[];
   dewormings: CarnetDeworming[];
   initialOpen?: boolean;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [opening, setOpening] = useState(false);
+  const [vacPage, setVacPage] = useState(0);
+  const [dewPage, setDewPage] = useState(0);
+
+  // Edición inline: qué registro se está editando (id null = nuevo)
+  const [editing, setEditing] = useState<{ section: Section; id: string | null } | null>(null);
+  const [draft, setDraft] = useState<Draft>(EMPTY_DRAFT);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   function openPassport() {
     if (open || opening) return;
@@ -69,17 +144,84 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setOpening(false);
       setOpen(true);
-    }, 340);
+    }, 240);
   }
 
-  // Al entrar a la página el pasaporte se abre solo: se alcanza a ver la
-  // portada un instante y enseguida corre la animación de apertura.
+  // El pasaporte se abre solo al cargar: portada un instante y apertura.
   useEffect(() => {
     if (initialOpen) return;
-    const t = window.setTimeout(openPassport, 750);
+    const t = window.setTimeout(openPassport, 420);
     return () => window.clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  function closePassport() {
+    setEditing(null);
+    setError(null);
+    setOpen(false);
+  }
+
+  function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
+    setError(null);
+    if (!record) {
+      setEditing({ section, id: null });
+      setDraft({ ...EMPTY_DRAFT, appliedAt: todayInput() });
+      return;
+    }
+    const isVac = section === "vac";
+    const name = isVac
+      ? (record as CarnetVaccine).name
+      : (record as CarnetDeworming).product;
+    const options = isVac ? VACCINE_OPTIONS : DEWORM_OPTIONS;
+    setEditing({ section, id: record.id });
+    setDraft({
+      name: options.includes(name) ? name : OTHER,
+      nameOther: options.includes(name) ? "" : name,
+      kind: !isVac ? ((record as CarnetDeworming).kind ?? "") : "",
+      appliedAt: toDateInput(record.appliedAt),
+      nextAt: toDateInput(record.nextAt),
+      weightKg: isVac
+        ? ((record as CarnetVaccine).weightKg != null
+            ? String((record as CarnetVaccine).weightKg)
+            : "")
+        : "",
+      notes: record.notes ?? "",
+    });
+  }
+
+  async function save() {
+    if (!editing || saving) return;
+    const resolvedName = draft.name === OTHER ? draft.nameOther.trim() : draft.name;
+    setSaving(true);
+    setError(null);
+    const res =
+      editing.section === "vac"
+        ? await saveCarnetVaccineAction({
+            id: editing.id,
+            petId,
+            name: resolvedName,
+            appliedAt: draft.appliedAt,
+            nextAt: draft.nextAt || null,
+            weightKg: draft.weightKg ? Number(draft.weightKg) : null,
+            notes: draft.notes || null,
+          })
+        : await saveCarnetDewormingAction({
+            id: editing.id,
+            petId,
+            product: resolvedName,
+            kind: draft.kind || null,
+            appliedAt: draft.appliedAt,
+            nextAt: draft.nextAt || null,
+            notes: draft.notes || null,
+          });
+    setSaving(false);
+    if (res.ok) {
+      setEditing(null);
+      router.refresh();
+    } else {
+      setError(res.error);
+    }
+  }
 
   /* ─── Cerrado: la portada ───────────────────────────────────── */
   if (!open) {
@@ -89,15 +231,15 @@ export function PassportCarnet({
           type="button"
           onClick={openPassport}
           aria-label="Abrir carnet de vacunación"
-          className="group relative w-[420px] max-w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.5deg]"
+          className="group relative w-[420px] max-w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.5deg] will-change-transform"
           style={{
             transformOrigin: "left center",
-            animation: "passportCoverIn 0.5s ease-out both",
+            animation: `passportCoverIn 0.35s ${EASE} both`,
             ...(opening
               ? {
-                  transition: "transform 0.34s ease-in, opacity 0.34s ease-in",
+                  transition: "transform 0.24s ease-in, opacity 0.24s ease-in",
                   transform: "perspective(1400px) rotateY(-72deg)",
-                  opacity: 0.2,
+                  opacity: 0.15,
                 }
               : {}),
           }}
@@ -121,10 +263,10 @@ export function PassportCarnet({
             }}
           >
             <p
-              className="text-[40px] font-black leading-none"
-              style={{ color: BRAND.orange, letterSpacing: "0.05em" }}
+              className="text-[42px] font-black leading-none"
+              style={{ color: BRAND.orange, letterSpacing: "0.06em" }}
             >
-              PASAPORTE
+              CARNET
             </p>
             <p
               className="text-[13px] font-extrabold mt-2"
@@ -134,7 +276,7 @@ export function PassportCarnet({
                 textIndent: "0.52em",
               }}
             >
-              PASSPORT
+              CARD
             </p>
 
             <PassportSeal className="w-[250px] my-10" />
@@ -175,26 +317,23 @@ export function PassportCarnet({
   }
 
   /* ─── Abierto: spread Vacunación + Desparasitación ──────────── */
+  const vacTotalPages = pagesFor(vaccines.length);
+  const dewTotalPages = pagesFor(dewormings.length);
+  const vp = Math.min(vacPage, vacTotalPages - 1);
+  const dp = Math.min(dewPage, dewTotalPages - 1);
+  const vacSlice = vaccines.slice(vp * PAGE_SIZE, (vp + 1) * PAGE_SIZE);
+  const dewSlice = dewormings.slice(dp * PAGE_SIZE, (dp + 1) * PAGE_SIZE);
+
   return (
     <div
       className="relative rounded-[22px] overflow-hidden"
       style={{
         background: BRAND.cream,
         boxShadow: "0 24px 52px -20px rgba(122, 51, 16, 0.4)",
-        animation: "passportSpreadIn 0.5s ease-out both",
+        animation: `passportSpreadIn 0.32s ${EASE} both`,
       }}
     >
-      <button
-        type="button"
-        onClick={() => setOpen(false)}
-        aria-label="Cerrar carnet"
-        className="absolute top-3.5 right-3.5 z-20 w-9 h-9 rounded-full inline-flex items-center justify-center transition hover:brightness-110"
-        style={{ background: "rgba(188,78,32,0.12)", color: BRAND.orange }}
-      >
-        <X size={16} strokeWidth={3} />
-      </button>
-
-      <div className="grid md:grid-cols-2 relative items-stretch">
+      <div className="grid grid-cols-1 md:grid-cols-2 relative items-stretch">
         {/* Lomo central (solo desktop) */}
         <div
           aria-hidden
@@ -205,156 +344,235 @@ export function PassportCarnet({
           }}
         />
 
-        {/* ── Página izquierda: Vacunación (clic = cerrar) ── */}
+        {/* ── Página izquierda: Vacunación ── */}
         <div
-          onClick={() => setOpen(false)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" || e.key === " ") setOpen(false);
-          }}
-          aria-label="Cerrar carnet"
-          title="Toca esta página para cerrar el carnet"
-          className="relative px-6 sm:px-8 pt-6 pb-8 flex flex-col gap-4 cursor-pointer select-none"
+          className="relative px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5"
           style={{
             transformOrigin: "right center",
-            animation: "passportPageSettle 0.6s ease-out both",
+            animation: `passportPageSettle 0.4s ${EASE} both`,
           }}
         >
-          <span
-            className="self-start inline-flex items-center gap-1 h-7 px-3 rounded-full text-[10px] font-extrabold uppercase tracking-[0.08em]"
-            style={{ background: "rgba(188,78,32,0.10)", color: BRAND.orange }}
-          >
-            <ChevronLeft size={12} strokeWidth={3} /> Cerrar carnet
-          </span>
+          <div className="flex flex-wrap items-center justify-between gap-2 min-h-[32px]">
+            <button
+              type="button"
+              onClick={closePassport}
+              className="inline-flex items-center gap-1 h-8 px-3 rounded-full text-[10.5px] font-extrabold uppercase tracking-[0.08em] transition hover:brightness-95 cursor-pointer"
+              style={{ background: "rgba(188,78,32,0.10)", color: BRAND.orange }}
+            >
+              <ChevronLeft size={12} strokeWidth={3} />
+              Cerrar <span className="hidden sm:inline">carnet</span>
+            </button>
+            <PageNav
+              page={vp}
+              total={vacTotalPages}
+              onPrev={() => setVacPage(vp - 1)}
+              onNext={() => setVacPage(vp + 1)}
+            />
+          </div>
 
           <SectionBand title="Vacunación" titleEn="Vaccination">
             <Syringe size={20} strokeWidth={2.6} />
           </SectionBand>
 
           <ColumnLegend
+            gridClass="sm:grid-cols-[1.5fr_1fr_0.7fr_1fr]"
             cols={[
+              ["Vacuna", "Vaccine"],
               ["Fecha", "Date"],
-              ["Vacuna · Peso", "Vaccine · Weight"],
-              ["Firma · Próxima", "Signature · Booster"],
+              ["Peso", "Weight"],
+              ["Próxima", "Booster"],
             ]}
           />
 
           <div className="flex flex-col gap-2.5">
-            {vaccines.map((v, i) => (
-              <RecordRow key={v.id} alt={i % 2 === 1}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <p
-                    className="text-[15px] font-extrabold leading-tight truncate"
-                    style={{ color: BRAND.ink }}
-                  >
-                    {v.name}
-                  </p>
-                  <DateChip value={fmt(v.appliedAt)} />
-                </div>
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
-                  <MiniStat
-                    es="Peso"
-                    en="Weight"
-                    value={v.weightKg != null ? `${v.weightKg} kg` : "—"}
-                  />
-                  <MiniStat
-                    es="Próxima"
-                    en="Booster"
-                    value={fmt(v.nextAt)}
-                    highlight={Boolean(v.nextAt)}
-                  />
-                </div>
-                {v.notes && (
-                  <p
-                    className="text-[11.5px] font-semibold mt-1.5 whitespace-pre-line"
-                    style={{ color: BRAND.inkSoft }}
-                  >
-                    {v.notes}
-                  </p>
-                )}
-                <Signature name={v.vetName} />
-              </RecordRow>
-            ))}
-            {Array.from({
-              length: Math.max(0, MIN_ROWS - vaccines.length),
-            }).map((_, i) => (
-              <EmptyRow key={`e-${i}`} alt={(vaccines.length + i) % 2 === 1} />
-            ))}
-          </div>
+            {vacSlice.map((v, i) => {
+              const isEditing = editing?.section === "vac" && editing.id === v.id;
+              return isEditing ? (
+                <EditVaccineRow
+                  key={v.id}
+                  draft={draft}
+                  setDraft={setDraft}
+                  saving={saving}
+                  error={error}
+                  onSave={save}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <RecordShell key={v.id} alt={i % 2 === 1} onClick={() => startEdit("vac", v)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-[1.5fr_1fr_0.7fr_1fr] gap-1.5 items-stretch">
+                    <FieldBox label="Vacuna">
+                      <span
+                        className="text-[14px] font-extrabold leading-tight"
+                        style={{ color: BRAND.ink }}
+                      >
+                        {v.name}
+                      </span>
+                    </FieldBox>
+                    <FieldBox label="Fecha">
+                      <span className="text-[12.5px] font-bold" style={{ color: BRAND.ink }}>
+                        {fmt(v.appliedAt)}
+                      </span>
+                    </FieldBox>
+                    <FieldBox label="Peso">
+                      <span className="text-[12.5px] font-bold" style={{ color: BRAND.ink }}>
+                        {v.weightKg != null ? `${v.weightKg} kg` : "—"}
+                      </span>
+                    </FieldBox>
+                    <FieldBox label="Próxima">
+                      <span
+                        className="text-[12.5px] font-bold"
+                        style={{ color: v.nextAt ? BRAND.orange : BRAND.ink }}
+                      >
+                        {fmt(v.nextAt)}
+                      </span>
+                    </FieldBox>
+                  </div>
+                  {v.notes && (
+                    <p
+                      className="text-[11px] font-semibold mt-1 px-1 whitespace-pre-line"
+                      style={{ color: BRAND.inkSoft }}
+                    >
+                      {v.notes}
+                    </p>
+                  )}
+                  <Signature name={v.vetName} />
+                </RecordShell>
+              );
+            })}
 
-          {vaccines.length === 0 && <FillHint kind="vacunación" />}
+            {/* Ranuras vacías → clic para llenar manualmente */}
+            {Array.from({ length: Math.max(0, PAGE_SIZE - vacSlice.length) }).map((_, i) => {
+              const isNewHere =
+                editing?.section === "vac" && editing.id === null && i === 0;
+              return isNewHere ? (
+                <EditVaccineRow
+                  key={`new-${i}`}
+                  draft={draft}
+                  setDraft={setDraft}
+                  saving={saving}
+                  error={error}
+                  onSave={save}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <EmptySlot
+                  key={`e-${i}`}
+                  alt={(vacSlice.length + i) % 2 === 1}
+                  onClick={() => startEdit("vac", null)}
+                />
+              );
+            })}
+          </div>
         </div>
 
         {/* ── Página derecha: Desparasitación ── */}
-        <div className="px-6 sm:px-8 pt-6 pb-8 flex flex-col gap-4">
-          <div className="h-7 hidden md:block" aria-hidden />
+        <div className="px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5">
+          <div className="flex flex-wrap items-center justify-end gap-2 min-h-[32px]">
+            <PageNav
+              page={dp}
+              total={dewTotalPages}
+              onPrev={() => setDewPage(dp - 1)}
+              onNext={() => setDewPage(dp + 1)}
+            />
+          </div>
 
           <SectionBand title="Desparasitación" titleEn="Deworming">
             <Pill size={20} strokeWidth={2.6} />
           </SectionBand>
 
           <ColumnLegend
+            gridClass="sm:grid-cols-[1.6fr_1fr_1fr]"
             cols={[
+              ["Producto · Dosis", "Product · Dosage"],
               ["Fecha", "Date"],
-              ["Productos · Dosis", "Product · Dosage"],
               ["Próxima", "Next"],
             ]}
           />
 
           <div className="flex flex-col gap-2.5">
-            {dewormings.map((d, i) => (
-              <RecordRow key={d.id} alt={i % 2 === 1}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <p
-                    className="text-[15px] font-extrabold leading-tight truncate"
-                    style={{ color: BRAND.ink }}
-                  >
-                    {d.product}
-                    {d.kind && (
+            {dewSlice.map((d, i) => {
+              const isEditing = editing?.section === "dew" && editing.id === d.id;
+              return isEditing ? (
+                <EditDewormingRow
+                  key={d.id}
+                  draft={draft}
+                  setDraft={setDraft}
+                  saving={saving}
+                  error={error}
+                  onSave={save}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <RecordShell key={d.id} alt={i % 2 === 1} onClick={() => startEdit("dew", d)}>
+                  <div className="grid grid-cols-2 sm:grid-cols-[1.6fr_1fr_1fr] gap-1.5 items-stretch">
+                    <FieldBox label="Producto">
                       <span
-                        className="ml-2 align-middle inline-flex h-[19px] px-2 rounded-full text-[9.5px] font-extrabold uppercase tracking-[0.06em] items-center"
-                        style={{
-                          background: "rgba(188,78,32,0.10)",
-                          color: BRAND.orange,
-                        }}
+                        className="text-[14px] font-extrabold leading-tight"
+                        style={{ color: BRAND.ink }}
                       >
-                        {d.kind}
+                        {d.product}
                       </span>
-                    )}
-                  </p>
-                  <DateChip value={fmt(d.appliedAt)} />
-                </div>
-                <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-2">
-                  <MiniStat
-                    es="Próxima"
-                    en="Next"
-                    value={fmt(d.nextAt)}
-                    highlight={Boolean(d.nextAt)}
-                  />
-                </div>
-                {d.notes && (
-                  <p
-                    className="text-[11.5px] font-semibold mt-1.5 whitespace-pre-line"
-                    style={{ color: BRAND.inkSoft }}
-                  >
-                    {d.notes}
-                  </p>
-                )}
-                <Signature name={d.vetName} />
-              </RecordRow>
-            ))}
-            {Array.from({
-              length: Math.max(0, MIN_ROWS - dewormings.length),
-            }).map((_, i) => (
-              <EmptyRow
-                key={`e-${i}`}
-                alt={(dewormings.length + i) % 2 === 1}
-              />
-            ))}
-          </div>
+                      {d.kind && (
+                        <span
+                          className="ml-2 inline-flex h-[18px] px-2 rounded-full text-[9px] font-extrabold uppercase tracking-[0.06em] items-center align-middle"
+                          style={{
+                            background: "rgba(188,78,32,0.10)",
+                            color: BRAND.orange,
+                          }}
+                        >
+                          {d.kind}
+                        </span>
+                      )}
+                    </FieldBox>
+                    <FieldBox label="Fecha">
+                      <span className="text-[12.5px] font-bold" style={{ color: BRAND.ink }}>
+                        {fmt(d.appliedAt)}
+                      </span>
+                    </FieldBox>
+                    <FieldBox label="Próxima">
+                      <span
+                        className="text-[12.5px] font-bold"
+                        style={{ color: d.nextAt ? BRAND.orange : BRAND.ink }}
+                      >
+                        {fmt(d.nextAt)}
+                      </span>
+                    </FieldBox>
+                  </div>
+                  {d.notes && (
+                    <p
+                      className="text-[11px] font-semibold mt-1 px-1 whitespace-pre-line"
+                      style={{ color: BRAND.inkSoft }}
+                    >
+                      {d.notes}
+                    </p>
+                  )}
+                  <Signature name={d.vetName} />
+                </RecordShell>
+              );
+            })}
 
-          {dewormings.length === 0 && <FillHint kind="desparasitación" />}
+            {Array.from({ length: Math.max(0, PAGE_SIZE - dewSlice.length) }).map((_, i) => {
+              const isNewHere =
+                editing?.section === "dew" && editing.id === null && i === 0;
+              return isNewHere ? (
+                <EditDewormingRow
+                  key={`new-${i}`}
+                  draft={draft}
+                  setDraft={setDraft}
+                  saving={saving}
+                  error={error}
+                  onSave={save}
+                  onCancel={() => setEditing(null)}
+                />
+              ) : (
+                <EmptySlot
+                  key={`e-${i}`}
+                  alt={(dewSlice.length + i) % 2 === 1}
+                  onClick={() => startEdit("dew", null)}
+                />
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -380,7 +598,61 @@ export function PassportCarnet({
   );
 }
 
-/* ─── Piezas ────────────────────────────────────────────────────── */
+/* ─── Paginación ────────────────────────────────────────────────── */
+
+function pagesFor(count: number): number {
+  if (count === 0) return 1;
+  // Si la última página quedó llena, se crea una nueva en automático
+  // para seguir capturando.
+  return Math.ceil(count / PAGE_SIZE) + (count % PAGE_SIZE === 0 ? 1 : 0);
+}
+
+function PageNav({
+  page,
+  total,
+  onPrev,
+  onNext,
+}: {
+  page: number;
+  total: number;
+  onPrev: () => void;
+  onNext: () => void;
+}) {
+  if (total <= 1) return null;
+  return (
+    <div className="flex items-center gap-1.5">
+      {page > 0 && (
+        <button
+          type="button"
+          onClick={onPrev}
+          className="inline-flex items-center gap-0.5 h-8 px-2.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-[0.06em] transition hover:brightness-95 cursor-pointer"
+          style={{ background: "rgba(188,78,32,0.10)", color: BRAND.orange }}
+        >
+          <ChevronLeft size={12} strokeWidth={3} /> Anterior
+        </button>
+      )}
+      <span
+        className="text-[10.5px] font-extrabold"
+        style={{ color: BRAND.inkSoft }}
+      >
+        Pág. {page + 1}/{total}
+      </span>
+      {page < total - 1 && (
+        <button
+          type="button"
+          onClick={onNext}
+          className="inline-flex items-center gap-0.5 h-8 px-2.5 rounded-full text-[10.5px] font-extrabold uppercase tracking-[0.06em] transition hover:brightness-110 cursor-pointer"
+          style={{ background: BRAND.orange, color: "#fff" }}
+        >
+          Siguiente <span className="hidden sm:inline">página</span>
+          <ChevronRight size={12} strokeWidth={3} />
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ─── Piezas de la página ───────────────────────────────────────── */
 
 function SectionBand({
   title,
@@ -396,20 +668,26 @@ function SectionBand({
       className="rounded-[10px] min-h-[52px] px-5 flex items-center justify-between text-white shrink-0"
       style={{ background: BRAND.orange }}
     >
-      <p className="text-[19px] font-extrabold leading-none">
+      <p className="text-[18px] sm:text-[19px] font-extrabold leading-none">
         {title}
-        <span className="font-semibold opacity-80 text-[15px]"> / {titleEn}</span>
+        <span className="font-semibold opacity-80 text-[14px] sm:text-[15px]"> / {titleEn}</span>
       </p>
       {children}
     </div>
   );
 }
 
-function ColumnLegend({ cols }: { cols: [string, string][] }) {
+function ColumnLegend({
+  cols,
+  gridClass,
+}: {
+  cols: [string, string][];
+  gridClass: string;
+}) {
   return (
-    <div className="flex items-center justify-between gap-3 px-1">
+    <div className={`hidden sm:grid ${gridClass} gap-1.5 px-4`}>
       {cols.map(([es, en]) => (
-        <div key={es} className="text-center">
+        <div key={es} className="text-center min-w-0">
           <p
             className="text-[10.5px] font-extrabold uppercase leading-tight"
             style={{ color: BRAND.ink, letterSpacing: "0.04em" }}
@@ -428,16 +706,25 @@ function ColumnLegend({ cols }: { cols: [string, string][] }) {
   );
 }
 
-function RecordRow({
+function RecordShell({
   children,
   alt,
+  onClick,
 }: {
   children: React.ReactNode;
   alt: boolean;
+  onClick: () => void;
 }) {
   return (
     <div
-      className="rounded-[12px] px-4 py-3"
+      role="button"
+      tabIndex={0}
+      onClick={onClick}
+      onKeyDown={(e) => {
+        if (e.key === "Enter") onClick();
+      }}
+      title="Toca para editar"
+      className="rounded-[12px] px-2.5 py-2.5 cursor-pointer transition hover:brightness-[0.985]"
       style={{
         border: `1.5px solid ${BRAND.gold}`,
         background: alt ? BRAND.creamRow : "#ffffff",
@@ -448,64 +735,57 @@ function RecordRow({
   );
 }
 
-function EmptyRow({ alt }: { alt: boolean }) {
+/** Cada dato vive en su propia caja delimitada (visible al pasar el cursor). */
+function FieldBox({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <div
-      aria-hidden
-      className="rounded-[12px] h-[56px]"
+      className="rounded-[8px] border border-transparent hover:border-[rgba(235,183,71,0.7)] px-1.5 py-1 transition-colors min-w-0"
+    >
+      <p
+        className="sm:hidden text-[8.5px] font-extrabold uppercase mb-0.5"
+        style={{ color: BRAND.goldText, letterSpacing: "0.1em" }}
+      >
+        {label}
+      </p>
+      <div className="truncate">{children}</div>
+    </div>
+  );
+}
+
+function EmptySlot({ alt, onClick }: { alt: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title="Toca para llenar manualmente"
+      className="group rounded-[12px] h-[54px] w-full cursor-pointer transition flex items-center justify-center"
       style={{
         border: `1.5px solid ${BRAND.gold}`,
         background: alt ? BRAND.creamRow : "#ffffff",
-        opacity: 0.75,
+        opacity: 0.8,
       }}
-    />
-  );
-}
-
-function DateChip({ value }: { value: string }) {
-  return (
-    <span
-      className="shrink-0 inline-flex items-center h-[24px] px-2.5 rounded-full text-[11.5px] font-extrabold"
-      style={{ background: "rgba(235,183,71,0.22)", color: BRAND.orange }}
-    >
-      {value}
-    </span>
-  );
-}
-
-function MiniStat({
-  es,
-  en,
-  value,
-  highlight = false,
-}: {
-  es: string;
-  en: string;
-  value: string;
-  highlight?: boolean;
-}) {
-  return (
-    <p
-      className="text-[12.5px] font-bold"
-      style={{ color: highlight ? BRAND.orange : BRAND.ink }}
     >
       <span
-        className="text-[9px] font-extrabold uppercase mr-1.5"
-        style={{ color: BRAND.goldText, letterSpacing: "0.1em" }}
-        title={en}
+        className="opacity-0 group-hover:opacity-100 transition text-[11px] font-extrabold uppercase tracking-[0.08em]"
+        style={{ color: BRAND.goldText }}
       >
-        {es}
+        + Llenar manualmente
       </span>
-      {value}
-    </p>
+    </button>
   );
 }
 
 function Signature({ name }: { name: string }) {
   return (
-    <div className="flex items-baseline justify-end gap-2 mt-1.5">
+    <div className="flex items-baseline justify-end gap-2 mt-1 px-1">
       <span
-        className="text-[16px] leading-none"
+        className="text-[15px] leading-none"
         style={{
           color: BRAND.ink,
           fontFamily:
@@ -524,15 +804,272 @@ function Signature({ name }: { name: string }) {
   );
 }
 
-function FillHint({ kind }: { kind: string }) {
+/* ─── Formularios inline ────────────────────────────────────────── */
+
+const inputStyle: React.CSSProperties = {
+  border: `1.5px solid ${BRAND.gold}`,
+  background: "#fff",
+  color: BRAND.ink,
+};
+
+function EditLabel({ children }: { children: React.ReactNode }) {
   return (
     <p
-      className="text-[11.5px] font-semibold text-center"
-      style={{ color: BRAND.inkSoft }}
+      className="text-[8.5px] font-extrabold uppercase mb-1"
+      style={{ color: BRAND.goldText, letterSpacing: "0.1em" }}
     >
-      Este carnet se llena automáticamente al terminar una consulta de {kind}{" "}
-      con la casilla “Agregar al carnet” marcada.
+      {children}
     </p>
+  );
+}
+
+function EditActions({
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  saving: boolean;
+  error: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2 mt-2.5">
+      <p className="text-[11px] font-bold min-w-0 truncate" style={{ color: "#C0392B" }}>
+        {error ?? ""}
+      </p>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={saving}
+          className="inline-flex items-center gap-1 h-9 px-3.5 rounded-full text-[11px] font-extrabold uppercase tracking-[0.06em] transition hover:brightness-95 cursor-pointer disabled:opacity-50"
+          style={{ background: "rgba(74,74,74,0.08)", color: BRAND.ink }}
+        >
+          <X size={12} strokeWidth={3} /> Cancelar
+        </button>
+        <button
+          type="button"
+          onClick={onSave}
+          disabled={saving}
+          className="inline-flex items-center gap-1 h-9 px-4 rounded-full text-[11px] font-extrabold uppercase tracking-[0.06em] transition hover:brightness-110 cursor-pointer disabled:opacity-60"
+          style={{ background: BRAND.orange, color: "#fff" }}
+        >
+          <Check size={13} strokeWidth={3} /> {saving ? "Guardando…" : "Guardar"}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function EditVaccineRow({
+  draft,
+  setDraft,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  draft: Draft;
+  setDraft: React.Dispatch<React.SetStateAction<Draft>>;
+  saving: boolean;
+  error: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="rounded-[12px] px-3 py-3"
+      style={{ border: `2px solid ${BRAND.orange}`, background: "#fff" }}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="col-span-2 sm:col-span-1">
+          <EditLabel>Vacuna / Vaccine</EditLabel>
+          <select
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.name}
+            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+          >
+            <option value="" disabled>
+              Selecciona…
+            </option>
+            {VACCINE_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+            <option value={OTHER}>Otra…</option>
+          </select>
+          {draft.name === OTHER && (
+            <input
+              type="text"
+              placeholder="Nombre de la vacuna"
+              className="mt-1.5 w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+              style={inputStyle}
+              value={draft.nameOther}
+              onChange={(e) => setDraft((d) => ({ ...d, nameOther: e.target.value }))}
+            />
+          )}
+        </div>
+        <div>
+          <EditLabel>Fecha / Date</EditLabel>
+          <input
+            type="date"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.appliedAt}
+            onChange={(e) => setDraft((d) => ({ ...d, appliedAt: e.target.value }))}
+          />
+        </div>
+        <div>
+          <EditLabel>Peso / Weight</EditLabel>
+          <div className="relative">
+            <input
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              min="0"
+              placeholder="0.0"
+              className="w-full h-9 rounded-[8px] pl-2 pr-8 text-[12.5px] font-bold outline-none"
+              style={inputStyle}
+              value={draft.weightKg}
+              onChange={(e) => setDraft((d) => ({ ...d, weightKg: e.target.value }))}
+            />
+            <span
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] font-extrabold"
+              style={{ color: BRAND.inkSoft }}
+            >
+              kg
+            </span>
+          </div>
+        </div>
+        <div>
+          <EditLabel>Próxima / Booster</EditLabel>
+          <input
+            type="date"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.nextAt}
+            onChange={(e) => setDraft((d) => ({ ...d, nextAt: e.target.value }))}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-4">
+          <EditLabel>Observaciones (opcional)</EditLabel>
+          <input
+            type="text"
+            placeholder="Lote, reacciones, notas…"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.notes}
+            onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+          />
+        </div>
+      </div>
+      <EditActions saving={saving} error={error} onSave={onSave} onCancel={onCancel} />
+    </div>
+  );
+}
+
+function EditDewormingRow({
+  draft,
+  setDraft,
+  saving,
+  error,
+  onSave,
+  onCancel,
+}: {
+  draft: Draft;
+  setDraft: React.Dispatch<React.SetStateAction<Draft>>;
+  saving: boolean;
+  error: string | null;
+  onSave: () => void;
+  onCancel: () => void;
+}) {
+  return (
+    <div
+      className="rounded-[12px] px-3 py-3"
+      style={{ border: `2px solid ${BRAND.orange}`, background: "#fff" }}
+    >
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <div className="col-span-2 sm:col-span-1">
+          <EditLabel>Producto / Product</EditLabel>
+          <select
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.name}
+            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
+          >
+            <option value="" disabled>
+              Selecciona…
+            </option>
+            {DEWORM_OPTIONS.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+            <option value={OTHER}>Otro…</option>
+          </select>
+          {draft.name === OTHER && (
+            <input
+              type="text"
+              placeholder="Nombre del producto"
+              className="mt-1.5 w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+              style={inputStyle}
+              value={draft.nameOther}
+              onChange={(e) => setDraft((d) => ({ ...d, nameOther: e.target.value }))}
+            />
+          )}
+        </div>
+        <div>
+          <EditLabel>Tipo / Type</EditLabel>
+          <select
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.kind}
+            onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value }))}
+          >
+            <option value="">—</option>
+            <option value="Interna">Interna</option>
+            <option value="Externa">Externa</option>
+            <option value="Ambas">Ambas</option>
+          </select>
+        </div>
+        <div>
+          <EditLabel>Fecha / Date</EditLabel>
+          <input
+            type="date"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.appliedAt}
+            onChange={(e) => setDraft((d) => ({ ...d, appliedAt: e.target.value }))}
+          />
+        </div>
+        <div>
+          <EditLabel>Próxima / Next</EditLabel>
+          <input
+            type="date"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.nextAt}
+            onChange={(e) => setDraft((d) => ({ ...d, nextAt: e.target.value }))}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-4">
+          <EditLabel>Dosis / Observaciones (opcional)</EditLabel>
+          <input
+            type="text"
+            placeholder="1 tableta / 10 kg, notas…"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.notes}
+            onChange={(e) => setDraft((d) => ({ ...d, notes: e.target.value }))}
+          />
+        </div>
+      </div>
+      <EditActions saving={saving} error={error} onSave={onSave} onCancel={onCancel} />
+    </div>
   );
 }
 

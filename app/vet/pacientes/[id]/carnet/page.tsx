@@ -114,6 +114,7 @@ export default async function VetPetCarnetPage({
       </div>
 
       <PassportCarnet
+        petId={pet.id}
         petName={pet.name}
         vaccines={vaccines}
         dewormings={dewormings}
