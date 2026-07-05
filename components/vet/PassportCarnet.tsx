@@ -244,18 +244,16 @@ export function PassportCarnet({
               : {}),
           }}
         >
-          {/* hojas asomando por el canto derecho */}
+          {/* Portada vertical (celular) */}
           <div
             aria-hidden
-            className="absolute top-[8px] bottom-[8px] -right-[6px] w-[12px] rounded-r-[7px]"
+            className="md:hidden absolute top-[8px] bottom-[8px] -right-[6px] w-[12px] rounded-r-[7px]"
             style={{
               background:
                 "repeating-linear-gradient(to bottom, #fffdf9 0 3px, #efdccb 3px 4px)",
               boxShadow: "2px 2px 10px rgba(0,0,0,0.12)",
             }}
           />
-
-          {/* Portada vertical (celular) */}
           <div
             className="md:hidden relative rounded-r-[18px] rounded-l-[10px] px-8 pt-14 pb-11 flex flex-col items-center overflow-hidden"
             style={{
@@ -308,18 +306,49 @@ export function PassportCarnet({
             </span>
           </div>
 
-          {/* Portada horizontal (computadora) — mismo formato que abierto */}
+          {/* Portada horizontal (computadora) — dos mitades, como el inicio */}
           <div
-            className="hidden md:flex relative rounded-r-[22px] rounded-l-[12px] min-h-[460px] px-14 lg:px-20 items-center justify-center gap-14 lg:gap-24 overflow-hidden"
+            className="hidden md:grid relative rounded-[22px] grid-cols-2 min-h-[460px] overflow-hidden"
             style={{
               background: BRAND.cream,
               boxShadow:
-                "0 24px 52px -20px rgba(122, 51, 16, 0.45), inset -16px 0 28px -22px rgba(122,51,16,0.5), inset 4px 0 0 rgba(122,51,16,0.18)",
+                "0 24px 52px -20px rgba(122, 51, 16, 0.45), inset 4px 0 0 rgba(122,51,16,0.14)",
             }}
           >
-            <div className="flex flex-col items-center shrink-0">
+            {/* hojas del canto, contenidas dentro del borde */}
+            <div
+              aria-hidden
+              className="absolute inset-y-3 right-0 w-[10px] pointer-events-none"
+              style={{
+                background:
+                  "repeating-linear-gradient(to bottom, #fffdf9 0 3px, #efdccb 3px 4px)",
+                maskImage:
+                  "linear-gradient(to right, transparent, black 40%)",
+              }}
+            />
+
+            {/* Mitad izquierda: el logo */}
+            <div className="flex items-center justify-center py-12">
+              <PassportSeal className="w-[320px] lg:w-[340px]" />
+            </div>
+
+            {/* Mitad derecha: nombre + CARNET + botón */}
+            <div className="flex flex-col items-center justify-center gap-0 py-12">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/vetsfriend-wordmark.png"
+                alt="Vetsfriend"
+                className="h-11 w-auto"
+              />
               <p
-                className="text-[52px] font-black leading-none"
+                className="text-[11px] font-extrabold mt-1"
+                style={{ color: BRAND.goldText, letterSpacing: "0.15em" }}
+              >
+                Clínica &amp; Grooming
+              </p>
+
+              <p
+                className="text-[56px] font-black leading-none mt-10"
                 style={{ color: BRAND.orange, letterSpacing: "0.06em" }}
               >
                 CARNET
@@ -334,8 +363,9 @@ export function PassportCarnet({
               >
                 CARD
               </p>
+
               <span
-                className="mt-10 inline-flex items-center gap-1.5 h-10 px-6 rounded-full text-[12.5px] font-extrabold uppercase tracking-[0.08em] transition group-hover:brightness-105"
+                className="mt-11 inline-flex items-center gap-1.5 h-10 px-6 rounded-full text-[12.5px] font-extrabold uppercase tracking-[0.08em] transition group-hover:brightness-105"
                 style={{
                   background: BRAND.orange,
                   color: "#fff",
@@ -344,23 +374,6 @@ export function PassportCarnet({
               >
                 Abrir carnet <span aria-hidden>→</span>
               </span>
-            </div>
-
-            <PassportSeal className="w-[300px] shrink-0" />
-
-            <div className="flex flex-col items-center shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/vetsfriend-wordmark.png"
-                alt="Vetsfriend"
-                className="h-12 w-auto"
-              />
-              <p
-                className="text-[11px] font-extrabold mt-1.5"
-                style={{ color: BRAND.goldText, letterSpacing: "0.15em" }}
-              >
-                Clínica &amp; Grooming
-              </p>
             </div>
           </div>
         </button>
