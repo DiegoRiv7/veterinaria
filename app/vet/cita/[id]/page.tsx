@@ -6,6 +6,7 @@ import { BackLink } from "@/components/BackLink";
 import { PetAvatar } from "@/components/PetAvatar";
 import { AppointmentChatWidget } from "@/components/vet/AppointmentChatWidget";
 import { ConsultaForm } from "@/components/vet/ConsultaForm";
+import { RescheduleDialog } from "@/components/vet/RescheduleDialog";
 import { StatusBadge, statusToVariant } from "@/components/vet/StatusBadge";
 import {
   SPECIES_LABEL,
@@ -45,6 +46,12 @@ export default async function VetAppointmentEdit({
     },
   });
   if (!appt) notFound();
+
+  const services = await prisma.service.findMany({
+    where: { active: true },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   const messagesRaw = await prisma.message.findMany({
     where: { appointmentId: appt.id },
@@ -292,19 +299,12 @@ export default async function VetAppointmentEdit({
           {/* Action buttons */}
           <div className="flex flex-col gap-2 mt-1">
             {isScheduled && (
-              <button
-                type="button"
-                disabled
-                title="Próximamente — reagendar desde aquí"
-                className="h-12 px-4 rounded-[14px] text-[14px] font-extrabold border inline-flex items-center justify-center gap-2 transition opacity-60 cursor-not-allowed"
-                style={{
-                  background: "var(--vet-bg-card)",
-                  borderColor: "var(--vet-border)",
-                  color: "var(--vet-text-2)",
-                }}
-              >
-                Reagendar
-              </button>
+              <RescheduleDialog
+                appointmentId={appt.id}
+                scheduledAtIso={appt.scheduledAt.toISOString()}
+                currentServiceId={appt.serviceId}
+                services={services}
+              />
             )}
 
             {!isCancelled && (

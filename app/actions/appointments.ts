@@ -447,6 +447,76 @@ export async function reopenAppointmentAction(
 }
 
 /**
+ * Reagenda una cita: cambia fecha/hora y opcionalmente el servicio
+ * (motivo). Al cambiar el servicio se recalculan duración y precio
+ * estimado. Una cita cancelada que se reagenda vuelve a quedar
+ * agendada.
+ */
+export async function rescheduleAppointmentAction(
+  appointmentId: string,
+  input: { date: string; time: string; serviceId?: string | null }
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const id = (appointmentId ?? "").trim();
+  if (!id) return { ok: false, error: "Cita inválida." };
+
+  const date = (input.date ?? "").trim();
+  const time = (input.time ?? "").trim();
+  if (!date || !time) return { ok: false, error: "Falta la fecha o la hora." };
+  const scheduledAt = new Date(`${date}T${time}:00`);
+  if (Number.isNaN(scheduledAt.getTime())) {
+    return { ok: false, error: "Fecha u hora inválida." };
+  }
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id },
+    select: {
+      status: true,
+      serviceId: true,
+      durationMinutes: true,
+      priceEstimate: true,
+      pet: { select: { species: true } },
+    },
+  });
+  if (!appt) return { ok: false, error: "Cita no encontrada." };
+  if (appt.status === "COMPLETED") {
+    return { ok: false, error: "Reabre la cita antes de reagendarla." };
+  }
+
+  const serviceId = (input.serviceId ?? "").trim() || appt.serviceId;
+  let durationMinutes = appt.durationMinutes;
+  let priceEstimate = appt.priceEstimate;
+  if (serviceId !== appt.serviceId) {
+    const service = await prisma.service.findUnique({ where: { id: serviceId } });
+    if (!service) return { ok: false, error: "Servicio no encontrado." };
+    durationMinutes = service.durationMinutes;
+    priceEstimate = await estimatePrice(serviceId, appt.pet.species);
+  }
+
+  await prisma.appointment.update({
+    where: { id },
+    data: {
+      scheduledAt,
+      serviceId,
+      durationMinutes,
+      priceEstimate,
+      status: "SCHEDULED",
+    },
+  });
+
+  revalidatePath("/vet");
+  revalidatePath("/vet/hoy");
+  revalidatePath("/vet/calendario");
+  revalidatePath("/inicio");
+  revalidatePath(`/cita/${id}`);
+  revalidatePath(`/vet/cita/${id}`);
+  return { ok: true };
+}
+
+/**
  * Registra una opción nueva en el catálogo de un campo select del
  * formulario del servicio (p.ej. un biológico que no estaba en la
  * lista). La opción se inserta antes de "Otro" para que esa salida
