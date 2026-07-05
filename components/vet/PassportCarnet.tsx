@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Check, ChevronLeft, ChevronRight, Pill, Syringe, X } from "lucide-react";
 import {
@@ -118,7 +118,7 @@ export function PassportCarnet({
   petName,
   vaccines,
   dewormings,
-  initialOpen = false,
+  initialOpen = true,
 }: {
   petId: string;
   petName: string;
@@ -129,6 +129,7 @@ export function PassportCarnet({
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
   const [opening, setOpening] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [vacPage, setVacPage] = useState(0);
   const [dewPage, setDewPage] = useState(0);
 
@@ -144,21 +145,18 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setOpening(false);
       setOpen(true);
-    }, 240);
+    }, 260);
   }
 
-  // El pasaporte se abre solo al cargar: portada un instante y apertura.
-  useEffect(() => {
-    if (initialOpen) return;
-    const t = window.setTimeout(openPassport, 420);
-    return () => window.clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   function closePassport() {
+    if (closing) return;
     setEditing(null);
     setError(null);
-    setOpen(false);
+    setClosing(true);
+    window.setTimeout(() => {
+      setClosing(false);
+      setOpen(false);
+    }, 260);
   }
 
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
@@ -234,7 +232,7 @@ export function PassportCarnet({
           className="group relative w-[420px] max-w-full md:w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.3deg] will-change-transform"
           style={{
             transformOrigin: "left center",
-            animation: `passportCoverIn 0.35s ${EASE} both`,
+            animation: `passportCoverIn 0.4s ${EASE} both`,
             ...(opening
               ? {
                   transition: "transform 0.24s ease-in, opacity 0.24s ease-in",
@@ -315,18 +313,6 @@ export function PassportCarnet({
                 "0 24px 52px -20px rgba(122, 51, 16, 0.45), inset 4px 0 0 rgba(122,51,16,0.14)",
             }}
           >
-            {/* hojas del canto, contenidas dentro del borde */}
-            <div
-              aria-hidden
-              className="absolute inset-y-3 right-0 w-[10px] pointer-events-none"
-              style={{
-                background:
-                  "repeating-linear-gradient(to bottom, #fffdf9 0 3px, #efdccb 3px 4px)",
-                maskImage:
-                  "linear-gradient(to right, transparent, black 40%)",
-              }}
-            />
-
             {/* Mitad izquierda: el logo */}
             <div className="flex items-center justify-center py-12">
               <PassportSeal className="w-[320px] lg:w-[340px]" />
@@ -397,11 +383,20 @@ export function PassportCarnet({
 
   return (
     <div
-      className="relative rounded-[22px] overflow-hidden"
+      className="relative rounded-[22px] overflow-hidden will-change-transform"
       style={{
         background: BRAND.cream,
         boxShadow: "0 24px 52px -20px rgba(122, 51, 16, 0.4)",
-        animation: `passportSpreadIn 0.32s ${EASE} both`,
+        transformOrigin: "left center",
+        animation: `passportSpreadIn 0.4s ${EASE} both`,
+        ...(closing
+          ? {
+              animation: "none",
+              transition: "transform 0.26s ease-in, opacity 0.26s ease-in",
+              transform: "perspective(1600px) rotateY(-56deg) scale(0.98)",
+              opacity: 0.1,
+            }
+          : {}),
       }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 relative items-stretch">

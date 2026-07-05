@@ -118,7 +118,7 @@ export default async function VetPetCarnetPage({
         petName={pet.name}
         vaccines={vaccines}
         dewormings={dewormings}
-        initialOpen={abierto === "1"}
+        initialOpen={abierto !== "0"}
       />
     </div>
   );
