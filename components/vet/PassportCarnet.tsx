@@ -156,7 +156,7 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setClosing(false);
       setOpen(false);
-    }, 290);
+    }, 330);
   }
 
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
@@ -383,14 +383,18 @@ export function PassportCarnet({
 
   return (
     <div
-      className="relative rounded-[22px] overflow-hidden will-change-transform"
+      className={`relative rounded-[22px] overflow-hidden will-change-transform ${
+        closing
+          ? "max-md:animate-[passportSpreadOut_0.3s_ease-in_both]"
+          : ""
+      }`}
       style={{
         background: BRAND.cream,
         boxShadow: "0 24px 52px -20px rgba(122, 51, 16, 0.4)",
         transformOrigin: "left center",
-        animation: closing
-          ? "passportSpreadOut 0.3s cubic-bezier(0.4, 0, 1, 1) both"
-          : `passportSpreadIn 0.4s ${EASE} both`,
+        // Al cerrar, en desktop el pliegue lo hace la página derecha
+        // (tipo libro); en móvil el spread completo se retira.
+        ...(closing ? {} : { animation: `passportSpreadIn 0.4s ${EASE} both` }),
       }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 relative items-stretch">
@@ -529,7 +533,14 @@ export function PassportCarnet({
         </div>
 
         {/* ── Página derecha: Desparasitación ── */}
-        <div className="px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5">
+        <div
+          className={`px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5 will-change-transform ${
+            closing
+              ? "md:animate-[passportPageFold_0.32s_cubic-bezier(0.55,0,0.85,0.4)_both]"
+              : ""
+          }`}
+          style={{ transformOrigin: "left center" }}
+        >
           <div className="flex flex-wrap items-center justify-end gap-2 min-h-[32px]">
             <PageNav
               page={dp}

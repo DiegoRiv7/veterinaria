@@ -169,6 +169,33 @@ export function ConsultaForm({
     }
   }
 
+  const reopenButton = (
+    <button
+      type="button"
+      onClick={handleReopen}
+      disabled={reopening || saving}
+      title="Volver a abrir la cita para editar la consulta"
+      className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition hover:brightness-105 disabled:opacity-60 inline-flex items-center justify-center gap-2"
+      style={{
+        background: "var(--vet-bg-card)",
+        borderColor: "var(--vet-border)",
+        color: "var(--vet-text-1)",
+      }}
+    >
+      {reopening ? (
+        <>
+          <Loader2 className="h-4 w-4 animate-spin" />
+          Reabriendo…
+        </>
+      ) : (
+        <>
+          <RotateCcw className="h-4 w-4" />
+          Reabrir cita
+        </>
+      )}
+    </button>
+  );
+
   return (
     <div className="flex flex-col gap-6">
       {schema.sections.map((section) => (
@@ -212,32 +239,11 @@ export function ConsultaForm({
                 </>
               )}
             </button>
-            <button
-              type="button"
-              onClick={handleReopen}
-              disabled={reopening || saving}
-              title="Volver a abrir la cita para editar la consulta"
-              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition hover:brightness-105 disabled:opacity-60 inline-flex items-center justify-center gap-2"
-              style={{
-                background: "var(--vet-bg-card)",
-                borderColor: "var(--vet-border)",
-                color: "var(--vet-text-1)",
-              }}
-            >
-              {reopening ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Reabriendo…
-                </>
-              ) : (
-                <>
-                  <RotateCcw className="h-4 w-4" />
-                  Reabrir cita
-                </>
-              )}
-            </button>
+            {reopenButton}
           </>
-        ) : disabled ? null : (
+        ) : disabled ? (
+          reopenButton
+        ) : (
           <>
             <button
               type="button"

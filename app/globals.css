@@ -236,7 +236,8 @@ input[type="checkbox"] {
 }
 
 /* === Vet panel theme (Vetsfriend) — scoped to /vet/* via .vet-theme === */
-.vet-theme {
+.vet-theme,
+.vet-portal {
   /* Cream/peach surfaces */
   --vet-bg-deep:    oklch(93% 0.028 60);
   --vet-bg-mid:     oklch(95% 0.022 60);
@@ -297,6 +298,13 @@ input[type="checkbox"] {
   font-variant-numeric: tabular-nums;
 }
 
+/* Portal variant: hereda las variables del tema vet sin pintar el fondo
+   de página (para overlays montados en document.body). */
+.vet-portal {
+  background: none;
+  min-height: 0;
+}
+
 .vet-theme ::-webkit-scrollbar { width: 6px; }
 .vet-theme ::-webkit-scrollbar-track { background: transparent; }
 .vet-theme ::-webkit-scrollbar-thumb { background: oklch(75% 0.06 50); border-radius: 99px; }
@@ -338,4 +346,9 @@ html { background-color: #fceadb; }
 @keyframes passportSpreadOut {
   0% { opacity: 1; transform: perspective(1600px) rotateY(0deg) scale(1); }
   100% { opacity: 0; transform: perspective(1600px) rotateY(-58deg) scale(0.97); }
+}
+/* La página derecha se pliega sobre la izquierda, como al cerrar un libro */
+@keyframes passportPageFold {
+  0% { transform: perspective(1600px) rotateY(0deg); }
+  100% { transform: perspective(1600px) rotateY(-88deg); }
 }

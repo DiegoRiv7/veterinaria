@@ -410,9 +410,10 @@ export async function saveConsultaDataAction(
 }
 
 /**
- * Reabre una cita atendida para que el veterinario pueda corregir la
- * consulta. Vuelve el estado a SCHEDULED; al marcarla atendida de nuevo,
- * el guardado en carnet no duplica registros (ver dedup arriba).
+ * Reabre una cita atendida o cancelada para que el veterinario pueda
+ * trabajar la consulta de nuevo. Vuelve el estado a SCHEDULED; al
+ * marcarla atendida otra vez, el guardado en carnet no duplica
+ * registros (ver dedup arriba).
  */
 export async function reopenAppointmentAction(
   appointmentId: string
@@ -429,8 +430,8 @@ export async function reopenAppointmentAction(
     select: { status: true },
   });
   if (!appt) return { ok: false, error: "Cita no encontrada." };
-  if (appt.status !== "COMPLETED") {
-    return { ok: false, error: "Solo se puede reabrir una cita atendida." };
+  if (appt.status !== "COMPLETED" && appt.status !== "CANCELLED") {
+    return { ok: false, error: "La cita ya está abierta." };
   }
 
   await prisma.appointment.update({

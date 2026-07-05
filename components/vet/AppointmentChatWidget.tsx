@@ -128,7 +128,7 @@ export function AppointmentChatWidget({
       {open &&
         typeof document !== "undefined" &&
         createPortal(
-        <div className="fixed inset-0 z-[80] pointer-events-none">
+        <div className="vet-portal fixed inset-0 z-[80] pointer-events-none">
           <section
             className="pointer-events-auto fixed flex min-h-[360px] min-w-[320px] flex-col overflow-hidden rounded-[18px] border shadow-[0_22px_70px_rgba(0,0,0,.22)]"
             style={{
@@ -178,11 +178,12 @@ export function AppointmentChatWidget({
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto p-3">
+            <div className="min-h-0 flex-1 flex flex-col">
               <AppointmentChat
                 messages={messages}
                 currentUserId={currentUserId}
                 appointmentId={appointmentId}
+                embedded
               />
             </div>
 

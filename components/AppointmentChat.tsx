@@ -32,21 +32,38 @@ export function AppointmentChat({
   messages,
   currentUserId,
   appointmentId,
+  embedded = false,
 }: {
   messages: ChatMessage[];
   currentUserId: string;
   appointmentId: string;
+  /** Sin marco ni encabezado propio — para usarlo dentro de una ventana
+   *  que ya trae su propio chrome (p.ej. AppointmentChatWidget). */
+  embedded?: boolean;
 }) {
   return (
-    <div className="bg-[var(--color-surface)]/95 backdrop-blur-sm rounded-[18px] border border-[var(--color-border)] shadow-[var(--shadow-soft-sm)] overflow-hidden">
-      <div className="px-5 py-3 border-b border-[var(--color-divider)] bg-[var(--color-surface-2)]">
-        <p className="text-[15px] font-semibold">Conversación</p>
-        <p className="text-[12px] text-[var(--color-muted)]">
-          Pregúntale al veterinario sobre la consulta.
-        </p>
-      </div>
+    <div
+      className={
+        embedded
+          ? "flex h-full min-h-0 flex-1 flex-col bg-[var(--color-surface)]"
+          : "bg-[var(--color-surface)]/95 backdrop-blur-sm rounded-[18px] border border-[var(--color-border)] shadow-[var(--shadow-soft-sm)] overflow-hidden"
+      }
+    >
+      {!embedded && (
+        <div className="px-5 py-3 border-b border-[var(--color-divider)] bg-[var(--color-surface-2)]">
+          <p className="text-[15px] font-semibold">Conversación</p>
+          <p className="text-[12px] text-[var(--color-muted)]">
+            Pregúntale al veterinario sobre la consulta.
+          </p>
+        </div>
+      )}
 
-      <div className="px-4 py-4 flex flex-col gap-2.5 max-h-[460px] overflow-y-auto">
+      <div
+        className={cn(
+          "px-4 py-4 flex flex-col gap-2.5 overflow-y-auto",
+          embedded ? "flex-1 min-h-0" : "max-h-[460px]"
+        )}
+      >
         {messages.length === 0 ? (
           <div className="text-center py-6 text-[13px] text-[var(--color-muted)]">
             Aún no hay mensajes. Sé el primero en escribir 👋
