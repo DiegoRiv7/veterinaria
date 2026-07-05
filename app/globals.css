@@ -335,3 +335,7 @@ html { background-color: #fceadb; }
   0% { opacity: 0.15; transform: perspective(1600px) rotateY(-68deg); }
   100% { opacity: 1; transform: perspective(1600px) rotateY(0deg); }
 }
+@keyframes passportSpreadOut {
+  0% { opacity: 1; transform: perspective(1600px) rotateY(0deg) scale(1); }
+  100% { opacity: 0; transform: perspective(1600px) rotateY(-58deg) scale(0.97); }
+}

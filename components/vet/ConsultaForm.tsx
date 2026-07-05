@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Loader2 } from "lucide-react";
+import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Loader2, RotateCcw } from "lucide-react";
 import type {
   ConsultaData,
   ConsultaValue,
@@ -11,7 +11,10 @@ import type {
   FormSchema,
   FormSection,
 } from "@/lib/form-schema";
-import { saveConsultaDataAction } from "@/app/actions/appointments";
+import {
+  reopenAppointmentAction,
+  saveConsultaDataAction,
+} from "@/app/actions/appointments";
 
 /**
  * Dynamic per-service consultation form. Renders the schema defined on
@@ -23,8 +26,8 @@ import { saveConsultaDataAction } from "@/app/actions/appointments";
  * - "Marcar atendida" performs a final save with markCompleted: true.
  * - When `disabled` (e.g. CANCELLED) is true, the entire form is read-only
  *   and autosave is suppressed.
- * - When `completed` is true (cita ya cerrada), inputs are read-only and
- *   the only visible action is a placeholder "Reabrir" button (disabled).
+ * - When `completed` is true (cita ya cerrada), inputs are read-only;
+ *   "Reabrir cita" vuelve el estado a SCHEDULED para corregir la consulta.
  */
 export function ConsultaForm({
   schema,
@@ -57,6 +60,7 @@ export function ConsultaForm({
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
   const [finalizing, setFinalizing] = useState(false);
+  const [reopening, setReopening] = useState(false);
 
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
@@ -127,6 +131,24 @@ export function ConsultaForm({
     }
   }
 
+  async function handleReopen() {
+    if (reopening) return;
+    setReopening(true);
+    try {
+      const res = await reopenAppointmentAction(appointmentId);
+      if (res.ok) {
+        toast.success("Cita reabierta", {
+          description: "Ya puedes editar la consulta de nuevo.",
+        });
+        router.refresh();
+      } else {
+        toast.error("No se pudo reabrir", { description: res.error });
+      }
+    } finally {
+      setReopening(false);
+    }
+  }
+
   async function handleMarkCompleted() {
     if (saveTimer.current) clearTimeout(saveTimer.current);
     suppressAutosave.current = true;
@@ -192,16 +214,27 @@ export function ConsultaForm({
             </button>
             <button
               type="button"
-              disabled
-              title="Próximamente — reabrir cita"
-              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border opacity-60 cursor-not-allowed"
+              onClick={handleReopen}
+              disabled={reopening || saving}
+              title="Volver a abrir la cita para editar la consulta"
+              className="h-12 px-5 rounded-[14px] text-[14px] font-extrabold border transition hover:brightness-105 disabled:opacity-60 inline-flex items-center justify-center gap-2"
               style={{
                 background: "var(--vet-bg-card)",
                 borderColor: "var(--vet-border)",
-                color: "var(--vet-text-2)",
+                color: "var(--vet-text-1)",
               }}
             >
-              Reabrir cita
+              {reopening ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Reabriendo…
+                </>
+              ) : (
+                <>
+                  <RotateCcw className="h-4 w-4" />
+                  Reabrir cita
+                </>
+              )}
             </button>
           </>
         ) : disabled ? null : (

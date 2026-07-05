@@ -1,7 +1,6 @@
 "use server";
 import { randomBytes } from "crypto";
 import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { hashPassword, requireSession } from "@/lib/auth";
 import { estimatePrice } from "@/lib/scheduling";
@@ -343,7 +342,8 @@ export async function saveConsultaDataAction(
     // On the transition to COMPLETED (never on re-saves), mirror the
     // vacunación/desparasitación answers into the pet's permanent records
     // if the vet ticked the "agregar al carnet" checkbox — this is what
-    // feeds the cartilla and the carnet de vacunación.
+    // feeds the cartilla and the carnet de vacunación. A same-day duplicate
+    // check keeps reopen→re-complete cycles from doubling records.
     if (options.markCompleted && appt.status !== "COMPLETED") {
       const entry = extractCarnetEntry(
         parseFormSchema(appt.service.formSchema),
@@ -351,29 +351,43 @@ export async function saveConsultaDataAction(
         appt.service.name
       );
       if (entry?.kind === "vaccine") {
-        await prisma.vaccine.create({
-          data: {
-            petId: appt.petId,
-            name: entry.name,
-            appliedAt: entry.appliedAt ?? appt.scheduledAt,
-            nextAt: entry.nextAt,
-            weightKg: entry.weightKg ?? appt.pet.weightKg,
-            notes: entry.notes,
-            addedByUserId: session.userId,
-          },
+        const appliedAt = entry.appliedAt ?? appt.scheduledAt;
+        const dup = await prisma.vaccine.findFirst({
+          where: { petId: appt.petId, name: entry.name, appliedAt },
+          select: { id: true },
         });
+        if (!dup) {
+          await prisma.vaccine.create({
+            data: {
+              petId: appt.petId,
+              name: entry.name,
+              appliedAt,
+              nextAt: entry.nextAt,
+              weightKg: entry.weightKg ?? appt.pet.weightKg,
+              notes: entry.notes,
+              addedByUserId: session.userId,
+            },
+          });
+        }
       } else if (entry?.kind === "deworming") {
-        await prisma.deworming.create({
-          data: {
-            petId: appt.petId,
-            product: entry.product,
-            kind: entry.dewormKind,
-            appliedAt: entry.appliedAt ?? appt.scheduledAt,
-            nextAt: entry.nextAt,
-            notes: entry.notes,
-            addedByUserId: session.userId,
-          },
+        const appliedAt = entry.appliedAt ?? appt.scheduledAt;
+        const dup = await prisma.deworming.findFirst({
+          where: { petId: appt.petId, product: entry.product, appliedAt },
+          select: { id: true },
         });
+        if (!dup) {
+          await prisma.deworming.create({
+            data: {
+              petId: appt.petId,
+              product: entry.product,
+              kind: entry.dewormKind,
+              appliedAt,
+              nextAt: entry.nextAt,
+              notes: entry.notes,
+              addedByUserId: session.userId,
+            },
+          });
+        }
       }
       if (entry) {
         revalidatePath(`/vet/pacientes/${appt.petId}/cartilla`);
@@ -387,6 +401,42 @@ export async function saveConsultaDataAction(
       error: e instanceof Error ? e.message : "No se pudo guardar.",
     };
   }
+
+  revalidatePath("/vet");
+  revalidatePath("/inicio");
+  revalidatePath(`/cita/${id}`);
+  revalidatePath(`/vet/cita/${id}`);
+  return { ok: true };
+}
+
+/**
+ * Reabre una cita atendida para que el veterinario pueda corregir la
+ * consulta. Vuelve el estado a SCHEDULED; al marcarla atendida de nuevo,
+ * el guardado en carnet no duplica registros (ver dedup arriba).
+ */
+export async function reopenAppointmentAction(
+  appointmentId: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const id = (appointmentId ?? "").trim();
+  if (!id) return { ok: false, error: "Cita inválida." };
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id },
+    select: { status: true },
+  });
+  if (!appt) return { ok: false, error: "Cita no encontrada." };
+  if (appt.status !== "COMPLETED") {
+    return { ok: false, error: "Solo se puede reabrir una cita atendida." };
+  }
+
+  await prisma.appointment.update({
+    where: { id },
+    data: { status: "SCHEDULED" },
+  });
 
   revalidatePath("/vet");
   revalidatePath("/inicio");

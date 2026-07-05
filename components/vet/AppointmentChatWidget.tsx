@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { MessageCircle, X } from "lucide-react";
 import { AppointmentChat } from "@/components/AppointmentChat";
 
@@ -122,8 +123,12 @@ export function AppointmentChatWidget({
         Ver conversación
       </button>
 
-      {open && (
-        <div className="fixed inset-0 z-50 pointer-events-none">
+      {/* Portal al body: evita que cualquier stacking context del layout
+          deje la ventana por debajo de los campos del formulario. */}
+      {open &&
+        typeof document !== "undefined" &&
+        createPortal(
+        <div className="fixed inset-0 z-[80] pointer-events-none">
           <section
             className="pointer-events-auto fixed flex min-h-[360px] min-w-[320px] flex-col overflow-hidden rounded-[18px] border shadow-[0_22px_70px_rgba(0,0,0,.22)]"
             style={{
@@ -191,7 +196,8 @@ export function AppointmentChatWidget({
               ),
             )}
           </section>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

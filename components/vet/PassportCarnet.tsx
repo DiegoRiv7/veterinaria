@@ -156,7 +156,7 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setClosing(false);
       setOpen(false);
-    }, 260);
+    }, 290);
   }
 
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
@@ -388,15 +388,9 @@ export function PassportCarnet({
         background: BRAND.cream,
         boxShadow: "0 24px 52px -20px rgba(122, 51, 16, 0.4)",
         transformOrigin: "left center",
-        animation: `passportSpreadIn 0.4s ${EASE} both`,
-        ...(closing
-          ? {
-              animation: "none",
-              transition: "transform 0.26s ease-in, opacity 0.26s ease-in",
-              transform: "perspective(1600px) rotateY(-56deg) scale(0.98)",
-              opacity: 0.1,
-            }
-          : {}),
+        animation: closing
+          ? "passportSpreadOut 0.3s cubic-bezier(0.4, 0, 1, 1) both"
+          : `passportSpreadIn 0.4s ${EASE} both`,
       }}
     >
       <div className="grid grid-cols-1 md:grid-cols-2 relative items-stretch">
