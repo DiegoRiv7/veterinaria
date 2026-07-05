@@ -156,7 +156,7 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setClosing(false);
       setOpen(false);
-    }, 380);
+    }, 600);
   }
 
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
@@ -397,7 +397,10 @@ export function PassportCarnet({
         ...(closing ? {} : { animation: `passportSpreadIn 0.4s ${EASE} both` }),
       }}
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 relative items-stretch">
+      <div
+        className="grid grid-cols-1 md:grid-cols-2 relative items-stretch"
+        style={{ perspective: "1800px" }}
+      >
         {/* Lomo central (solo desktop) */}
         <div
           aria-hidden
@@ -532,15 +535,21 @@ export function PassportCarnet({
           </div>
         </div>
 
-        {/* ── Página derecha: Desparasitación ── */}
+        {/* ── Página derecha: Desparasitación ──
+            Al cerrar, gira 180° sobre el lomo y cae encima de la página
+            izquierda, mostrando su reverso — como cerrar un libro. */}
         <div
-          className={`px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5 will-change-transform ${
+          className={`relative z-20 will-change-transform ${
             closing
-              ? "md:animate-[passportPageFold_0.38s_cubic-bezier(0.55,0.06,0.35,1)_both]"
+              ? "md:animate-[passportPageFold_0.6s_cubic-bezier(0.6,0.05,0.3,1)_both]"
               : ""
           }`}
-          style={{ transformOrigin: "left center" }}
+          style={{
+            transformOrigin: "left center",
+            transformStyle: "preserve-3d",
+          }}
         >
+          <div className="px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5 h-full [backface-visibility:hidden]">
           <div className="flex flex-wrap items-center justify-end gap-2 min-h-[32px]">
             <PageNav
               page={dp}
@@ -649,6 +658,16 @@ export function PassportCarnet({
                 />
               );
             })}
+            </div>
+          </div>
+
+          {/* Reverso de la página (se ve durante el volteo) */}
+          <div
+            aria-hidden
+            className="hidden md:flex absolute inset-0 items-center justify-center [backface-visibility:hidden]"
+            style={{ transform: "rotateY(180deg)", background: BRAND.cream }}
+          >
+            <PassportSeal className="w-[240px] opacity-90" />
           </div>
         </div>
       </div>
