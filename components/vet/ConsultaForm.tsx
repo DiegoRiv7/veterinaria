@@ -12,6 +12,7 @@ import type {
   FormSection,
 } from "@/lib/form-schema";
 import {
+  addServiceSelectOptionAction,
   reopenAppointmentAction,
   saveConsultaDataAction,
 } from "@/app/actions/appointments";
@@ -131,6 +132,20 @@ export function ConsultaForm({
     }
   }
 
+  const registerOption = useCallback(
+    async (fieldId: string, name: string) => {
+      const res = await addServiceSelectOptionAction(appointmentId, fieldId, name);
+      if (!res.ok) {
+        toast.error("No se pudo registrar", { description: res.error });
+        return false;
+      }
+      toast.success(`"${name}" se agregó a la lista`);
+      router.refresh();
+      return true;
+    },
+    [appointmentId, router]
+  );
+
   async function handleReopen() {
     if (reopening) return;
     setReopening(true);
@@ -205,6 +220,7 @@ export function ConsultaForm({
           values={values}
           onChange={setFieldValue}
           readOnly={readOnly}
+          onRegisterOption={registerOption}
         />
       ))}
 
@@ -235,7 +251,7 @@ export function ConsultaForm({
               ) : (
                 <>
                   <FileText className="h-4 w-4" />
-                  Generar resumen PDF
+                  Generar receta
                 </>
               )}
             </button>
@@ -264,7 +280,7 @@ export function ConsultaForm({
               ) : (
                 <>
                   <FileText className="h-4 w-4" />
-                  Generar resumen PDF
+                  Generar receta
                 </>
               )}
             </button>
@@ -404,11 +420,13 @@ function SectionBlock({
   values,
   onChange,
   readOnly,
+  onRegisterOption,
 }: {
   section: FormSection;
   values: ConsultaData;
   onChange: (id: string, v: ConsultaValue) => void;
   readOnly: boolean;
+  onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
 }) {
   return (
     <section
@@ -451,6 +469,7 @@ function SectionBlock({
               value={values[field.id]}
               onChange={(v) => onChange(field.id, v)}
               readOnly={readOnly}
+              onRegisterOption={onRegisterOption}
             />
           ))
         )}
@@ -464,11 +483,13 @@ function FieldRenderer({
   value,
   onChange,
   readOnly,
+  onRegisterOption,
 }: {
   field: FormField;
   value: ConsultaValue | undefined;
   onChange: (v: ConsultaValue) => void;
   readOnly: boolean;
+  onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
 }) {
   if (field.type === "heading") {
     return (
@@ -489,6 +510,7 @@ function FieldRenderer({
         value={value}
         onChange={onChange}
         readOnly={readOnly}
+        onRegisterOption={onRegisterOption}
       />
       {field.helpText && (
         <p
@@ -528,11 +550,13 @@ function FieldControl({
   value,
   onChange,
   readOnly,
+  onRegisterOption,
 }: {
   field: FormField;
   value: ConsultaValue | undefined;
   onChange: (v: ConsultaValue) => void;
   readOnly: boolean;
+  onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
 }) {
   const inputStyle: React.CSSProperties = {
     background: "var(--vet-bg-card)",
@@ -632,13 +656,12 @@ function FieldControl({
 
     case "select":
       return (
-        <PrettySelect
-          id={`f-${field.id}`}
+        <SelectWithOther
+          field={field}
           value={typeof value === "string" ? value : ""}
-          options={field.options ?? []}
-          placeholder="Selecciona"
-          disabled={readOnly}
+          readOnly={readOnly}
           onChange={onChange}
+          onRegisterOption={onRegisterOption}
         />
       );
 
@@ -726,6 +749,95 @@ function FieldControl({
     default:
       return null;
   }
+}
+
+/**
+ * Select con salida "Otro": al elegirla aparece un campo para escribir el
+ * nombre nuevo y guardarlo en el catálogo del servicio — así el doctor
+ * puede registrar un biológico/producto que no estaba en la lista y queda
+ * disponible para siempre.
+ */
+function SelectWithOther({
+  field,
+  value,
+  readOnly,
+  onChange,
+  onRegisterOption,
+}: {
+  field: FormField;
+  value: string;
+  readOnly: boolean;
+  onChange: (v: ConsultaValue) => void;
+  onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
+}) {
+  const [custom, setCustom] = useState("");
+  const [savingOption, setSavingOption] = useState(false);
+  const options = field.options ?? [];
+  const otherOpt =
+    options.find((o) => /^otr[oa]s?\b/i.test(o.trim())) ?? null;
+  const showCustom = otherOpt !== null && value === otherOpt && !readOnly;
+
+  async function commit() {
+    const name = custom.trim();
+    if (!name || savingOption) return;
+    setSavingOption(true);
+    const ok = await onRegisterOption(field.id, name);
+    setSavingOption(false);
+    if (ok) {
+      onChange(name);
+      setCustom("");
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <PrettySelect
+        id={`f-${field.id}`}
+        value={value}
+        options={options}
+        placeholder="Selecciona"
+        disabled={readOnly}
+        onChange={onChange}
+      />
+      {showCustom && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            autoFocus
+            value={custom}
+            onChange={(e) => setCustom(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commit();
+              }
+            }}
+            placeholder="Escribe el nombre nuevo…"
+            className="h-12 flex-1 rounded-[12px] border px-4 text-[15px] outline-none transition focus:border-[color:var(--vet-green)] focus:ring-2 focus:ring-[color:var(--vet-green-glow)]"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-1)",
+            }}
+          />
+          <button
+            type="button"
+            onClick={commit}
+            disabled={savingOption || !custom.trim()}
+            className="h-12 px-4 rounded-[12px] text-[13px] font-extrabold text-white transition hover:brightness-105 disabled:opacity-60 inline-flex items-center justify-center gap-1.5 shrink-0"
+            style={{ background: "var(--vet-green)" }}
+          >
+            {savingOption ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            Guardar en la lista
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function PrettySelect({

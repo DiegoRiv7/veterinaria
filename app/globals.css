@@ -340,15 +340,16 @@ html { background-color: #fceadb; }
   100% { transform: perspective(1200px) rotateY(0deg); opacity: 1; }
 }
 @keyframes passportCoverIn {
-  0% { opacity: 0.15; transform: perspective(1600px) rotateY(-68deg); }
+  0% { opacity: 0.15; transform: perspective(1600px) rotateY(42deg); }
   100% { opacity: 1; transform: perspective(1600px) rotateY(0deg); }
 }
 @keyframes passportSpreadOut {
   0% { opacity: 1; transform: perspective(1600px) rotateY(0deg) scale(1); }
   100% { opacity: 0; transform: perspective(1600px) rotateY(-58deg) scale(0.97); }
 }
-/* La página derecha se pliega sobre la izquierda, como al cerrar un libro */
+/* La página derecha se pliega sobre la izquierda (derecha → izquierda),
+   girando hacia adentro como al cerrar un libro */
 @keyframes passportPageFold {
   0% { transform: perspective(1600px) rotateY(0deg); }
-  100% { transform: perspective(1600px) rotateY(-88deg); }
+  100% { transform: perspective(1600px) rotateY(88deg); }
 }

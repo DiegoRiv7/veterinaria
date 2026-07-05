@@ -156,7 +156,7 @@ export function PassportCarnet({
     window.setTimeout(() => {
       setClosing(false);
       setOpen(false);
-    }, 330);
+    }, 380);
   }
 
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
@@ -536,7 +536,7 @@ export function PassportCarnet({
         <div
           className={`px-4 sm:px-8 pt-5 pb-8 flex flex-col gap-3.5 will-change-transform ${
             closing
-              ? "md:animate-[passportPageFold_0.32s_cubic-bezier(0.55,0,0.85,0.4)_both]"
+              ? "md:animate-[passportPageFold_0.38s_cubic-bezier(0.55,0.06,0.35,1)_both]"
               : ""
           }`}
           style={{ transformOrigin: "left center" }}

@@ -446,6 +446,65 @@ export async function reopenAppointmentAction(
   return { ok: true };
 }
 
+/**
+ * Registra una opción nueva en el catálogo de un campo select del
+ * formulario del servicio (p.ej. un biológico que no estaba en la
+ * lista). La opción se inserta antes de "Otro" para que esa salida
+ * siga siendo la última, y queda disponible para futuras consultas.
+ */
+export async function addServiceSelectOptionAction(
+  appointmentId: string,
+  fieldId: string,
+  option: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const id = (appointmentId ?? "").trim();
+  const fid = (fieldId ?? "").trim();
+  const name = (option ?? "").trim();
+  if (!id || !fid) return { ok: false, error: "Datos inválidos." };
+  if (!name) return { ok: false, error: "Escribe el nombre." };
+  if (name.length > 80) return { ok: false, error: "El nombre es demasiado largo." };
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id },
+    select: { service: { select: { id: true, formSchema: true } } },
+  });
+  if (!appt) return { ok: false, error: "Cita no encontrada." };
+
+  const schema = parseFormSchema(appt.service.formSchema);
+  if (!schema) return { ok: false, error: "El servicio no tiene formulario configurado." };
+
+  let found = false;
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      if (field.id !== fid || field.type !== "select") continue;
+      found = true;
+      const options = field.options ?? [];
+      const exists = options.some(
+        (o) => o.trim().toLowerCase() === name.toLowerCase()
+      );
+      if (!exists) {
+        const otherIdx = options.findIndex((o) => /^otr[oa]s?\b/i.test(o.trim()));
+        if (otherIdx >= 0) options.splice(otherIdx, 0, name);
+        else options.push(name);
+        field.options = options;
+      }
+    }
+  }
+  if (!found) return { ok: false, error: "Campo no encontrado en el formulario." };
+
+  await prisma.service.update({
+    where: { id: appt.service.id },
+    data: { formSchema: JSON.stringify(schema) },
+  });
+  revalidatePath(`/vet/cita/${id}`);
+  revalidatePath(`/admin/servicios/${appt.service.id}`);
+  return { ok: true };
+}
+
 /* ─── Service form schema ─────────────────────────────────────── */
 
 import type { FormSchema } from "@/lib/form-schema";
