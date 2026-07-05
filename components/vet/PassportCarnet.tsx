@@ -231,7 +231,7 @@ export function PassportCarnet({
           type="button"
           onClick={openPassport}
           aria-label="Abrir carnet de vacunación"
-          className="group relative w-[420px] max-w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.5deg] will-change-transform"
+          className="group relative w-[420px] max-w-full md:w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.3deg] will-change-transform"
           style={{
             transformOrigin: "left center",
             animation: `passportCoverIn 0.35s ${EASE} both`,
@@ -254,8 +254,10 @@ export function PassportCarnet({
               boxShadow: "2px 2px 10px rgba(0,0,0,0.12)",
             }}
           />
+
+          {/* Portada vertical (celular) */}
           <div
-            className="relative rounded-r-[18px] rounded-l-[10px] px-8 pt-14 pb-11 flex flex-col items-center overflow-hidden"
+            className="md:hidden relative rounded-r-[18px] rounded-l-[10px] px-8 pt-14 pb-11 flex flex-col items-center overflow-hidden"
             style={{
               background: BRAND.cream,
               boxShadow:
@@ -304,6 +306,62 @@ export function PassportCarnet({
             >
               Abrir carnet <span aria-hidden>→</span>
             </span>
+          </div>
+
+          {/* Portada horizontal (computadora) — mismo formato que abierto */}
+          <div
+            className="hidden md:flex relative rounded-r-[22px] rounded-l-[12px] min-h-[460px] px-14 lg:px-20 items-center justify-center gap-14 lg:gap-24 overflow-hidden"
+            style={{
+              background: BRAND.cream,
+              boxShadow:
+                "0 24px 52px -20px rgba(122, 51, 16, 0.45), inset -16px 0 28px -22px rgba(122,51,16,0.5), inset 4px 0 0 rgba(122,51,16,0.18)",
+            }}
+          >
+            <div className="flex flex-col items-center shrink-0">
+              <p
+                className="text-[52px] font-black leading-none"
+                style={{ color: BRAND.orange, letterSpacing: "0.06em" }}
+              >
+                CARNET
+              </p>
+              <p
+                className="text-[15px] font-extrabold mt-2.5"
+                style={{
+                  color: BRAND.goldText,
+                  letterSpacing: "0.52em",
+                  textIndent: "0.52em",
+                }}
+              >
+                CARD
+              </p>
+              <span
+                className="mt-10 inline-flex items-center gap-1.5 h-10 px-6 rounded-full text-[12.5px] font-extrabold uppercase tracking-[0.08em] transition group-hover:brightness-105"
+                style={{
+                  background: BRAND.orange,
+                  color: "#fff",
+                  boxShadow: "0 6px 14px -6px rgba(122,51,16,0.5)",
+                }}
+              >
+                Abrir carnet <span aria-hidden>→</span>
+              </span>
+            </div>
+
+            <PassportSeal className="w-[300px] shrink-0" />
+
+            <div className="flex flex-col items-center shrink-0">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/vetsfriend-wordmark.png"
+                alt="Vetsfriend"
+                className="h-12 w-auto"
+              />
+              <p
+                className="text-[11px] font-extrabold mt-1.5"
+                style={{ color: BRAND.goldText, letterSpacing: "0.15em" }}
+              >
+                Clínica &amp; Grooming
+              </p>
+            </div>
           </div>
         </button>
         <p
@@ -426,6 +484,10 @@ export function PassportCarnet({
                         {fmt(v.nextAt)}
                       </span>
                     </FieldBox>
+                    {/* Firma justo debajo y alineada con la fecha */}
+                    <div className="col-span-2 sm:col-span-1 sm:col-start-2 flex justify-end sm:justify-center">
+                      <Signature name={v.vetName} />
+                    </div>
                   </div>
                   {v.notes && (
                     <p
@@ -435,7 +497,6 @@ export function PassportCarnet({
                       {v.notes}
                     </p>
                   )}
-                  <Signature name={v.vetName} />
                 </RecordShell>
               );
             })}
@@ -537,6 +598,10 @@ export function PassportCarnet({
                         {fmt(d.nextAt)}
                       </span>
                     </FieldBox>
+                    {/* Firma justo debajo y alineada con la fecha */}
+                    <div className="col-span-2 sm:col-span-1 sm:col-start-2 flex justify-end sm:justify-center">
+                      <Signature name={d.vetName} />
+                    </div>
                   </div>
                   {d.notes && (
                     <p
@@ -546,7 +611,6 @@ export function PassportCarnet({
                       {d.notes}
                     </p>
                   )}
-                  <Signature name={d.vetName} />
                 </RecordShell>
               );
             })}
@@ -753,7 +817,7 @@ function FieldBox({
       >
         {label}
       </p>
-      <div className="truncate">{children}</div>
+      <div className="truncate sm:text-center">{children}</div>
     </div>
   );
 }
@@ -783,24 +847,16 @@ function EmptySlot({ alt, onClick }: { alt: boolean; onClick: () => void }) {
 
 function Signature({ name }: { name: string }) {
   return (
-    <div className="flex items-baseline justify-end gap-2 mt-1 px-1">
-      <span
-        className="text-[15px] leading-none"
-        style={{
-          color: BRAND.ink,
-          fontFamily:
-            '"Snell Roundhand", "Segoe Script", "Brush Script MT", cursive',
-        }}
-      >
-        {name}
-      </span>
-      <span
-        className="text-[8px] font-extrabold uppercase"
-        style={{ color: BRAND.inkSoft, letterSpacing: "0.12em" }}
-      >
-        Vetsfriend
-      </span>
-    </div>
+    <span
+      className="text-[15px] leading-none px-1 truncate"
+      style={{
+        color: BRAND.ink,
+        fontFamily:
+          '"Snell Roundhand", "Segoe Script", "Brush Script MT", cursive',
+      }}
+    >
+      {name}
+    </span>
   );
 }
 
