@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Nunito } from "next/font/google";
 import { LoginForm } from "./login-form";
+import { AnimatedPetsHero } from "@/components/AnimatedPetsHero";
 
 const nunito = Nunito({
   subsets: ["latin"],
@@ -16,7 +17,7 @@ export default function LoginPage() {
   return (
     <div className={nunito.variable}>
       <main className="vet-theme lg:flex lg:min-h-dvh">
-        {/* ── Left half — looping hero video (desktop only) ────────────── */}
+        {/* ── Left half — carrusel de mascotas (desktop only) ──────────── */}
         <section
           className="hidden lg:flex lg:flex-col lg:w-1/2 lg:min-h-dvh relative overflow-hidden"
           style={{
@@ -24,8 +25,7 @@ export default function LoginPage() {
               "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
           }}
         >
-          {/* Subtle dot pattern — kept from the original brand panel so the
-              video doesn't completely take over the visual identity. */}
+          {/* Subtle dot pattern overlay */}
           <div
             aria-hidden
             className="absolute inset-0 pointer-events-none opacity-[0.07] z-[1]"
@@ -36,45 +36,13 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Looping silhouette video, fullbleed, tinted by the terracotta
-              gradient below it. mix-blend-mode: multiply turns the dark
-              silhouettes into warm-shadow tones so the dog playing keeps its
-              motion but harmonizes with the brand palette throughout the
-              panel — no hard horizontal split. */}
-          <video
-            src="/login-hero.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            aria-hidden
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              // soft-light blends much more gently than multiply — the
-              // silhouettes mantienen su forma pero no se estampan en
-              // negro contra el panel. saturate+brightness compensan el
-              // suavizado para que el dog playing siga leyéndose.
-              mixBlendMode: "soft-light",
-              filter: "brightness(1.35) saturate(1.25) contrast(0.95)",
-              opacity: 0.85,
-            }}
-          />
+          {/* Carrusel de mascotas 3D */}
+          <div className="basis-[56%] grow-0 shrink-0 relative pt-10">
+            <AnimatedPetsHero />
+          </div>
 
-          {/* Warm wash on top — sutilísimo, sólo para empujar los
-              residuales fríos del video hacia la paleta de marca. */}
-          <div
-            aria-hidden
-            className="absolute inset-0 pointer-events-none z-[2]"
-            style={{
-              background:
-                "linear-gradient(135deg, oklch(60% 0.16 40 / 0.12) 0%, oklch(50% 0.14 38 / 0.06) 100%)",
-              mixBlendMode: "screen",
-            }}
-          />
-
-          {/* Welcome copy — anchored to the bottom of the panel */}
-          <div className="mt-auto flex flex-col px-12 xl:px-16 pb-14 xl:pb-16 relative z-10">
+          {/* Welcome copy */}
+          <div className="basis-[44%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
             <Image
               src="/vetsfriend-icon.png"
               alt="Vetsfriend"
@@ -83,16 +51,13 @@ export default function LoginPage() {
               priority
               className="w-12 h-12 rounded-[14px] mb-5"
               style={{
-                boxShadow: "0 8px 24px rgba(0,0,0,0.28)",
+                boxShadow: "0 8px 24px rgba(0,0,0,0.18)",
                 border: "1px solid rgba(255,255,255,0.2)",
               }}
             />
             <h1
               className="text-white text-[40px] xl:text-[44px] font-black tracking-tight"
-              style={{
-                lineHeight: 1.15,
-                textShadow: "0 2px 14px rgba(0,0,0,0.4)",
-              }}
+              style={{ lineHeight: 1.15 }}
             >
               Bienvenido a{" "}
               <Image
@@ -113,10 +78,7 @@ export default function LoginPage() {
             </h1>
             <p
               className="text-white/95 text-[16px] xl:text-[17px] font-semibold mt-5 max-w-md leading-relaxed text-justify"
-              style={{
-                hyphens: "auto",
-                textShadow: "0 1px 8px rgba(0,0,0,0.45)",
-              }}
+              style={{ hyphens: "auto" }}
             >
               La clínica veterinaria al alcance de tu mano. Agenda citas,
               consulta el historial de tu mascota y mantente conectado con
