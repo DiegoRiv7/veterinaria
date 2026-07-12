@@ -36,13 +36,13 @@ export default function LoginPage() {
             }}
           />
 
-          {/* Carrusel de mascotas 3D */}
-          <div className="basis-[56%] grow-0 shrink-0 relative pt-10">
+          {/* Animation area — pushed down a bit so it doesn't sit too high */}
+          <div className="basis-[55%] grow-0 shrink-0 relative pt-12">
             <AnimatedPetsHero />
           </div>
 
-          {/* Welcome copy */}
-          <div className="basis-[44%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
+          {/* Welcome copy — centered in its 45%, breathing room */}
+          <div className="basis-[45%] grow-0 shrink-0 flex flex-col justify-center px-12 xl:px-16 relative z-10">
             <Image
               src="/vetsfriend-icon.png"
               alt="Vetsfriend"

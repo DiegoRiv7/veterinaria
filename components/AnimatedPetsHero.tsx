@@ -1,27 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Image from "next/image";
-
-/**
- * Carrusel de mascotas del panel de bienvenida (login, desktop).
- *
- * Minimalista a propósito: una mascota 3D (emojis Fluent de Microsoft,
- * MIT, servidos desde /public/pets) sobre el panel de marca, con un
- * flotado casi imperceptible, sombra de piso que respira y un crossfade
- * con deriva sutil entre mascotas. Sin adornos.
- */
 
 const PETS = [
-  { src: "/pets/dog.png", label: "Perros" },
-  { src: "/pets/cat.png", label: "Gatos" },
-  { src: "/pets/rabbit.png", label: "Conejos" },
-  { src: "/pets/parrot.png", label: "Aves" },
-  { src: "/pets/lizard.png", label: "Reptiles" },
-  { src: "/pets/hamster.png", label: "Hámsters" },
+  { emoji: "🐶", label: "Perros" },
+  { emoji: "🐱", label: "Gatos" },
+  { emoji: "🐰", label: "Conejos" },
+  { emoji: "🦜", label: "Aves" },
+  { emoji: "🦎", label: "Reptiles" },
+  { emoji: "🐹", label: "Hámsters" },
 ];
 
-const HOLD_MS = 3600;
+const FLOATERS: { emoji: string; top?: string; bottom?: string; left?: string; right?: string; delay: number; size: number }[] = [
+  { emoji: "🐾", top: "8%",  left: "10%",  delay: 0,    size: 42 },
+  { emoji: "🐾", top: "22%", right: "14%", delay: 2.2,  size: 36 },
+  { emoji: "🐾", bottom: "28%", left: "18%", delay: 1.4, size: 50 },
+  { emoji: "🐾", bottom: "10%", right: "20%", delay: 3.0, size: 38 },
+  { emoji: "💛", top: "44%",  left: "8%",   delay: 4.2, size: 26 },
+  { emoji: "💛", top: "60%",  right: "8%",  delay: 0.6, size: 24 },
+  { emoji: "🦴", top: "12%",  right: "32%", delay: 1.8, size: 30 },
+  { emoji: "🦴", bottom: "20%", left: "42%", delay: 3.6, size: 28 },
+];
 
 export function AnimatedPetsHero() {
   const [active, setActive] = useState(0);
@@ -29,128 +28,111 @@ export function AnimatedPetsHero() {
   useEffect(() => {
     const id = setInterval(() => {
       setActive((i) => (i + 1) % PETS.length);
-    }, HOLD_MS);
+    }, 2800);
     return () => clearInterval(id);
   }, []);
 
   return (
     <div className="relative w-full h-full overflow-hidden">
-      {/* Resplandor cálido, apenas presente */}
+      {/* Decorative floaters drifting in the background */}
+      {FLOATERS.map((f, i) => (
+        <span
+          key={i}
+          aria-hidden
+          className="absolute select-none animate-[floaty_9s_ease-in-out_infinite]"
+          style={{
+            top: f.top,
+            bottom: f.bottom,
+            left: f.left,
+            right: f.right,
+            fontSize: f.size,
+            opacity: 0.22,
+            animationDelay: `${f.delay}s`,
+            filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.18))",
+          }}
+        >
+          {f.emoji}
+        </span>
+      ))}
+
+      {/* Soft glow behind the featured pet */}
       <div
         aria-hidden
-        className="absolute left-1/2 top-[44%] -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
         style={{
-          width: 440,
-          height: 440,
+          width: 380,
+          height: 380,
           background:
-            "radial-gradient(circle, rgba(255,224,190,0.16) 0%, rgba(255,224,190,0.05) 50%, transparent 70%)",
+            "radial-gradient(circle, rgba(255,237,212,0.28) 0%, transparent 70%)",
         }}
       />
 
-      {/* Crossfade con deriva sutil entre mascotas */}
-      <div className="absolute inset-0 pb-16 flex items-center justify-center">
-        {PETS.map((p, i) => {
-          const n = PETS.length;
-          const offset = (i - active + n) % n;
-          const isActive = offset === 0;
-          const isLeaving = offset === n - 1;
-          return (
+      {/* Featured pet — crossfade carousel. Reserve bottom space for dots. */}
+      <div className="absolute inset-0 pb-20 flex items-center justify-center">
+        {PETS.map((p, i) => (
+          <div
+            key={p.label}
+            className="absolute flex flex-col items-center"
+            style={{
+              opacity: i === active ? 1 : 0,
+              transform:
+                i === active ? "scale(1) translateY(0)" : "scale(0.78) translateY(8px)",
+              transition: "opacity .7s ease, transform .7s cubic-bezier(.22,1,.36,1)",
+            }}
+          >
             <div
-              key={p.label}
-              className="absolute flex flex-col items-center will-change-transform"
+              className="select-none"
               style={{
-                opacity: isActive ? 1 : 0,
-                transform: isActive
-                  ? "translateX(0) scale(1)"
-                  : isLeaving
-                    ? "translateX(-28px) scale(0.97)"
-                    : "translateX(28px) scale(0.97)",
-                transition:
-                  "opacity 0.8s ease, transform 1s cubic-bezier(0.22, 1, 0.36, 1)",
-                pointerEvents: "none",
+                fontSize: 200,
+                filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.25))",
+                animation: "petBob 3.2s ease-in-out infinite",
               }}
             >
-              {/* Flotado casi imperceptible, separado de la transición */}
-              <div
-                style={{
-                  animation: isActive
-                    ? "petBob 4.6s ease-in-out infinite"
-                    : "none",
-                }}
-              >
-                <Image
-                  src={p.src}
-                  alt={p.label}
-                  width={256}
-                  height={256}
-                  priority={i === 0}
-                  className="w-[200px] h-[200px] xl:w-[224px] xl:h-[224px] select-none"
-                  style={{
-                    filter: "drop-shadow(0 20px 30px rgba(50, 16, 4, 0.28))",
-                  }}
-                />
-              </div>
-
-              {/* Sombra de piso que respira con el flotado */}
-              <div
-                aria-hidden
-                className="mt-2"
-                style={{
-                  width: 120,
-                  height: 18,
-                  borderRadius: "50%",
-                  background:
-                    "radial-gradient(ellipse at center, rgba(50, 16, 4, 0.30) 0%, transparent 70%)",
-                  animation: isActive
-                    ? "petShadow 4.6s ease-in-out infinite"
-                    : "none",
-                }}
-              />
-
-              {/* Etiqueta tipográfica, sin adornos */}
-              <p
-                className="mt-7 text-[12px] font-bold uppercase select-none"
-                style={{
-                  color: "rgba(255,255,255,0.72)",
-                  letterSpacing: "0.34em",
-                  textIndent: "0.34em",
-                }}
-              >
-                {p.label}
-              </p>
+              {p.emoji}
             </div>
-          );
-        })}
+            <div
+              className="mt-3 px-5 py-1.5 rounded-full text-[14px] font-extrabold uppercase tracking-[0.18em]"
+              style={{
+                background: "rgba(255,255,255,0.18)",
+                color: "white",
+                backdropFilter: "blur(6px)",
+                border: "1px solid rgba(255,255,255,0.28)",
+              }}
+            >
+              {p.label}
+            </div>
+          </div>
+        ))}
       </div>
 
-      {/* Progreso — líneas mínimas */}
-      <div className="absolute bottom-7 left-0 right-0 flex justify-center gap-2">
+      {/* Progress dots — pinned to bottom with safe gap from the pill above */}
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
         {PETS.map((_, i) => (
           <span
             key={i}
-            className="h-[3px] rounded-full transition-all duration-500"
+            className="h-1.5 rounded-full transition-all duration-500"
             style={{
-              width: i === active ? 22 : 8,
+              width: i === active ? 24 : 6,
               background:
                 i === active
-                  ? "rgba(255,255,255,0.85)"
-                  : "rgba(255,255,255,0.22)",
+                  ? "rgba(255,255,255,0.92)"
+                  : "rgba(255,255,255,0.35)",
             }}
           />
         ))}
       </div>
 
       <style>{`
+        @keyframes floaty {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(14px, -22px); }
+        }
         @keyframes petBob {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-7px); }
-        }
-        @keyframes petShadow {
-          0%, 100% { transform: scaleX(1); opacity: 1; }
-          50% { transform: scaleX(0.88); opacity: 0.75; }
+          50% { transform: translateY(-12px); }
         }
         @media (prefers-reduced-motion: reduce) {
-          [style*="petBob"], [style*="petShadow"] {
+          [class*="animate-[floaty"], [style*="petBob"] {
             animation: none !important;
           }
         }
