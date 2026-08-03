@@ -118,7 +118,7 @@ export function PassportCarnet({
   petName,
   vaccines,
   dewormings,
-  initialOpen = true,
+  initialOpen = false,
 }: {
   petId: string;
   petName: string;
@@ -228,7 +228,7 @@ export function PassportCarnet({
         <button
           type="button"
           onClick={openPassport}
-          aria-label="Abrir carnet de vacunación"
+          aria-label="Abrir pasaporte de vacunación"
           className="group relative w-[420px] max-w-full md:w-full text-left cursor-pointer transition-transform duration-300 hover:-translate-y-1.5 hover:rotate-[0.3deg] will-change-transform"
           style={{
             transformOrigin: "left center",
@@ -261,20 +261,20 @@ export function PassportCarnet({
             }}
           >
             <p
-              className="text-[42px] font-black leading-none"
-              style={{ color: BRAND.orange, letterSpacing: "0.06em" }}
+              className="text-[34px] font-black leading-none"
+              style={{ color: BRAND.orange, letterSpacing: "0.05em" }}
             >
-              CARNET
+              PASAPORTE
             </p>
             <p
               className="text-[13px] font-extrabold mt-2"
               style={{
                 color: BRAND.goldText,
-                letterSpacing: "0.52em",
-                textIndent: "0.52em",
+                letterSpacing: "0.42em",
+                textIndent: "0.42em",
               }}
             >
-              CARD
+              PASSPORT
             </p>
 
             <PassportSeal className="w-[250px] my-10" />
@@ -300,7 +300,7 @@ export function PassportCarnet({
                 boxShadow: "0 6px 14px -6px rgba(122,51,16,0.5)",
               }}
             >
-              Abrir carnet <span aria-hidden>→</span>
+              Abrir pasaporte <span aria-hidden>→</span>
             </span>
           </div>
 
@@ -334,20 +334,20 @@ export function PassportCarnet({
               </p>
 
               <p
-                className="text-[56px] font-black leading-none mt-10"
-                style={{ color: BRAND.orange, letterSpacing: "0.06em" }}
+                className="text-[46px] font-black leading-none mt-10"
+                style={{ color: BRAND.orange, letterSpacing: "0.05em" }}
               >
-                CARNET
+                PASAPORTE
               </p>
               <p
                 className="text-[15px] font-extrabold mt-2.5"
                 style={{
                   color: BRAND.goldText,
-                  letterSpacing: "0.52em",
-                  textIndent: "0.52em",
+                  letterSpacing: "0.42em",
+                  textIndent: "0.42em",
                 }}
               >
-                CARD
+                PASSPORT
               </p>
 
               <span
@@ -358,7 +358,7 @@ export function PassportCarnet({
                   boxShadow: "0 6px 14px -6px rgba(122,51,16,0.5)",
                 }}
               >
-                Abrir carnet <span aria-hidden>→</span>
+                Abrir pasaporte <span aria-hidden>→</span>
               </span>
             </div>
           </div>
@@ -367,7 +367,7 @@ export function PassportCarnet({
           className="mt-3 text-[12px] font-semibold"
           style={{ color: "var(--vet-text-3)" }}
         >
-          Carnet de {petName} · toca la portada para abrirlo
+          Pasaporte de {petName} · toca la portada para abrirlo
         </p>
       </div>
     );
@@ -420,7 +420,7 @@ export function PassportCarnet({
               style={{ background: "rgba(188,78,32,0.10)", color: BRAND.orange }}
             >
               <ChevronLeft size={12} strokeWidth={3} />
-              Cerrar <span className="hidden sm:inline">carnet</span>
+              Cerrar <span className="hidden sm:inline">pasaporte</span>
             </button>
             <PageNav
               page={vp}

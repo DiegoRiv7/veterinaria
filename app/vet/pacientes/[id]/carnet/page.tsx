@@ -94,7 +94,7 @@ export default async function VetPetCarnetPage({
             className="text-[11px] font-extrabold uppercase tracking-[0.08em]"
             style={{ color: "var(--vet-text-3)" }}
           >
-            Carnet de vacunación
+            Pasaporte de vacunación
           </p>
           <p
             className="text-[18px] font-black leading-tight truncate"
@@ -118,7 +118,7 @@ export default async function VetPetCarnetPage({
         petName={pet.name}
         vaccines={vaccines}
         dewormings={dewormings}
-        initialOpen={abierto !== "0"}
+        initialOpen={abierto === "1"}
       />
     </div>
   );

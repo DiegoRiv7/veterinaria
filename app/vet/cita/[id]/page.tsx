@@ -170,7 +170,7 @@ export default async function VetAppointmentEdit({
                   color: "var(--vet-text-2)",
                 }}
               >
-                Ver carnet de vacunación
+                Ver pasaporte de vacunación
                 <span aria-hidden>→</span>
               </Link>
             </div>

@@ -22,7 +22,7 @@ function titleFor(pathname: string): string {
   if (pathname.startsWith("/vet/cita/")) return "Detalle de Cita";
   if (pathname.startsWith("/vet/chat/")) return "Chat";
   if (/^\/vet\/pacientes\/[^/]+\/carnet/.test(pathname))
-    return "Carnet de Vacunación";
+    return "Pasaporte de Vacunación";
   return "Panel Veterinario";
 }
 
