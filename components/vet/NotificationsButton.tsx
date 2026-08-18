@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { VetIcon } from "./VetIcon";
 import { markAllNotificationsReadAction } from "@/app/actions/notifications";
+import { CLINIC_TIME_ZONE, formatClinicTime } from "@/lib/clinic-time";
 
 type Notif =
   | {
@@ -41,16 +42,16 @@ function formatRelative(d: Date) {
   if (h < 24) return `${h}h`;
   const days = Math.round(h / 24);
   if (days < 7) return `${days}d`;
-  return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short" }).format(d);
+  return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+  }).format(d);
 }
 
 function formatTime(d: Date) {
-  // Manual AM/PM — see lib/utils.ts formatTime for context.
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const period = h >= 12 ? "p.m." : "a.m.";
-  const hh = ((h + 11) % 12) + 1;
-  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTime(d);
 }
 
 function initialFor(name: string) {

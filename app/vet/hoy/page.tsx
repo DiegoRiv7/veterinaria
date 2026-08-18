@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { readSession } from "@/lib/auth";
 import { TodayViewClient } from "@/components/vet/TodayViewClient";
 import { NewAppointmentButton } from "@/components/vet/NewAppointmentButton";
+import { formatDate } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 
@@ -54,11 +55,7 @@ export default async function VetTodayPage({
     }),
   ]);
 
-  const headerDate = new Intl.DateTimeFormat("es-MX", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(new Date());
+  const headerDate = formatDate(new Date());
 
   // Strip Date objects to plain strings for the client component
   const serializable = appts.map((a) => ({

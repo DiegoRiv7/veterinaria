@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { SPECIES_EMOJI } from "@/lib/utils";
+import { formatClinicTimeShort } from "@/lib/clinic-time";
 import { StatusBadge, statusToVariant } from "./StatusBadge";
 
 type Appt = {
@@ -13,12 +14,8 @@ type Appt = {
 };
 
 function formatTimeShort(d: Date | string) {
-  const date = typeof d === "string" ? new Date(d) : d;
-  return new Intl.DateTimeFormat("es-MX", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: false,
-  }).format(date);
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTimeShort(d);
 }
 
 export function AppointmentRow({ appt, compact }: { appt: Appt; compact?: boolean }) {

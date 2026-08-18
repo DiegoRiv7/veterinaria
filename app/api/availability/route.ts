@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { availableSlotsForDay } from "@/lib/scheduling";
+import { formatClinicTime } from "@/lib/clinic-time";
 import { readSession } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
@@ -34,13 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 // Server-side formatter — guarantees the AM/PM marker is correct on any
-// device. Mirrors lib/utils.ts formatTime but uses the slot's intended
-// LOCAL clock hour (the slot was built from open-minute-of-day, so the
-// hour we want is just the hour component of the original Date).
+// device, always in clinic time (lib/clinic-time.ts).
 function formatSlotTime(d: Date): string {
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const period = h >= 12 ? "p.m." : "a.m.";
-  const hh = ((h + 11) % 12) + 1;
-  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  return formatClinicTime(d);
 }

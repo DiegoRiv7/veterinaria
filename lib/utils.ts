@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { CLINIC_TIME_ZONE, formatClinicTime } from "./clinic-time";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -16,6 +17,7 @@ export function formatCurrency(value: number) {
 export function formatDate(date: Date | string) {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
     weekday: "long",
     day: "numeric",
     month: "long",
@@ -23,15 +25,8 @@ export function formatDate(date: Date | string) {
 }
 
 export function formatTime(date: Date | string) {
-  // Compute the AM/PM marker manually instead of using Intl.DateTimeFormat
-  // with hour12:true. iOS Safari (notably older versions) can render every
-  // hour as "a.m." under es-MX locale, which is what shipped to /agendar.
-  const d = typeof date === "string" ? new Date(date) : date;
-  const h = d.getHours();
-  const m = d.getMinutes();
-  const period = h >= 12 ? "p.m." : "a.m.";
-  const hh = ((h + 11) % 12) + 1;
-  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTime(date);
 }
 
 export function minutesToTime(m: number): string {

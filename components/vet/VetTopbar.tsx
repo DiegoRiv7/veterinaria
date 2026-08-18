@@ -3,6 +3,7 @@
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
 import { NotificationsButton } from "./NotificationsButton";
+import { CLINIC_TIME_ZONE } from "@/lib/clinic-time";
 
 type NotifData = React.ComponentProps<typeof NotificationsButton>;
 
@@ -29,6 +30,7 @@ function titleFor(pathname: string): string {
 function todayChip() {
   const d = new Date();
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
     weekday: "short",
     day: "numeric",
     month: "short",

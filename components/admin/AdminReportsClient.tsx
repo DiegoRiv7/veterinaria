@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { STATUS_LABEL as STATUS_LABEL_ES } from "@/lib/utils";
+import { CLINIC_TIME_ZONE, formatClinicTimeShort } from "@/lib/clinic-time";
 import {
   Calendar,
   CheckCircle2,
@@ -91,6 +92,7 @@ const TABLE_LABELS: Record<ExportTable, string> = {
 
 function formatDateTime(d: Date) {
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
@@ -112,6 +114,7 @@ function formatMxn(v: number) {
 
 function formatDateShort(d: Date) {
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -119,11 +122,8 @@ function formatDateShort(d: Date) {
 }
 
 function formatTime(d: Date) {
-  return new Intl.DateTimeFormat("es-MX", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: false,
-  }).format(d);
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTimeShort(d);
 }
 
 function inSelection<T extends number | string>(

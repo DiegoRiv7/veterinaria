@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CalendarClock, Loader2, X } from "lucide-react";
 import { rescheduleAppointmentAction } from "@/app/actions/appointments";
+import { clinicDateInput, clinicTimeInput } from "@/lib/clinic-time";
 
 /**
  * Botón "Reagendar" del detalle de cita: abre un diálogo para cambiar
@@ -30,10 +31,9 @@ export function RescheduleDialog({
   const [serviceId, setServiceId] = useState(currentServiceId);
 
   function openDialog() {
-    const d = new Date(scheduledAtIso);
-    const p = (n: number) => String(n).padStart(2, "0");
-    setDate(`${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`);
-    setTime(`${p(d.getHours())}:${p(d.getMinutes())}`);
+    // Prellenar con hora de la clínica, no la del dispositivo.
+    setDate(clinicDateInput(scheduledAtIso));
+    setTime(clinicTimeInput(scheduledAtIso));
     setServiceId(currentServiceId);
     setOpen(true);
   }

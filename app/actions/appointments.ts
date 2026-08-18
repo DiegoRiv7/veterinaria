@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { hashPassword, requireSession } from "@/lib/auth";
 import { estimatePrice } from "@/lib/scheduling";
+import { clinicInstant } from "@/lib/clinic-time";
 
 export async function createAppointmentAction(
   formData: FormData
@@ -203,8 +204,8 @@ export async function createAppointmentByVetAction(
   if (!pet) return { ok: false, error: "Mascota no encontrada." };
   const priceEstimate = await estimatePrice(serviceId, pet.species);
 
-  // Combine date+time into a Date in local timezone
-  const scheduledAt = new Date(`${date}T${time}:00`);
+  // Fecha+hora capturadas son hora de pared de la clínica
+  const scheduledAt = clinicInstant(date, time);
   if (Number.isNaN(scheduledAt.getTime())) {
     return { ok: false, error: "Fecha u hora inválida." };
   }
@@ -466,7 +467,7 @@ export async function rescheduleAppointmentAction(
   const date = (input.date ?? "").trim();
   const time = (input.time ?? "").trim();
   if (!date || !time) return { ok: false, error: "Falta la fecha o la hora." };
-  const scheduledAt = new Date(`${date}T${time}:00`);
+  const scheduledAt = clinicInstant(date, time);
   if (Number.isNaN(scheduledAt.getTime())) {
     return { ok: false, error: "Fecha u hora inválida." };
   }

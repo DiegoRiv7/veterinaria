@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { VetIcon } from "./VetIcon";
+import { CLINIC_TIME_ZONE, formatClinicTimeShort } from "@/lib/clinic-time";
 import { FilterSortBar, type FilterChip, type FilterType, type SortOption } from "./FilterSortBar";
 
 type HistorialItem = {
@@ -66,17 +67,15 @@ function formatMxn(v: number) {
 }
 function formatDate(d: Date) {
   return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
     day: "numeric",
     month: "short",
     year: "numeric",
   }).format(d);
 }
 function formatTime(d: Date) {
-  return new Intl.DateTimeFormat("es-MX", {
-    hour: "numeric",
-    minute: "2-digit",
-    hour12: false,
-  }).format(d);
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTimeShort(d);
 }
 
 const FILTER_TYPES: FilterType[] = [

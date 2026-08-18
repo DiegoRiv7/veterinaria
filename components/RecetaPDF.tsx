@@ -10,6 +10,7 @@ import {
   Image,
 } from "@react-pdf/renderer";
 import { SPECIES_LABEL, SEX_LABEL, ageFromBirthDate } from "@/lib/utils";
+import { formatClinicTime } from "@/lib/clinic-time";
 
 // ----------------------------------------------------------------------------
 // Types
@@ -280,12 +281,8 @@ function formatLongDate(date: Date) {
 }
 
 function formatTime(date: Date) {
-  // Manual AM/PM — keeps the receta consistent with the rest of the app.
-  const h = date.getHours();
-  const m = date.getMinutes();
-  const period = h >= 12 ? "p.m." : "a.m.";
-  const hh = ((h + 11) % 12) + 1;
-  return `${hh}:${String(m).padStart(2, "0")} ${period}`;
+  // Siempre en hora de la clínica — ver lib/clinic-time.ts.
+  return formatClinicTime(date);
 }
 
 function shortId(id: string) {
