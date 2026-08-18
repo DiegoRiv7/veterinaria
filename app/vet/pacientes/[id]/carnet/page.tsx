@@ -51,7 +51,7 @@ export default async function VetPetCarnetPage({
     nextAt: v.nextAt ? v.nextAt.toISOString() : null,
     weightKg: v.weightKg,
     notes: v.notes,
-    vetName: v.addedBy.name,
+    vetName: v.vetName ?? v.addedBy.name,
   }));
 
   const dewormings: CarnetDeworming[] = pet.dewormings.map((d) => ({
@@ -61,7 +61,7 @@ export default async function VetPetCarnetPage({
     appliedAt: d.appliedAt.toISOString(),
     nextAt: d.nextAt ? d.nextAt.toISOString() : null,
     notes: d.notes,
-    vetName: d.addedBy.name,
+    vetName: d.vetName ?? d.addedBy.name,
   }));
 
   return (
@@ -119,6 +119,7 @@ export default async function VetPetCarnetPage({
         vaccines={vaccines}
         dewormings={dewormings}
         initialOpen={abierto === "1"}
+        defaultVetName={session.name}
       />
     </div>
   );

@@ -98,6 +98,8 @@ model Vaccine {
   nextAt        DateTime?
   weightKg      Float?
   notes         String?
+  /// Nombre del médico mostrado en el pasaporte; si es null se usa addedBy.name
+  vetName       String?
   addedByUserId String
   addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "VaccineAddedBy")
   createdAt     DateTime  @default(now())
@@ -114,6 +116,8 @@ model Deworming {
   appliedAt     DateTime
   nextAt        DateTime?
   notes         String?
+  /// Nombre del médico mostrado en el pasaporte; si es null se usa addedBy.name
+  vetName       String?
   addedByUserId String
   addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "DewormingAddedBy")
   createdAt     DateTime  @default(now())

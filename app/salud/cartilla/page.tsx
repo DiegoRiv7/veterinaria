@@ -87,7 +87,7 @@ export default async function CartillaPage() {
       appliedAt: v.appliedAt.toISOString(),
       nextAt: v.nextAt ? v.nextAt.toISOString() : null,
       notes: v.notes,
-      addedByName: v.addedBy.name,
+      addedByName: v.vetName ?? v.addedBy.name,
       status,
     };
   });
@@ -104,7 +104,7 @@ export default async function CartillaPage() {
     appliedAt: d.appliedAt.toISOString(),
     nextAt: d.nextAt ? d.nextAt.toISOString() : null,
     notes: d.notes,
-    addedByName: d.addedBy.name,
+    addedByName: d.vetName ?? d.addedBy.name,
   }));
 
   const manualSurgeries = pet.surgeries.map((s) => ({

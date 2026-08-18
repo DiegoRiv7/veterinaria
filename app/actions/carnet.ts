@@ -43,6 +43,7 @@ export async function saveCarnetVaccineAction(input: {
   nextAt?: string | null;
   weightKg?: number | null;
   notes?: string | null;
+  vetName?: string | null;
 }): Promise<CarnetSaveResult> {
   let session;
   try {
@@ -60,6 +61,7 @@ export async function saveCarnetVaccineAction(input: {
       ? input.weightKg
       : null;
   const notes = (input.notes ?? "").trim() || null;
+  const vetName = (input.vetName ?? "").trim().slice(0, 80) || null;
 
   if (!petId) return { ok: false, error: "Mascota inválida." };
   if (!name) return { ok: false, error: "Selecciona la vacuna." };
@@ -76,7 +78,7 @@ export async function saveCarnetVaccineAction(input: {
     }
     await prisma.vaccine.update({
       where: { id },
-      data: { name, appliedAt, nextAt, weightKg, notes },
+      data: { name, appliedAt, nextAt, weightKg, notes, vetName },
     });
     revalidateCarnet(petId);
     return { ok: true, id };
@@ -90,6 +92,7 @@ export async function saveCarnetVaccineAction(input: {
       nextAt,
       weightKg,
       notes,
+      vetName,
       addedByUserId: session.userId,
     },
     select: { id: true },
@@ -106,6 +109,7 @@ export async function saveCarnetDewormingAction(input: {
   appliedAt: string;
   nextAt?: string | null;
   notes?: string | null;
+  vetName?: string | null;
 }): Promise<CarnetSaveResult> {
   let session;
   try {
@@ -121,6 +125,7 @@ export async function saveCarnetDewormingAction(input: {
   const appliedAt = parseDate(input.appliedAt);
   const nextAt = parseDate(input.nextAt ?? null);
   const notes = (input.notes ?? "").trim() || null;
+  const vetName = (input.vetName ?? "").trim().slice(0, 80) || null;
 
   if (!petId) return { ok: false, error: "Mascota inválida." };
   if (!product) return { ok: false, error: "Selecciona el producto." };
@@ -137,7 +142,7 @@ export async function saveCarnetDewormingAction(input: {
     }
     await prisma.deworming.update({
       where: { id },
-      data: { product, kind, appliedAt, nextAt, notes },
+      data: { product, kind, appliedAt, nextAt, notes, vetName },
     });
     revalidateCarnet(petId);
     return { ok: true, id };
@@ -151,6 +156,7 @@ export async function saveCarnetDewormingAction(input: {
       appliedAt,
       nextAt,
       notes,
+      vetName,
       addedByUserId: session.userId,
     },
     select: { id: true },

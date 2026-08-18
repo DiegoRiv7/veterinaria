@@ -77,6 +77,7 @@ type Draft = {
   nextAt: string;
   weightKg: string;
   notes: string;
+  vetName: string; // médico que atendió (editable)
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -87,6 +88,7 @@ const EMPTY_DRAFT: Draft = {
   nextAt: "",
   weightKg: "",
   notes: "",
+  vetName: "",
 };
 
 function fmt(iso: string | null): string {
@@ -119,12 +121,15 @@ export function PassportCarnet({
   vaccines,
   dewormings,
   initialOpen = false,
+  defaultVetName = "",
 }: {
   petId: string;
   petName: string;
   vaccines: CarnetVaccine[];
   dewormings: CarnetDeworming[];
   initialOpen?: boolean;
+  /** Prellenado del campo "Médico" al capturar un registro nuevo. */
+  defaultVetName?: string;
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
@@ -163,7 +168,7 @@ export function PassportCarnet({
     setError(null);
     if (!record) {
       setEditing({ section, id: null });
-      setDraft({ ...EMPTY_DRAFT, appliedAt: todayInput() });
+      setDraft({ ...EMPTY_DRAFT, appliedAt: todayInput(), vetName: defaultVetName });
       return;
     }
     const isVac = section === "vac";
@@ -184,6 +189,7 @@ export function PassportCarnet({
             : "")
         : "",
       notes: record.notes ?? "",
+      vetName: record.vetName ?? "",
     });
   }
 
@@ -202,6 +208,7 @@ export function PassportCarnet({
             nextAt: draft.nextAt || null,
             weightKg: draft.weightKg ? Number(draft.weightKg) : null,
             notes: draft.notes || null,
+            vetName: draft.vetName || null,
           })
         : await saveCarnetDewormingAction({
             id: editing.id,
@@ -211,6 +218,7 @@ export function PassportCarnet({
             appliedAt: draft.appliedAt,
             nextAt: draft.nextAt || null,
             notes: draft.notes || null,
+            vetName: draft.vetName || null,
           });
     setSaving(false);
     if (res.ok) {
@@ -1013,7 +1021,18 @@ function EditVaccineRow({
             onChange={(e) => setDraft((d) => ({ ...d, nextAt: e.target.value }))}
           />
         </div>
-        <div className="col-span-2 sm:col-span-4">
+        <div className="col-span-2 sm:col-span-1">
+          <EditLabel>Médico / Doctor</EditLabel>
+          <input
+            type="text"
+            placeholder="Nombre del médico"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.vetName}
+            onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-3">
           <EditLabel>Observaciones (opcional)</EditLabel>
           <input
             type="text"
@@ -1114,7 +1133,18 @@ function EditDewormingRow({
             onChange={(e) => setDraft((d) => ({ ...d, nextAt: e.target.value }))}
           />
         </div>
-        <div className="col-span-2 sm:col-span-4">
+        <div className="col-span-2 sm:col-span-1">
+          <EditLabel>Médico / Doctor</EditLabel>
+          <input
+            type="text"
+            placeholder="Nombre del médico"
+            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+            style={inputStyle}
+            value={draft.vetName}
+            onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
+          />
+        </div>
+        <div className="col-span-2 sm:col-span-3">
           <EditLabel>Dosis / Observaciones (opcional)</EditLabel>
           <input
             type="text"
