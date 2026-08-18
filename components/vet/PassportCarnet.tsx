@@ -77,7 +77,8 @@ type Draft = {
   nextAt: string;
   weightKg: string;
   notes: string;
-  vetName: string; // médico que atendió (editable)
+  vetName: string; // médico que atendió: valor del select (o OTHER)
+  vetNameOther: string;
 };
 
 const EMPTY_DRAFT: Draft = {
@@ -89,6 +90,7 @@ const EMPTY_DRAFT: Draft = {
   weightKg: "",
   notes: "",
   vetName: "",
+  vetNameOther: "",
 };
 
 function fmt(iso: string | null): string {
@@ -122,6 +124,7 @@ export function PassportCarnet({
   dewormings,
   initialOpen = false,
   defaultVetName = "",
+  vetNameOptions = [],
 }: {
   petId: string;
   petName: string;
@@ -130,6 +133,8 @@ export function PassportCarnet({
   initialOpen?: boolean;
   /** Prellenado del campo "Médico" al capturar un registro nuevo. */
   defaultVetName?: string;
+  /** Médicos registrados para el select de "Médico" (más la opción Otro). */
+  vetNameOptions?: string[];
 }) {
   const router = useRouter();
   const [open, setOpen] = useState(initialOpen);
@@ -164,11 +169,19 @@ export function PassportCarnet({
     }, 300);
   }
 
+  /** El nombre va al select si está registrado; si no, a "Otro…" + texto. */
+  function vetDraftFor(name: string): Pick<Draft, "vetName" | "vetNameOther"> {
+    if (!name) return { vetName: "", vetNameOther: "" };
+    return vetNameOptions.includes(name)
+      ? { vetName: name, vetNameOther: "" }
+      : { vetName: OTHER, vetNameOther: name };
+  }
+
   function startEdit(section: Section, record: CarnetVaccine | CarnetDeworming | null) {
     setError(null);
     if (!record) {
       setEditing({ section, id: null });
-      setDraft({ ...EMPTY_DRAFT, appliedAt: todayInput(), vetName: defaultVetName });
+      setDraft({ ...EMPTY_DRAFT, appliedAt: todayInput(), ...vetDraftFor(defaultVetName) });
       return;
     }
     const isVac = section === "vac";
@@ -189,13 +202,15 @@ export function PassportCarnet({
             : "")
         : "",
       notes: record.notes ?? "",
-      vetName: record.vetName ?? "",
+      ...vetDraftFor(record.vetName ?? ""),
     });
   }
 
   async function save() {
     if (!editing || saving) return;
     const resolvedName = draft.name === OTHER ? draft.nameOther.trim() : draft.name;
+    const resolvedVetName =
+      draft.vetName === OTHER ? draft.vetNameOther.trim() : draft.vetName;
     setSaving(true);
     setError(null);
     const res =
@@ -208,7 +223,7 @@ export function PassportCarnet({
             nextAt: draft.nextAt || null,
             weightKg: draft.weightKg ? Number(draft.weightKg) : null,
             notes: draft.notes || null,
-            vetName: draft.vetName || null,
+            vetName: resolvedVetName || null,
           })
         : await saveCarnetDewormingAction({
             id: editing.id,
@@ -218,7 +233,7 @@ export function PassportCarnet({
             appliedAt: draft.appliedAt,
             nextAt: draft.nextAt || null,
             notes: draft.notes || null,
-            vetName: draft.vetName || null,
+            vetName: resolvedVetName || null,
           });
     setSaving(false);
     if (res.ok) {
@@ -458,6 +473,7 @@ export function PassportCarnet({
               return isEditing ? (
                 <EditVaccineRow
                   key={v.id}
+                  vetOptions={vetNameOptions}
                   draft={draft}
                   setDraft={setDraft}
                   saving={saving}
@@ -518,6 +534,7 @@ export function PassportCarnet({
               return isNewHere ? (
                 <EditVaccineRow
                   key={`new-${i}`}
+                  vetOptions={vetNameOptions}
                   draft={draft}
                   setDraft={setDraft}
                   saving={saving}
@@ -566,6 +583,7 @@ export function PassportCarnet({
               return isEditing ? (
                 <EditDewormingRow
                   key={d.id}
+                  vetOptions={vetNameOptions}
                   draft={draft}
                   setDraft={setDraft}
                   saving={saving}
@@ -631,6 +649,7 @@ export function PassportCarnet({
               return isNewHere ? (
                 <EditDewormingRow
                   key={`new-${i}`}
+                  vetOptions={vetNameOptions}
                   draft={draft}
                   setDraft={setDraft}
                   saving={saving}
@@ -936,6 +955,7 @@ function EditVaccineRow({
   error,
   onSave,
   onCancel,
+  vetOptions,
 }: {
   draft: Draft;
   setDraft: React.Dispatch<React.SetStateAction<Draft>>;
@@ -943,6 +963,7 @@ function EditVaccineRow({
   error: string | null;
   onSave: () => void;
   onCancel: () => void;
+  vetOptions: string[];
 }) {
   return (
     <div
@@ -1023,14 +1044,32 @@ function EditVaccineRow({
         </div>
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Médico / Doctor</EditLabel>
-          <input
-            type="text"
-            placeholder="Nombre del médico"
+          <select
             className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
             style={inputStyle}
             value={draft.vetName}
             onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
-          />
+          >
+            <option value="" disabled>
+              Selecciona…
+            </option>
+            {vetOptions.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+            <option value={OTHER}>Otro…</option>
+          </select>
+          {draft.vetName === OTHER && (
+            <input
+              type="text"
+              placeholder="Nombre del médico"
+              className="mt-1.5 w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+              style={inputStyle}
+              value={draft.vetNameOther}
+              onChange={(e) => setDraft((d) => ({ ...d, vetNameOther: e.target.value }))}
+            />
+          )}
         </div>
         <div className="col-span-2 sm:col-span-3">
           <EditLabel>Observaciones (opcional)</EditLabel>
@@ -1056,6 +1095,7 @@ function EditDewormingRow({
   error,
   onSave,
   onCancel,
+  vetOptions,
 }: {
   draft: Draft;
   setDraft: React.Dispatch<React.SetStateAction<Draft>>;
@@ -1063,6 +1103,7 @@ function EditDewormingRow({
   error: string | null;
   onSave: () => void;
   onCancel: () => void;
+  vetOptions: string[];
 }) {
   return (
     <div
@@ -1135,14 +1176,32 @@ function EditDewormingRow({
         </div>
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Médico / Doctor</EditLabel>
-          <input
-            type="text"
-            placeholder="Nombre del médico"
+          <select
             className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
             style={inputStyle}
             value={draft.vetName}
             onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
-          />
+          >
+            <option value="" disabled>
+              Selecciona…
+            </option>
+            {vetOptions.map((o) => (
+              <option key={o} value={o}>
+                {o}
+              </option>
+            ))}
+            <option value={OTHER}>Otro…</option>
+          </select>
+          {draft.vetName === OTHER && (
+            <input
+              type="text"
+              placeholder="Nombre del médico"
+              className="mt-1.5 w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
+              style={inputStyle}
+              value={draft.vetNameOther}
+              onChange={(e) => setDraft((d) => ({ ...d, vetNameOther: e.target.value }))}
+            />
+          )}
         </div>
         <div className="col-span-2 sm:col-span-3">
           <EditLabel>Dosis / Observaciones (opcional)</EditLabel>

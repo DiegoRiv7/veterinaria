@@ -8,6 +8,7 @@ import { AppointmentChatWidget } from "@/components/vet/AppointmentChatWidget";
 import { ConsultaForm } from "@/components/vet/ConsultaForm";
 import { RescheduleDialog } from "@/components/vet/RescheduleDialog";
 import { StatusBadge, statusToVariant } from "@/components/vet/StatusBadge";
+import { VetAssignSelect, type VetOption } from "@/components/vet/VetAssignSelect";
 import {
   SPECIES_LABEL,
   formatDate,
@@ -87,6 +88,40 @@ export default async function VetAppointmentEdit({
   const isCancelled = appt.status === "CANCELLED";
   const isCompleted = appt.status === "COMPLETED";
   const isScheduled = appt.status === "SCHEDULED";
+
+  // Médicos registrados y su disponibilidad en el horario de esta cita
+  // (para el selector de médico asignado).
+  const apptStartMs = appt.scheduledAt.getTime();
+  const apptEndMs = apptStartMs + appt.durationMinutes * 60_000;
+  const [vetsRaw, nearbyAppts] = await Promise.all([
+    prisma.veterinarian.findMany({
+      include: { user: { select: { name: true } } },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.appointment.findMany({
+      where: {
+        id: { not: appt.id },
+        status: { in: ["SCHEDULED", "COMPLETED"] },
+        // Ninguna cita dura más de 6 h; acotamos la ventana de búsqueda.
+        scheduledAt: { gte: new Date(apptStartMs - 6 * 3_600_000), lt: new Date(apptEndMs) },
+      },
+      select: { vetId: true, scheduledAt: true, durationMinutes: true },
+    }),
+  ]);
+  const busyVetIds = new Set(
+    nearbyAppts
+      .filter((a) => {
+        const s = a.scheduledAt.getTime();
+        const e = s + a.durationMinutes * 60_000;
+        return apptStartMs < e && apptEndMs > s;
+      })
+      .map((a) => a.vetId)
+  );
+  const vetOptions: VetOption[] = vetsRaw.map((v) => ({
+    vetId: v.id,
+    name: v.user.name,
+    busy: busyVetIds.has(v.id),
+  }));
 
   return (
     <div className="w-full max-w-[1280px] mx-auto px-1">
@@ -236,6 +271,22 @@ export default async function VetAppointmentEdit({
           >
             <MetaRow label="Estado">
               <StatusBadge variant={statusToVariant(appt.status)} />
+            </MetaRow>
+            <MetaRow label="Médico">
+              {isScheduled ? (
+                <VetAssignSelect
+                  appointmentId={appt.id}
+                  currentVetId={appt.vetId}
+                  options={vetOptions}
+                />
+              ) : (
+                <span
+                  className="text-[13px] font-extrabold"
+                  style={{ color: "var(--vet-text-1)" }}
+                >
+                  {appt.vet.user.name}
+                </span>
+              )}
             </MetaRow>
             <MetaRow label="Fecha">
               <span

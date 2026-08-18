@@ -518,6 +518,79 @@ export async function rescheduleAppointmentAction(
 }
 
 /**
+ * Reasigna una cita agendada a otro médico, validando que el destino
+ * no tenga otra cita que se encime en ese horario.
+ */
+export async function reassignAppointmentVetAction(input: {
+  appointmentId: string;
+  vetId: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const id = (input.appointmentId ?? "").trim();
+  const vetId = (input.vetId ?? "").trim();
+  if (!id || !vetId) return { ok: false, error: "Datos inválidos." };
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id },
+    select: { vetId: true, scheduledAt: true, durationMinutes: true, status: true },
+  });
+  if (!appt) return { ok: false, error: "Cita no encontrada." };
+  if (appt.status !== "SCHEDULED") {
+    return { ok: false, error: "Solo se pueden reasignar citas agendadas." };
+  }
+  if (appt.vetId === vetId) return { ok: true };
+
+  const vet = await prisma.veterinarian.findUnique({
+    where: { id: vetId },
+    include: { user: { select: { name: true } } },
+  });
+  if (!vet) return { ok: false, error: "Médico no encontrado." };
+
+  if (await vetBusyAt(vetId, appt.scheduledAt, appt.durationMinutes, id)) {
+    return { ok: false, error: `${vet.user.name} está ocupado en ese horario.` };
+  }
+
+  await prisma.appointment.update({ where: { id }, data: { vetId } });
+
+  revalidatePath("/vet");
+  revalidatePath("/vet/hoy");
+  revalidatePath("/vet/calendario");
+  revalidatePath("/inicio");
+  revalidatePath(`/cita/${id}`);
+  revalidatePath(`/vet/cita/${id}`);
+  return { ok: true };
+}
+
+/** ¿El médico tiene otra cita que se encima con [start, start+durationMinutes)? */
+async function vetBusyAt(
+  vetId: string,
+  start: Date,
+  durationMinutes: number,
+  excludeAppointmentId: string
+): Promise<boolean> {
+  const startMs = start.getTime();
+  const endMs = startMs + durationMinutes * 60_000;
+  // Ninguna cita dura más de 6 h; acotamos la consulta a esa ventana.
+  const candidates = await prisma.appointment.findMany({
+    where: {
+      vetId,
+      id: { not: excludeAppointmentId },
+      status: { in: ["SCHEDULED", "COMPLETED"] },
+      scheduledAt: { gte: new Date(startMs - 6 * 3_600_000), lt: new Date(endMs) },
+    },
+    select: { scheduledAt: true, durationMinutes: true },
+  });
+  return candidates.some((c) => {
+    const cStart = c.scheduledAt.getTime();
+    const cEnd = cStart + c.durationMinutes * 60_000;
+    return startMs < cEnd && endMs > cStart;
+  });
+}
+
+/**
  * Registra una opción nueva en el catálogo de un campo select del
  * formulario del servicio (p.ej. un biológico que no estaba en la
  * lista). La opción se inserta antes de "Otro" para que esa salida

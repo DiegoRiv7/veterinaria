@@ -26,6 +26,11 @@ export default async function VetPetCarnetPage({
 
   const { id } = await params;
   const { abierto } = await searchParams;
+  const vets = await prisma.veterinarian.findMany({
+    include: { user: { select: { name: true } } },
+    orderBy: { createdAt: "asc" },
+  });
+  const vetNameOptions = vets.map((v) => v.user.name);
   const pet = await prisma.pet.findUnique({
     where: { id },
     include: {
@@ -120,6 +125,7 @@ export default async function VetPetCarnetPage({
         dewormings={dewormings}
         initialOpen={abierto === "1"}
         defaultVetName={session.name}
+        vetNameOptions={vetNameOptions}
       />
     </div>
   );
