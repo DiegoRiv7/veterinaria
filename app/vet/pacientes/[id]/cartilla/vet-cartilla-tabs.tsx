@@ -11,13 +11,42 @@ import {
   PetSurgeriesTab,
   type SurgeryEntry,
 } from "@/components/PetSurgeriesTab";
+import { PetRecordsTab, type RecordEntry } from "@/components/PetRecordsTab";
+import {
+  LAB_FIELDS,
+  TEST_FIELDS,
+  IMAGING_FIELDS,
+  FEEDING_FIELDS,
+} from "@/lib/cartilla-sections";
+import {
+  addLabStudyAction,
+  deleteLabStudyAction,
+  addDiagnosticTestAction,
+  deleteDiagnosticTestAction,
+  addImagingStudyAction,
+  deleteImagingStudyAction,
+  addFeedingRecordAction,
+  deleteFeedingRecordAction,
+} from "@/app/actions/health-records";
 
-type SectionId = "vaccines" | "deworm" | "surgeries" | "consults";
+type SectionId =
+  | "vaccines"
+  | "deworm"
+  | "surgeries"
+  | "lab"
+  | "tests"
+  | "imaging"
+  | "feeding"
+  | "consults";
 
 const TABS: { id: SectionId; icon: string; label: string }[] = [
   { id: "vaccines", icon: "💉", label: "Vacunas" },
   { id: "deworm", icon: "💊", label: "Desparasitación" },
   { id: "surgeries", icon: "🔪", label: "Cirugías" },
+  { id: "lab", icon: "🔬", label: "Laboratorio" },
+  { id: "tests", icon: "🧪", label: "Tests" },
+  { id: "imaging", icon: "🩻", label: "Imagenología" },
+  { id: "feeding", icon: "🍖", label: "Alimentación" },
   { id: "consults", icon: "📋", label: "Consultas" },
 ];
 
@@ -28,6 +57,10 @@ export function VetCartillaTabs({
   dewormings,
   surgeries,
   consults,
+  labStudies,
+  diagnosticTests,
+  imagingStudies,
+  feedingRecords,
 }: {
   petId: string;
   accent: string;
@@ -35,6 +68,10 @@ export function VetCartillaTabs({
   dewormings: DewormingEntry[];
   surgeries: SurgeryEntry[];
   consults: { id: string; type: string; date: string; vet: string; notes: string }[];
+  labStudies: RecordEntry[];
+  diagnosticTests: RecordEntry[];
+  imagingStudies: RecordEntry[];
+  feedingRecords: RecordEntry[];
 }) {
   const [section, setSection] = useState<SectionId>("vaccines");
 
@@ -85,6 +122,14 @@ export function VetCartillaTabs({
                   ? dewormings.length
                   : t.id === "surgeries"
                   ? surgeries.length
+                  : t.id === "lab"
+                  ? labStudies.length
+                  : t.id === "tests"
+                  ? diagnosticTests.length
+                  : t.id === "imaging"
+                  ? imagingStudies.length
+                  : t.id === "feeding"
+                  ? feedingRecords.length
                   : consults.length}
               </span>
             </button>
@@ -109,6 +154,66 @@ export function VetCartillaTabs({
         )}
         {section === "surgeries" && (
           <PetSurgeriesTab petId={petId} items={surgeries} />
+        )}
+        {section === "lab" && (
+          <PetRecordsTab
+            petId={petId}
+            entries={labStudies}
+            fields={LAB_FIELDS}
+            emoji="🔬"
+            addLabel="Agregar estudio de laboratorio"
+            formTitle="Nuevo estudio de laboratorio"
+            emptyTitle="Sin estudios de laboratorio"
+            emptyHint="Registra químico sanguíneo, hemograma, coprológico y más."
+            successMessage="Estudio registrado."
+            addAction={addLabStudyAction}
+            deleteAction={deleteLabStudyAction}
+          />
+        )}
+        {section === "tests" && (
+          <PetRecordsTab
+            petId={petId}
+            entries={diagnosticTests}
+            fields={TEST_FIELDS}
+            emoji="🧪"
+            addLabel="Agregar test"
+            formTitle="Nuevo test de diagnóstico"
+            emptyTitle="Sin tests registrados"
+            emptyHint="Registra tests de moquillo, FeLV, FIV y más, con su resultado."
+            successMessage="Test registrado."
+            addAction={addDiagnosticTestAction}
+            deleteAction={deleteDiagnosticTestAction}
+          />
+        )}
+        {section === "imaging" && (
+          <PetRecordsTab
+            petId={petId}
+            entries={imagingStudies}
+            fields={IMAGING_FIELDS}
+            emoji="🩻"
+            addLabel="Agregar estudio de imagenología"
+            formTitle="Nuevo estudio de imagenología"
+            emptyTitle="Sin estudios de imagenología"
+            emptyHint="Registra radiografías, ultrasonidos y otros estudios con sus hallazgos."
+            successMessage="Estudio registrado."
+            addAction={addImagingStudyAction}
+            deleteAction={deleteImagingStudyAction}
+          />
+        )}
+        {section === "feeding" && (
+          <PetRecordsTab
+            petId={petId}
+            entries={feedingRecords}
+            fields={FEEDING_FIELDS}
+            emoji="🍖"
+            addLabel="Registrar alimentación"
+            formTitle="Registro de alimentación"
+            emptyTitle="Sin registros de alimentación"
+            emptyHint="Registra el tipo de alimento, la cantidad diaria en gramos y el peso."
+            successMessage="Alimentación registrada."
+            addAction={addFeedingRecordAction}
+            deleteAction={deleteFeedingRecordAction}
+          />
         )}
         {section === "consults" &&
           (consults.length === 0 ? (

@@ -51,6 +51,22 @@ export default async function VetPetCartillaPage({
         include: { addedBy: { select: { name: true } } },
         orderBy: { performedAt: "desc" },
       },
+      labStudies: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { performedAt: "desc" },
+      },
+      diagnosticTests: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { performedAt: "desc" },
+      },
+      imagingStudies: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { performedAt: "desc" },
+      },
+      feedingRecords: {
+        include: { addedBy: { select: { name: true } } },
+        orderBy: { recordedAt: "desc" },
+      },
       appointments: {
         include: {
           service: { select: { name: true } },
@@ -138,6 +154,62 @@ export default async function VetPetCartillaPage({
         "Realizada en consulta veterinaria.",
       addedByName: a.vet.user.name,
     }));
+
+  const labStudies = pet.labStudies.map((l) => ({
+    id: l.id,
+    title: l.kind,
+    date: l.performedAt.toISOString(),
+    badge: null,
+    details: l.result ? [{ label: "Resultado", value: l.result }] : [],
+    notes: l.notes,
+    addedByName: l.vetName ?? l.addedBy.name,
+  }));
+
+  const diagnosticTests = pet.diagnosticTests.map((t) => ({
+    id: t.id,
+    title: t.name,
+    date: t.performedAt.toISOString(),
+    badge: t.result
+      ? {
+          label: t.result,
+          tone:
+            t.result === "Positivo"
+              ? ("red" as const)
+              : t.result === "Negativo"
+              ? ("green" as const)
+              : ("amber" as const),
+        }
+      : null,
+    details: [],
+    notes: t.notes,
+    addedByName: t.vetName ?? t.addedBy.name,
+  }));
+
+  const imagingStudies = pet.imagingStudies.map((s) => ({
+    id: s.id,
+    title: s.kind,
+    date: s.performedAt.toISOString(),
+    badge: null,
+    details: s.region ? [{ label: "Zona", value: s.region }] : [],
+    notes: s.findings,
+    addedByName: s.vetName ?? s.addedBy.name,
+  }));
+
+  const feedingRecords = pet.feedingRecords.map((f, i) => ({
+    id: f.id,
+    title: f.brand ? `${f.foodType} · ${f.brand}` : f.foodType,
+    date: f.recordedAt.toISOString(),
+    badge: i === 0 ? { label: "Dieta actual", tone: "green" as const } : null,
+    details: [
+      ...(f.dailyGrams ? [{ label: "Al día", value: `${f.dailyGrams} g` }] : []),
+      ...(f.mealsPerDay
+        ? [{ label: "Comidas", value: `${f.mealsPerDay} al día` }]
+        : []),
+      ...(f.weightKg ? [{ label: "Peso", value: `${f.weightKg} kg` }] : []),
+    ],
+    notes: f.notes,
+    addedByName: f.addedBy.name,
+  }));
 
   const consults = completedAppts
     .filter(
@@ -238,6 +310,10 @@ export default async function VetPetCartillaPage({
         dewormings={[...manualDewormings, ...autoDewormings]}
         surgeries={[...manualSurgeries, ...autoSurgeries]}
         consults={consults}
+        labStudies={labStudies}
+        diagnosticTests={diagnosticTests}
+        imagingStudies={imagingStudies}
+        feedingRecords={feedingRecords}
       />
     </div>
   );

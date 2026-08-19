@@ -59,6 +59,10 @@ model User {
   vaccinesAdded   Vaccine[]   @relation("VaccineAddedBy")
   dewormingsAdded Deworming[] @relation("DewormingAddedBy")
   surgeriesAdded  Surgery[]   @relation("SurgeryAddedBy")
+  labStudiesAdded      LabStudy[]       @relation("LabStudyAddedBy")
+  diagnosticTestsAdded DiagnosticTest[] @relation("DiagnosticTestAddedBy")
+  imagingStudiesAdded  ImagingStudy[]   @relation("ImagingStudyAddedBy")
+  feedingRecordsAdded  FeedingRecord[]  @relation("FeedingRecordAddedBy")
 }
 
 model Pet {
@@ -87,6 +91,10 @@ model Pet {
   vaccines     Vaccine[]
   dewormings   Deworming[]
   surgeries    Surgery[]
+  labStudies      LabStudy[]
+  diagnosticTests DiagnosticTest[]
+  imagingStudies  ImagingStudy[]
+  feedingRecords  FeedingRecord[]
 }
 
 model Vaccine {
@@ -138,6 +146,76 @@ model Surgery {
   createdAt     DateTime  @default(now())
 
   @@index([petId, performedAt])
+}
+
+/// Estudio de laboratorio (químico sanguíneo, hemograma, patología, etc.)
+model LabStudy {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  kind          String
+  performedAt   DateTime
+  result        String?
+  notes         String?
+  vetName       String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "LabStudyAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, performedAt])
+}
+
+/// Test rápido de diagnóstico (moquillo, FeLV, FIV, etc.)
+model DiagnosticTest {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  name          String
+  performedAt   DateTime
+  result        String?   // "Positivo" / "Negativo" / "Indeterminado"
+  notes         String?
+  vetName       String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "DiagnosticTestAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, performedAt])
+}
+
+/// Estudio de imagenología (radiografía, ultrasonido, etc.)
+model ImagingStudy {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  kind          String
+  region        String?   // zona estudiada
+  performedAt   DateTime
+  findings      String?   // hallazgos / qué se le hizo
+  vetName       String?
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "ImagingStudyAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, performedAt])
+}
+
+/// Registro de alimentación (el más reciente es la dieta actual)
+model FeedingRecord {
+  id            String    @id @default(cuid())
+  petId         String
+  pet           Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  foodType      String
+  brand         String?
+  dailyGrams    Float?    // cantidad de alimento al día, en gramos
+  mealsPerDay   Int?
+  weightKg      Float?    // peso de la mascota al registrar
+  notes         String?
+  recordedAt    DateTime
+  addedByUserId String
+  addedBy       User      @relation(fields: [addedByUserId], references: [id], name: "FeedingRecordAddedBy")
+  createdAt     DateTime  @default(now())
+
+  @@index([petId, recordedAt])
 }
 
 model PetPhoto {

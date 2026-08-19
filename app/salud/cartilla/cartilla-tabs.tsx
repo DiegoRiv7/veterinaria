@@ -9,6 +9,23 @@ import {
   PetSurgeriesTab,
   type SurgeryEntry,
 } from "@/components/PetSurgeriesTab";
+import { PetRecordsTab, type RecordEntry } from "@/components/PetRecordsTab";
+import {
+  LAB_FIELDS,
+  TEST_FIELDS,
+  IMAGING_FIELDS,
+  FEEDING_FIELDS,
+} from "@/lib/cartilla-sections";
+import {
+  addLabStudyAction,
+  deleteLabStudyAction,
+  addDiagnosticTestAction,
+  deleteDiagnosticTestAction,
+  addImagingStudyAction,
+  deleteImagingStudyAction,
+  addFeedingRecordAction,
+  deleteFeedingRecordAction,
+} from "@/app/actions/health-records";
 
 export type CartillaPayload = {
   pet: {
@@ -28,6 +45,10 @@ export type CartillaPayload = {
   vaccines: VaccineEntry[];
   dewormings: DewormingEntry[];
   surgeries: SurgeryEntry[];
+  labStudies: RecordEntry[];
+  diagnosticTests: RecordEntry[];
+  imagingStudies: RecordEntry[];
+  feedingRecords: RecordEntry[];
   consults: {
     id: string;
     type: string;
@@ -43,12 +64,25 @@ export type CartillaPayload = {
   } | null;
 };
 
-type SectionId = "vaccines" | "deworm" | "surgeries" | "consults" | "vet";
+type SectionId =
+  | "vaccines"
+  | "deworm"
+  | "surgeries"
+  | "lab"
+  | "tests"
+  | "imaging"
+  | "feeding"
+  | "consults"
+  | "vet";
 
 const TABS: { id: SectionId; icon: string; label: string }[] = [
   { id: "vaccines", icon: "💉", label: "Vacunas" },
   { id: "deworm", icon: "💊", label: "Desparas." },
   { id: "surgeries", icon: "🔪", label: "Cirugías" },
+  { id: "lab", icon: "🔬", label: "Lab" },
+  { id: "tests", icon: "🧪", label: "Tests" },
+  { id: "imaging", icon: "🩻", label: "Imagen" },
+  { id: "feeding", icon: "🍖", label: "Alimento" },
   { id: "consults", icon: "📋", label: "Consultas" },
   { id: "vet", icon: "🏥", label: "Mi Vet" },
 ];
@@ -112,6 +146,74 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
         {section === "vaccines" && <VaccinesSection payload={payload} />}
         {section === "deworm" && <DewormSection payload={payload} />}
         {section === "surgeries" && <SurgeriesSection payload={payload} />}
+        {section === "lab" && (
+          <PetRecordsTab
+            petId={payload.pet.id}
+            entries={payload.labStudies}
+            fields={LAB_FIELDS}
+            emoji="🔬"
+            addLabel="Agregar estudio de laboratorio"
+            formTitle="Nuevo estudio de laboratorio"
+            emptyTitle="Sin estudios de laboratorio"
+            emptyHint={`Registra los estudios de laboratorio de ${payload.pet.name}.`}
+            successMessage="Estudio registrado."
+            addAction={addLabStudyAction}
+            deleteAction={deleteLabStudyAction}
+            dark
+            accent={payload.palette.accent}
+          />
+        )}
+        {section === "tests" && (
+          <PetRecordsTab
+            petId={payload.pet.id}
+            entries={payload.diagnosticTests}
+            fields={TEST_FIELDS}
+            emoji="🧪"
+            addLabel="Agregar test"
+            formTitle="Nuevo test de diagnóstico"
+            emptyTitle="Sin tests registrados"
+            emptyHint={`Registra los tests de diagnóstico de ${payload.pet.name}.`}
+            successMessage="Test registrado."
+            addAction={addDiagnosticTestAction}
+            deleteAction={deleteDiagnosticTestAction}
+            dark
+            accent={payload.palette.accent}
+          />
+        )}
+        {section === "imaging" && (
+          <PetRecordsTab
+            petId={payload.pet.id}
+            entries={payload.imagingStudies}
+            fields={IMAGING_FIELDS}
+            emoji="🩻"
+            addLabel="Agregar estudio de imagenología"
+            formTitle="Nuevo estudio de imagenología"
+            emptyTitle="Sin estudios de imagenología"
+            emptyHint={`Registra radiografías y ultrasonidos de ${payload.pet.name}.`}
+            successMessage="Estudio registrado."
+            addAction={addImagingStudyAction}
+            deleteAction={deleteImagingStudyAction}
+            dark
+            accent={payload.palette.accent}
+          />
+        )}
+        {section === "feeding" && (
+          <PetRecordsTab
+            petId={payload.pet.id}
+            entries={payload.feedingRecords}
+            fields={FEEDING_FIELDS}
+            emoji="🍖"
+            addLabel="Registrar alimentación"
+            formTitle="Registro de alimentación"
+            emptyTitle="Sin registros de alimentación"
+            emptyHint={`Registra qué come ${payload.pet.name} y cuánto al día.`}
+            successMessage="Alimentación registrada."
+            addAction={addFeedingRecordAction}
+            deleteAction={deleteFeedingRecordAction}
+            dark
+            accent={payload.palette.accent}
+          />
+        )}
         {section === "consults" && <ConsultsSection payload={payload} />}
         {section === "vet" && <VetSection payload={payload} />}
       </div>
