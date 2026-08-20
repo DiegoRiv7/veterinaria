@@ -114,7 +114,7 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
     <>
       {/* Tabs row */}
       <div
-        className="flex gap-2 px-3 py-3 overflow-x-auto"
+        className="no-scrollbar flex gap-2 px-3 py-3 overflow-x-auto"
         style={{ borderBottom: "1px solid oklch(28% 0.04 35)" }}
       >
         {TABS.map((t) => {

@@ -354,3 +354,14 @@ html { background-color: #fceadb; }
   0% { opacity: 1; transform: perspective(1600px) rotateY(0deg); }
   100% { opacity: 0.85; transform: perspective(1600px) rotateY(-88deg); }
 }
+
+/* Oculta la barra de scroll conservando el desplazamiento (tiras de pestañas). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

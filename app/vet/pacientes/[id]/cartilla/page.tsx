@@ -232,7 +232,7 @@ export default async function VetPetCartillaPage({
     }));
 
   return (
-    <div className="flex flex-col gap-5 max-w-[1100px] mx-auto w-full">
+    <div className="flex flex-col gap-5 max-w-[1240px] mx-auto w-full">
       <BackLink
         fallbackHref={`/vet/pacientes/${pet.id}`}
         className="inline-flex items-center gap-1 text-[13px] font-extrabold no-underline self-start"

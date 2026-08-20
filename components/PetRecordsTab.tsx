@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Plus, Trash2, X, Loader2 } from "lucide-react";
 import type { HealthRecordResult } from "@/app/actions/health-records";
+import { FancySelect } from "@/components/FancySelect";
 
 /**
  * Sección genérica de registros de la cartilla (laboratorio, tests,
@@ -151,7 +152,13 @@ export function PetRecordsTab({
   };
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const [otherOpen, setOtherOpen] = useState<Record<string, boolean>>({});
+  // Valor actual de cada select del formulario (controlados por FancySelect).
+  const initialSelects = () => {
+    const m: Record<string, string> = {};
+    for (const f of fields) if (f.type === "select") m[f.id] = f.defaultValue ?? "";
+    return m;
+  };
+  const [selects, setSelects] = useState<Record<string, string>>(initialSelects);
   const [pendingDelete, startDelete] = useTransition();
 
   const [state, formAction, pending] = useActionState<HealthRecordResult | null, FormData>(
@@ -167,7 +174,6 @@ export function PetRecordsTab({
       if (result.ok) {
         toast.success(successMessage);
         setAdding(false);
-        setOtherOpen({});
         router.refresh();
       } else {
         toast.error(result.error);
@@ -202,36 +208,31 @@ export function PetRecordsTab({
     );
 
     if (f.type === "select") {
+      const val = selects[f.id] ?? "";
+      const opts = [
+        ...(f.options ?? []).map((o) => ({ value: o, label: o })),
+        ...(f.allowOther ? [{ value: OTHER_OPTION, label: "Otro…" }] : []),
+      ];
       return (
         <div key={f.id} className={`flex flex-col gap-1.5 ${f.full ? "" : "min-w-0 flex-1"}`}>
           {label}
-          <select
+          <FancySelect
             id={`rec-${f.id}`}
             name={f.id}
+            value={val}
+            onChange={(v) => setSelects((s) => ({ ...s, [f.id]: v }))}
+            options={opts}
+            placeholder="Selecciona…"
             required={f.required}
-            defaultValue={f.defaultValue ?? ""}
-            onChange={(e) =>
-              f.allowOther &&
-              setOtherOpen((s) => ({ ...s, [f.id]: e.target.value === OTHER_OPTION }))
-            }
-            className={inputClass}
-            style={inputStyle}
-          >
-            <option value="" disabled>
-              Selecciona…
-            </option>
-            {(f.options ?? []).map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-            {f.allowOther && <option value={OTHER_OPTION}>Otro…</option>}
-          </select>
-          {f.allowOther && otherOpen[f.id] && (
+            dark={dark}
+            accent={accent}
+          />
+          {f.allowOther && val === OTHER_OPTION && (
             <input
               type="text"
               name={`${f.id}Other`}
               required
+              autoFocus
               placeholder="Escribe cuál…"
               className={inputClass}
               style={inputStyle}
@@ -310,7 +311,10 @@ export function PetRecordsTab({
       {!readonly && !adding && (
         <button
           type="button"
-          onClick={() => setAdding(true)}
+          onClick={() => {
+            setSelects(initialSelects());
+            setAdding(true);
+          }}
           className="w-full py-3 rounded-[14px] flex items-center justify-center gap-2 text-[14px] font-extrabold transition"
           style={{
             background: dark
