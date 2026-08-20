@@ -61,227 +61,240 @@ const COLORS = {
   white: "#ffffff",
 };
 
-const styles = StyleSheet.create({
-  page: {
-    paddingTop: 26,
-    paddingBottom: 42,
-    paddingHorizontal: 36,
-    fontFamily: "Helvetica",
-    fontSize: 10.5,
-    color: COLORS.text,
-    backgroundColor: COLORS.white,
-  },
+/**
+ * La receta es "responsive": estimamos cuánto contenido hay y generamos los
+ * estilos con un factor de escala `k`. Con poco contenido k=1 (tamaños
+ * cómodos, la firma sigue al contenido); con mucho contenido k baja hasta
+ * 0.78 y todo se compacta para no pasar de una hoja.
+ */
+function makeStyles(k: number) {
+  // Redondeo a medios puntos para tipografía limpia.
+  const sz = (n: number) => Math.round(n * k * 2) / 2;
+  const lh = k < 0.95 ? 1.32 : 1.4;
 
-  // Header
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  brandMark: {
-    width: 40,
-    height: 40,
-    borderRadius: 11,
-    marginRight: 11,
-    backgroundColor: COLORS.brandSoft,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-  },
-  brandLogo: {
-    width: 40,
-    height: 40,
-  },
-  brandTitle: {
-    fontSize: 18,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.ink,
-    letterSpacing: 0.2,
-  },
-  brandSubtitle: {
-    fontSize: 8.5,
-    color: COLORS.sky,
-    marginTop: 2,
-    fontFamily: "Helvetica-Bold",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
+  return StyleSheet.create({
+    page: {
+      paddingTop: 26,
+      paddingBottom: 42,
+      paddingHorizontal: 36,
+      fontFamily: "Helvetica",
+      fontSize: sz(10.5),
+      color: COLORS.text,
+      backgroundColor: COLORS.white,
+    },
 
-  // Gradient strip (faked with three colored rects side by side)
-  gradientBar: {
-    flexDirection: "row",
-    height: 3,
-    borderRadius: 2,
-    overflow: "hidden",
-    marginTop: 10,
-    marginBottom: 12,
-  },
-  gradSky: { flex: 1, backgroundColor: COLORS.sky },
-  gradIndigo: { flex: 1, backgroundColor: COLORS.indigo },
-  gradPink: { flex: 1, backgroundColor: COLORS.pink },
+    // Header (tamaño fijo — es la identidad de la clínica)
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      marginBottom: 4,
+    },
+    brandMark: {
+      width: 40,
+      height: 40,
+      borderRadius: 11,
+      marginRight: 11,
+      backgroundColor: COLORS.brandSoft,
+      alignItems: "center",
+      justifyContent: "center",
+      overflow: "hidden",
+    },
+    brandLogo: {
+      width: 40,
+      height: 40,
+    },
+    brandTitle: {
+      fontSize: 18,
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.ink,
+      letterSpacing: 0.2,
+    },
+    brandSubtitle: {
+      fontSize: 8.5,
+      color: COLORS.sky,
+      marginTop: 2,
+      fontFamily: "Helvetica-Bold",
+      letterSpacing: 1.2,
+      textTransform: "uppercase",
+    },
 
-  // Receta label
-  recetaLabelRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 10,
-  },
-  recetaTitle: {
-    fontSize: 15,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.indigo,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  recetaMeta: {
-    fontSize: 8.5,
-    color: COLORS.muted,
-    textAlign: "right",
-    marginTop: 1,
-  },
-  recetaVet: {
-    fontSize: 10.5,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.ink,
-    textAlign: "right",
-  },
-  recetaCedula: {
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.indigo,
-    textAlign: "right",
-    marginTop: 1.5,
-  },
+    // Gradient strip (faked with three colored rects side by side)
+    gradientBar: {
+      flexDirection: "row",
+      height: 3,
+      borderRadius: 2,
+      overflow: "hidden",
+      marginTop: 10,
+      marginBottom: sz(12),
+    },
+    gradSky: { flex: 1, backgroundColor: COLORS.sky },
+    gradIndigo: { flex: 1, backgroundColor: COLORS.indigo },
+    gradPink: { flex: 1, backgroundColor: COLORS.pink },
 
-  // Sections
-  section: {
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 9,
-    backgroundColor: COLORS.white,
-  },
-  sectionAccent: {
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: 9,
-    backgroundColor: COLORS.soft,
-  },
-  sectionTitle: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.indigo,
-    textTransform: "uppercase",
-    letterSpacing: 1.1,
-    marginBottom: 5,
-  },
+    // Receta label
+    recetaLabelRow: {
+      flexDirection: "row",
+      justifyContent: "space-between",
+      alignItems: "flex-end",
+      marginBottom: sz(10),
+    },
+    recetaTitle: {
+      fontSize: 15,
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.indigo,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+    },
+    recetaMeta: {
+      fontSize: 8.5,
+      color: COLORS.muted,
+      textAlign: "right",
+      marginTop: 1,
+    },
+    recetaVet: {
+      fontSize: 10.5,
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.ink,
+      textAlign: "right",
+    },
+    recetaCedula: {
+      fontSize: 9,
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.indigo,
+      textAlign: "right",
+      marginTop: 1.5,
+    },
 
-  // Two-column grid for data rows
-  grid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  gridItem: {
-    width: "25%",
-    paddingRight: 7,
-    marginBottom: 4,
-  },
-  gridItemFull: {
-    width: "100%",
-    marginBottom: 4,
-  },
-  fieldLabel: {
-    fontSize: 7,
-    color: COLORS.muted,
-    textTransform: "uppercase",
-    letterSpacing: 0.5,
-    marginBottom: 1.5,
-  },
-  fieldValue: {
-    fontSize: 9.5,
-    color: COLORS.ink,
-    fontFamily: "Helvetica-Bold",
-  },
+    // Sections
+    section: {
+      marginBottom: sz(8),
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      borderRadius: 8,
+      padding: sz(9),
+      backgroundColor: COLORS.white,
+    },
+    sectionAccent: {
+      marginBottom: sz(8),
+      borderWidth: 1,
+      borderColor: COLORS.border,
+      borderRadius: 8,
+      padding: sz(9),
+      backgroundColor: COLORS.soft,
+    },
+    sectionTitle: {
+      fontSize: sz(8),
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.indigo,
+      textTransform: "uppercase",
+      letterSpacing: 1.1,
+      marginBottom: sz(5),
+    },
 
-  // Body / paragraph text inside boxes
-  paragraph: {
-    fontSize: 10,
-    color: COLORS.text,
-    lineHeight: 1.4,
-  },
+    // Four-column grid for data rows
+    grid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+    },
+    gridItem: {
+      width: "25%",
+      paddingRight: 7,
+      marginBottom: sz(4),
+    },
+    gridItemFull: {
+      width: "100%",
+      marginBottom: sz(4),
+    },
+    fieldLabel: {
+      fontSize: sz(7),
+      color: COLORS.muted,
+      textTransform: "uppercase",
+      letterSpacing: 0.5,
+      marginBottom: 1.5,
+    },
+    fieldValue: {
+      fontSize: sz(9.5),
+      color: COLORS.ink,
+      fontFamily: "Helvetica-Bold",
+    },
 
-  // Medications list
-  medItem: {
-    flexDirection: "row",
-    marginBottom: 4,
-  },
-  medNumber: {
-    width: 17,
-    height: 17,
-    borderRadius: 9,
-    backgroundColor: COLORS.pink,
-    color: COLORS.white,
-    fontSize: 8.5,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "center",
-    paddingTop: 3.5,
-    marginRight: 7,
-  },
-  medText: {
-    flex: 1,
-    fontSize: 10,
-    color: COLORS.text,
-    paddingTop: 2.5,
-    lineHeight: 1.35,
-  },
+    // Body / paragraph text inside boxes
+    paragraph: {
+      fontSize: sz(10),
+      color: COLORS.text,
+      lineHeight: lh,
+    },
 
-  // Signature
-  signatureBlock: {
-    marginTop: "auto",
-    paddingTop: 16,
-    alignItems: "center",
-  },
-  signatureLine: {
-    width: 200,
-    height: 1,
-    backgroundColor: COLORS.ink,
-    marginBottom: 5,
-  },
-  signatureName: {
-    fontSize: 10.5,
-    fontFamily: "Helvetica-Bold",
-    color: COLORS.ink,
-  },
-  signatureRole: {
-    fontSize: 8.5,
-    color: COLORS.muted,
-    marginTop: 2,
-  },
+    // Medications list
+    medItem: {
+      flexDirection: "row",
+      marginBottom: sz(4),
+    },
+    medNumber: {
+      width: sz(17),
+      height: sz(17),
+      borderRadius: sz(17) / 2,
+      backgroundColor: COLORS.pink,
+      color: COLORS.white,
+      fontSize: sz(8.5),
+      fontFamily: "Helvetica-Bold",
+      textAlign: "center",
+      paddingTop: sz(3.5),
+      marginRight: 7,
+    },
+    medText: {
+      flex: 1,
+      fontSize: sz(10),
+      color: COLORS.text,
+      paddingTop: sz(2.5),
+      lineHeight: lh,
+    },
 
-  // Footer
-  footer: {
-    position: "absolute",
-    bottom: 14,
-    left: 36,
-    right: 36,
-    textAlign: "center",
-    fontSize: 8,
-    color: COLORS.muted,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: 7,
-  },
+    // Signature — sigue al contenido (sin anclarse al fondo de la hoja)
+    signatureBlock: {
+      marginTop: sz(26),
+      alignItems: "center",
+    },
+    signatureLine: {
+      width: 200,
+      height: 1,
+      backgroundColor: COLORS.ink,
+      marginBottom: 5,
+    },
+    signatureName: {
+      fontSize: sz(10.5),
+      fontFamily: "Helvetica-Bold",
+      color: COLORS.ink,
+    },
+    signatureRole: {
+      fontSize: sz(8.5),
+      color: COLORS.muted,
+      marginTop: 2,
+    },
 
-  emptyText: {
-    fontSize: 10,
-    color: COLORS.muted,
-    fontStyle: "italic",
-  },
-});
+    // Footer
+    footer: {
+      position: "absolute",
+      bottom: 14,
+      left: 36,
+      right: 36,
+      textAlign: "center",
+      fontSize: 8,
+      color: COLORS.muted,
+      borderTopWidth: 1,
+      borderTopColor: COLORS.border,
+      paddingTop: 7,
+    },
+
+    emptyText: {
+      fontSize: sz(10),
+      color: COLORS.muted,
+      fontStyle: "italic",
+    },
+  });
+}
+
+type Styles = ReturnType<typeof makeStyles>;
 
 // ----------------------------------------------------------------------------
 // Helpers
@@ -303,6 +316,15 @@ function formatTime(date: Date) {
 
 function shortId(id: string) {
   return id.slice(-8).toUpperCase();
+}
+
+/** Líneas estimadas de un texto al renderizarse (~chars por línea). */
+function estimateLines(text: string | null, charsPerLine: number) {
+  const t = (text ?? "").trim();
+  if (!t) return 1; // el texto "sin registro" en cursiva
+  return t
+    .split(/\r?\n/)
+    .reduce((n, line) => n + Math.max(1, Math.ceil(line.length / charsPerLine)), 0);
 }
 
 // Simple stylized paw mark using SVG paths (no emoji).
@@ -327,7 +349,15 @@ function PawMark() {
 // Component
 // ----------------------------------------------------------------------------
 
-function Field({ label, value }: { label: string; value: string | null | undefined }) {
+function Field({
+  styles,
+  label,
+  value,
+}: {
+  styles: Styles;
+  label: string;
+  value: string | null | undefined;
+}) {
   return (
     <View style={styles.gridItem}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -336,12 +366,45 @@ function Field({ label, value }: { label: string; value: string | null | undefin
   );
 }
 
+/** Renglones de medicamentos a partir del texto capturado. */
+function parseMeds(medications: string | null): string[] {
+  return (medications ?? "")
+    .split(/\r?\n/)
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0)
+    .map((line) => line.replace(/^\s*\d+[.)\-]\s*/, ""));
+}
+
+/**
+ * Escala adaptativa: estima la altura del contenido a k=1 y, si no cabe en
+ * la hoja, compacta (hasta 0.72). La ruta puede re-renderizar con una
+ * escala menor si aun así se pasó de una página.
+ */
+export function computeRecetaScale(data: RecetaData): number {
+  const meds = parseMeds(data.medications);
+  const fieldCount =
+    10 + (data.pet.color ? 1 : 0) + (data.pet.microchipId ? 1 : 0);
+  const estimated =
+    150 + // header + barra + encabezado de receta
+    (28 + Math.ceil(fieldCount / 4) * 26) + // bloque de datos
+    3 * 32 + // marco de las 3 secciones de texto
+    estimateLines(data.vetNotes, 95) * 15.5 +
+    estimateLines(data.instructions, 95) * 15.5 +
+    Math.max(1, meds.length) * 23 + // renglones de medicamentos
+    75; // firma
+  const available = 842 - 26 - 42; // A4 alto − márgenes
+  return estimated <= available ? 1 : Math.max(0.72, available / estimated);
+}
+
 export function RecetaPDF({
   data,
   logo,
+  scale,
 }: {
   data: RecetaData;
   logo?: Buffer | null;
+  /** Sobrescribe la escala calculada (reintentos de la ruta). */
+  scale?: number;
 }) {
   const issuedAt = new Date();
   const age = ageFromBirthDate(data.pet.birthDate);
@@ -350,11 +413,9 @@ export function RecetaPDF({
   const weightStr =
     data.pet.weightKg != null ? `${data.pet.weightKg.toString()} kg` : null;
 
-  const meds = (data.medications ?? "")
-    .split(/\r?\n/)
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-    .map((line) => line.replace(/^\s*\d+[.)\-]\s*/, ""));
+  const meds = parseMeds(data.medications);
+  const k = scale ?? computeRecetaScale(data);
+  const styles = makeStyles(k);
 
   return (
     <Document
@@ -405,20 +466,23 @@ export function RecetaPDF({
         <View style={styles.sectionAccent}>
           <Text style={styles.sectionTitle}>Datos del paciente</Text>
           <View style={styles.grid}>
-            <Field label="Paciente" value={data.pet.name} />
-            <Field label="Especie" value={speciesLabel} />
-            <Field label="Raza" value={data.pet.breed} />
-            <Field label="Edad" value={age} />
-            <Field label="Sexo" value={sexLabel} />
-            <Field label="Peso" value={weightStr} />
-            {data.pet.color ? <Field label="Color" value={data.pet.color} /> : null}
-            {data.pet.microchipId ? (
-              <Field label="Microchip" value={data.pet.microchipId} />
+            <Field styles={styles} label="Paciente" value={data.pet.name} />
+            <Field styles={styles} label="Especie" value={speciesLabel} />
+            <Field styles={styles} label="Raza" value={data.pet.breed} />
+            <Field styles={styles} label="Edad" value={age} />
+            <Field styles={styles} label="Sexo" value={sexLabel} />
+            <Field styles={styles} label="Peso" value={weightStr} />
+            {data.pet.color ? (
+              <Field styles={styles} label="Color" value={data.pet.color} />
             ) : null}
-            <Field label="Propietario" value={data.client.name} />
-            <Field label="Teléfono" value={data.client.phone ?? null} />
-            <Field label="Servicio" value={data.service.name} />
+            {data.pet.microchipId ? (
+              <Field styles={styles} label="Microchip" value={data.pet.microchipId} />
+            ) : null}
+            <Field styles={styles} label="Propietario" value={data.client.name} />
+            <Field styles={styles} label="Teléfono" value={data.client.phone ?? null} />
+            <Field styles={styles} label="Servicio" value={data.service.name} />
             <Field
+              styles={styles}
               label="Fecha de consulta"
               value={`${formatLongDate(data.scheduledAt)} · ${formatTime(data.scheduledAt)}`}
             />
