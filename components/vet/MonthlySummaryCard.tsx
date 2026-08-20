@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { VetIcon } from "./VetIcon";
+import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
 
 type MonthRow = { label: string; val: number; pct: number };
 
@@ -406,27 +407,21 @@ function SummaryModal({
                 }}
               />
             ) : (
-              <select
+              <FancySelect
                 value={monthKey}
-                onChange={(e) => setMonthKey(e.target.value)}
-                className="h-9 px-3 pr-8 rounded-[10px] border outline-none text-[13px] font-bold"
-                style={{
-                  background: "var(--vet-bg-card)",
-                  borderColor: "var(--vet-border)",
-                  color: "var(--vet-text-1)",
-                  appearance: "none",
-                  backgroundImage:
-                    'url("data:image/svg+xml;utf8,<svg xmlns=\\"http://www.w3.org/2000/svg\\" width=\\"12\\" height=\\"7\\" viewBox=\\"0 0 12 7\\"><path fill=\\"%2378819f\\" d=\\"M0 0l6 7 6-7z\\"/></svg>")',
-                  backgroundRepeat: "no-repeat",
-                  backgroundPosition: "right 10px center",
-                }}
-              >
-                {monthOptions.map((m) => (
-                  <option key={`${m.year}-${m.month}`} value={`${m.year}-${m.month}`}>
-                    {MONTH_NAMES[m.month]} {m.year}
-                  </option>
-                ))}
-              </select>
+                onChange={setMonthKey}
+                required
+                options={monthOptions.map((m) => ({
+                  value: `${m.year}-${m.month}`,
+                  label: `${MONTH_NAMES[m.month]} ${m.year}`,
+                }))}
+                height={36}
+                fontSize={13}
+                radius={10}
+                accent="var(--vet-green)"
+                tokens={VET_TOKENS}
+                className="w-[180px]"
+              />
             )}
           </div>
 

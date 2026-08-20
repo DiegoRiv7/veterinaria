@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { VetIcon } from "./VetIcon";
+import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
 import { createAppointmentByVetAction } from "@/app/actions/appointments";
 
 export type ClientOption = {
@@ -510,18 +511,15 @@ function NewAppointmentModal({
                   />
                 </Field>
                 <Field label="Especie">
-                  <select
+                  <FancySelect
                     value={newPetSpecies}
-                    onChange={(e) => setNewPetSpecies(e.target.value)}
-                    className={fieldClass}
-                    style={{ ...fieldStyle, appearance: "none" }}
-                  >
-                    {SPECIES.map((s) => (
-                      <option key={s.value} value={s.value}>
-                        {s.label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={setNewPetSpecies}
+                    required
+                    options={SPECIES.map((s) => ({ value: s.value, label: s.label }))}
+                    height={44}
+                    accent="var(--vet-green)"
+                    tokens={VET_TOKENS}
+                  />
                 </Field>
                 <Field label="Raza (opcional)">
                   <input
@@ -541,18 +539,15 @@ function NewAppointmentModal({
           <Section title="Servicio">
             <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
               <Field label="Tipo de servicio">
-                <select
+                <FancySelect
                   value={serviceId}
-                  onChange={(e) => setServiceId(e.target.value)}
-                  className={fieldClass}
-                  style={{ ...fieldStyle, appearance: "none" }}
-                >
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setServiceId}
+                  required
+                  options={services.map((s) => ({ value: s.id, label: s.name }))}
+                  height={44}
+                  accent="var(--vet-green)"
+                  tokens={VET_TOKENS}
+                />
               </Field>
               {selectedService && (
                 <div

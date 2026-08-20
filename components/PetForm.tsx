@@ -1,9 +1,10 @@
 "use client";
-import { useRef, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input, Label, Select, Textarea } from "@/components/ui/input";
+import { Input, Label, Textarea } from "@/components/ui/input";
+import { FancySelect } from "@/components/FancySelect";
 import { SPECIES_EMOJI, SPECIES_LABEL, SEX_LABEL, dateToInputValue } from "@/lib/utils";
 import { PetPhotoPicker } from "@/components/PetPhotoPicker";
 
@@ -44,6 +45,7 @@ export function PetForm({
   const formRef = useRef<HTMLFormElement>(null);
   const [pending, start] = useTransition();
   const init = initial ?? {};
+  const [sex, setSex] = useState<string>(init.sex ?? "UNKNOWN");
 
   return (
     <form
@@ -148,11 +150,22 @@ export function PetForm({
 
       <div>
         <Label htmlFor="sex">Sexo</Label>
-        <Select id="sex" name="sex" defaultValue={init.sex ?? "UNKNOWN"}>
-          {(["MALE", "FEMALE", "UNKNOWN"] as const).map((v) => (
-            <option key={v} value={v}>{SEX_LABEL[v]}</option>
-          ))}
-        </Select>
+        <FancySelect
+          id="sex"
+          name="sex"
+          value={sex}
+          onChange={setSex}
+          required
+          options={(["MALE", "FEMALE", "UNKNOWN"] as const).map((v) => ({
+            value: v,
+            label: SEX_LABEL[v],
+          }))}
+          fontSize={15}
+          tokens={{
+            inputBg: "var(--color-surface)",
+            buttonShadow: "var(--shadow-soft-sm)",
+          }}
+        />
       </div>
 
       <label className="flex items-center gap-3 p-3 rounded-[14px] bg-[var(--color-surface-2)] border border-[var(--color-border)]">

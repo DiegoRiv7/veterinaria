@@ -108,12 +108,15 @@ export function VetCartillaTabs({
       <div className="relative">
         <div
           ref={tabsRef}
-          className="no-scrollbar flex gap-1 p-1.5 rounded-[14px] border overflow-x-auto"
+          className="no-scrollbar flex p-1.5 rounded-[14px] border overflow-x-auto"
           style={{
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
           }}
         >
+          {/* mx-auto centra las pestañas cuando caben; con overflow se
+              colapsa a 0 y el scroll parte desde la izquierda. */}
+          <div className="mx-auto flex gap-1">
           {TABS.map((t) => {
             const active = section === t.id;
             return (
@@ -164,6 +167,7 @@ export function VetCartillaTabs({
               </button>
             );
           })}
+          </div>
         </div>
 
         {arrows.left && (

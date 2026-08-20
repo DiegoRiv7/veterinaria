@@ -7,6 +7,7 @@ import {
   saveCarnetVaccineAction,
   saveCarnetDewormingAction,
 } from "@/app/actions/carnet";
+import { FancySelect, type FancyTokens } from "@/components/FancySelect";
 
 /* Paleta muestreada del pasaporte impreso de Vetsfriend */
 const BRAND = {
@@ -897,6 +898,54 @@ const inputStyle: React.CSSProperties = {
   color: BRAND.ink,
 };
 
+/** Paleta del pasaporte para los dropdowns del sistema. */
+const PASSPORT_SELECT_TOKENS: Partial<FancyTokens> = {
+  inputBg: "#fff",
+  menuBg: "#fff",
+  hoverBg: BRAND.creamRow,
+  border: BRAND.gold,
+  text: BRAND.ink,
+  textMuted: BRAND.inkSoft,
+  menuShadow: "0 14px 34px rgba(0,0,0,.18)",
+};
+
+function PassportSelect({
+  value,
+  onChange,
+  options,
+  allowOther,
+  otherLabel = "Otro…",
+  placeholder = "Selecciona…",
+  required = true,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  options: string[];
+  allowOther?: boolean;
+  otherLabel?: string;
+  placeholder?: string;
+  required?: boolean;
+}) {
+  return (
+    <FancySelect
+      value={value}
+      onChange={onChange}
+      required={required}
+      placeholder={placeholder}
+      options={[
+        ...options.map((o) => ({ value: o, label: o })),
+        ...(allowOther ? [{ value: OTHER, label: otherLabel }] : []),
+      ]}
+      height={36}
+      fontSize={12.5}
+      radius={8}
+      borderWidth={1.5}
+      accent={BRAND.orange}
+      tokens={PASSPORT_SELECT_TOKENS}
+    />
+  );
+}
+
 function EditLabel({ children }: { children: React.ReactNode }) {
   return (
     <p
@@ -973,22 +1022,13 @@ function EditVaccineRow({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Vacuna / Vaccine</EditLabel>
-          <select
-            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
-            style={inputStyle}
+          <PassportSelect
             value={draft.name}
-            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-          >
-            <option value="" disabled>
-              Selecciona…
-            </option>
-            {VACCINE_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-            <option value={OTHER}>Otra…</option>
-          </select>
+            onChange={(v) => setDraft((d) => ({ ...d, name: v }))}
+            options={VACCINE_OPTIONS}
+            allowOther
+            otherLabel="Otra…"
+          />
           {draft.name === OTHER && (
             <input
               type="text"
@@ -1044,22 +1084,12 @@ function EditVaccineRow({
         </div>
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Médico / Doctor</EditLabel>
-          <select
-            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
-            style={inputStyle}
+          <PassportSelect
             value={draft.vetName}
-            onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
-          >
-            <option value="" disabled>
-              Selecciona…
-            </option>
-            {vetOptions.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-            <option value={OTHER}>Otro…</option>
-          </select>
+            onChange={(v) => setDraft((d) => ({ ...d, vetName: v }))}
+            options={vetOptions}
+            allowOther
+          />
           {draft.vetName === OTHER && (
             <input
               type="text"
@@ -1113,22 +1143,12 @@ function EditDewormingRow({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Producto / Product</EditLabel>
-          <select
-            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
-            style={inputStyle}
+          <PassportSelect
             value={draft.name}
-            onChange={(e) => setDraft((d) => ({ ...d, name: e.target.value }))}
-          >
-            <option value="" disabled>
-              Selecciona…
-            </option>
-            {DEWORM_OPTIONS.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-            <option value={OTHER}>Otro…</option>
-          </select>
+            onChange={(v) => setDraft((d) => ({ ...d, name: v }))}
+            options={DEWORM_OPTIONS}
+            allowOther
+          />
           {draft.name === OTHER && (
             <input
               type="text"
@@ -1142,17 +1162,13 @@ function EditDewormingRow({
         </div>
         <div>
           <EditLabel>Tipo / Type</EditLabel>
-          <select
-            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
-            style={inputStyle}
+          <PassportSelect
             value={draft.kind}
-            onChange={(e) => setDraft((d) => ({ ...d, kind: e.target.value }))}
-          >
-            <option value="">—</option>
-            <option value="Interna">Interna</option>
-            <option value="Externa">Externa</option>
-            <option value="Ambas">Ambas</option>
-          </select>
+            onChange={(v) => setDraft((d) => ({ ...d, kind: v }))}
+            options={["Interna", "Externa", "Ambas"]}
+            placeholder="—"
+            required={false}
+          />
         </div>
         <div>
           <EditLabel>Fecha / Date</EditLabel>
@@ -1176,22 +1192,12 @@ function EditDewormingRow({
         </div>
         <div className="col-span-2 sm:col-span-1">
           <EditLabel>Médico / Doctor</EditLabel>
-          <select
-            className="w-full h-9 rounded-[8px] px-2 text-[12.5px] font-bold outline-none"
-            style={inputStyle}
+          <PassportSelect
             value={draft.vetName}
-            onChange={(e) => setDraft((d) => ({ ...d, vetName: e.target.value }))}
-          >
-            <option value="" disabled>
-              Selecciona…
-            </option>
-            {vetOptions.map((o) => (
-              <option key={o} value={o}>
-                {o}
-              </option>
-            ))}
-            <option value={OTHER}>Otro…</option>
-          </select>
+            onChange={(v) => setDraft((d) => ({ ...d, vetName: v }))}
+            options={vetOptions}
+            allowOther
+          />
           {draft.vetName === OTHER && (
             <input
               type="text"

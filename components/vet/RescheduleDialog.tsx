@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { CalendarClock, Loader2, X } from "lucide-react";
+import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
 import { rescheduleAppointmentAction } from "@/app/actions/appointments";
 import { clinicDateInput, clinicTimeInput } from "@/lib/clinic-time";
 
@@ -177,19 +178,16 @@ export function RescheduleDialog({
                 >
                   Motivo / servicio
                 </label>
-                <select
-                  className={inputClass}
-                  style={inputStyle}
+                <FancySelect
                   value={serviceId}
-                  onChange={(e) => setServiceId(e.target.value)}
+                  onChange={setServiceId}
+                  required
                   disabled={saving}
-                >
-                  {services.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-                </select>
+                  options={services.map((s) => ({ value: s.id, label: s.name }))}
+                  fontSize={15}
+                  accent="var(--vet-green)"
+                  tokens={VET_TOKENS}
+                />
                 <p
                   className="text-[11.5px] font-semibold"
                   style={{ color: "var(--vet-text-3)" }}

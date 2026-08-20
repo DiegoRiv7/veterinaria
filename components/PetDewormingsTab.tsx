@@ -8,6 +8,7 @@ import {
   deleteDewormingAction,
   type AddResult,
 } from "@/app/actions/cartilla";
+import { FancySelect } from "@/components/FancySelect";
 
 export type DewormingEntry = {
   id: string;
@@ -42,6 +43,7 @@ export function PetDewormingsTab({
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [kind, setKind] = useState("Interna");
   const [pendingDelete, startDelete] = useTransition();
   const [state, formAction, pending] = useActionState<
     AddResult | { ok: false; error: undefined } | null,
@@ -101,7 +103,10 @@ export function PetDewormingsTab({
       {!readonly && !adding && (
         <button
           type="button"
-          onClick={() => setAdding(true)}
+          onClick={() => {
+            setKind("Interna");
+            setAdding(true);
+          }}
           className="w-full py-3 rounded-[14px] flex items-center justify-center gap-2 text-[14px] font-extrabold transition"
           style={{
             background: t.addBg,
@@ -159,22 +164,18 @@ export function PetDewormingsTab({
           </Field>
 
           <Field label="Tipo">
-            <select
+            <FancySelect
               name="kind"
-              defaultValue="Interna"
-              className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
-              style={{
-                height: 48,
-                minHeight: 48,
-                background: t.inputBg,
-                borderColor: t.border,
-                color: t.text,
-              }}
-            >
-              <option value="Interna">Interna</option>
-              <option value="Externa">Externa</option>
-              <option value="Ambas">Ambas</option>
-            </select>
+              value={kind}
+              onChange={setKind}
+              required
+              options={["Interna", "Externa", "Ambas"].map((o) => ({
+                value: o,
+                label: o,
+              }))}
+              dark={dark}
+              accent={accent}
+            />
           </Field>
 
           <div className="flex gap-2">

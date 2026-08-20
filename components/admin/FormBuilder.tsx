@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
 import {
   AlertCircle,
   Check,
@@ -660,22 +661,21 @@ function ContextToolbar({
         Seleccionado
       </span>
 
-      <select
+      <FancySelect
         value={field.type}
-        onChange={(e) => onChange({ type: e.target.value as FieldType })}
-        className="h-9 px-2 rounded-[9px] border text-[12px] font-extrabold outline-none"
-        style={{
-          background: "var(--vet-bg-card)",
-          borderColor: "var(--vet-border)",
-          color: "var(--vet-text-1)",
-        }}
-      >
-        {(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => (
-          <option key={type} value={type}>
-            {FIELD_TYPE_META[type].label}
-          </option>
-        ))}
-      </select>
+        onChange={(v) => onChange({ type: v as FieldType })}
+        required
+        options={(Object.keys(FIELD_TYPE_META) as FieldType[]).map((type) => ({
+          value: type,
+          label: FIELD_TYPE_META[type].label,
+        }))}
+        height={36}
+        fontSize={12}
+        radius={9}
+        accent="var(--vet-green)"
+        tokens={VET_TOKENS}
+        className="w-[180px] shrink-0"
+      />
 
       {!visual && (
         <label
@@ -1152,16 +1152,22 @@ function PreviewField({ field }: { field: FormField }) {
         />
       )}
       {field.type === "select" && (
-        <select
-          disabled
-          className="h-10 px-3 rounded-[10px] border text-[13px] font-bold disabled:opacity-100"
-          style={inputStyle}
-        >
-          <option>Seleccionar</option>
-          {(field.options ?? []).map((option, index) => (
-            <option key={index}>{option}</option>
-          ))}
-        </select>
+        <div className="pointer-events-none">
+          <FancySelect
+            value=""
+            onChange={() => {}}
+            placeholder="Seleccionar"
+            options={(field.options ?? []).map((option) => ({
+              value: option,
+              label: option,
+            }))}
+            height={40}
+            fontSize={13}
+            radius={10}
+            accent="var(--vet-green)"
+            tokens={VET_TOKENS}
+          />
+        </div>
       )}
       {field.type === "checkbox" && (
         <label

@@ -114,9 +114,10 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
     <>
       {/* Tabs row */}
       <div
-        className="no-scrollbar flex gap-2 px-3 py-3 overflow-x-auto"
+        className="no-scrollbar flex px-3 py-3 overflow-x-auto"
         style={{ borderBottom: "1px solid oklch(28% 0.04 35)" }}
       >
+        <div className="mx-auto flex gap-2">
         {TABS.map((t) => {
           const active = section === t.id;
           return (
@@ -137,6 +138,7 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
             </button>
           );
         })}
+        </div>
       </div>
 
       {/* Content */}
