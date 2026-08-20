@@ -52,6 +52,7 @@ export async function updateVetAccountAction(
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const phone = String(formData.get("phone") ?? "").replace(/\D+/g, "");
   const bio = String(formData.get("bio") ?? "").trim();
+  const license = String(formData.get("license") ?? "").trim().slice(0, 40);
 
   if (!name) return { ok: false, error: "El nombre no puede quedar vacío." };
   if (!EMAIL_RE.test(email)) return { ok: false, error: "El correo no es válido." };
@@ -76,7 +77,7 @@ export async function updateVetAccountAction(
   // Update vet bio if user has a vet profile
   await prisma.veterinarian.updateMany({
     where: { userId: session.userId },
-    data: { bio: bio || null },
+    data: { bio: bio || null, licenseNumber: license || null },
   });
 
   // Refresh session cookie so the sidebar/topbar pick up the new name immediately

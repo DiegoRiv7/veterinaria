@@ -90,6 +90,7 @@ export async function GET(
           email: appt.vet.user.email,
         },
         bio: appt.vet.bio,
+        licenseNumber: appt.vet.licenseNumber,
       },
     },
   });

@@ -11,6 +11,7 @@ import {
   formatDate,
 } from "@/lib/utils";
 import { VetCartillaTabs } from "./vet-cartilla-tabs";
+import { PetPhotoEdit } from "@/components/PetPhotoEdit";
 
 export const dynamic = "force-dynamic";
 
@@ -259,26 +260,23 @@ export default async function VetPetCartillaPage({
           }}
         />
         <div className="relative flex items-center gap-4">
-          <div
-            className="w-16 h-16 rounded-[16px] overflow-hidden flex items-center justify-center text-[28px] flex-shrink-0 border-2"
+          <PetPhotoEdit
+            petId={pet.id}
+            photoUrl={pet.photoUrl}
+            alt={pet.name}
+            fallback={
+              <span className="text-[28px]">
+                {SPECIES_EMOJI[pet.species] ?? "🐾"}
+              </span>
+            }
+            className="w-16 h-16 rounded-[16px] flex-shrink-0 border-2"
             style={{
               borderColor: "rgba(255,255,255,0.4)",
               background: pet.photoUrl
                 ? "rgba(255,255,255,0.10)"
                 : "rgba(255,255,255,0.18)",
             }}
-          >
-            {pet.photoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={pet.photoUrl}
-                alt={pet.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <span>{SPECIES_EMOJI[pet.species] ?? "🐾"}</span>
-            )}
-          </div>
+          />
           <div className="min-w-0">
             <p
               className="text-[10px] font-extrabold uppercase tracking-[1.4px] text-white/80"

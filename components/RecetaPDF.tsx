@@ -40,6 +40,7 @@ export type RecetaData = {
   vet: {
     user: { name: string; email: string | null };
     bio: string | null;
+    licenseNumber: string | null;
   };
 };
 
@@ -62,11 +63,11 @@ const COLORS = {
 
 const styles = StyleSheet.create({
   page: {
-    paddingTop: 40,
-    paddingBottom: 60,
-    paddingHorizontal: 40,
+    paddingTop: 26,
+    paddingBottom: 42,
+    paddingHorizontal: 36,
     fontFamily: "Helvetica",
-    fontSize: 11,
+    fontSize: 10.5,
     color: COLORS.text,
     backgroundColor: COLORS.white,
   },
@@ -75,32 +76,32 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    marginBottom: 8,
+    marginBottom: 4,
   },
   brandMark: {
-    width: 52,
-    height: 52,
-    borderRadius: 14,
-    marginRight: 14,
+    width: 40,
+    height: 40,
+    borderRadius: 11,
+    marginRight: 11,
     backgroundColor: COLORS.brandSoft,
     alignItems: "center",
     justifyContent: "center",
     overflow: "hidden",
   },
   brandLogo: {
-    width: 52,
-    height: 52,
+    width: 40,
+    height: 40,
   },
   brandTitle: {
-    fontSize: 22,
+    fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: COLORS.ink,
     letterSpacing: 0.2,
   },
   brandSubtitle: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: COLORS.sky,
-    marginTop: 3,
+    marginTop: 2,
     fontFamily: "Helvetica-Bold",
     letterSpacing: 1.2,
     textTransform: "uppercase",
@@ -109,11 +110,11 @@ const styles = StyleSheet.create({
   // Gradient strip (faked with three colored rects side by side)
   gradientBar: {
     flexDirection: "row",
-    height: 4,
+    height: 3,
     borderRadius: 2,
     overflow: "hidden",
-    marginTop: 14,
-    marginBottom: 18,
+    marginTop: 10,
+    marginBottom: 12,
   },
   gradSky: { flex: 1, backgroundColor: COLORS.sky },
   gradIndigo: { flex: 1, backgroundColor: COLORS.indigo },
@@ -124,45 +125,59 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-end",
-    marginBottom: 12,
+    marginBottom: 10,
   },
   recetaTitle: {
-    fontSize: 16,
+    fontSize: 15,
     fontFamily: "Helvetica-Bold",
     color: COLORS.indigo,
     letterSpacing: 1,
     textTransform: "uppercase",
   },
   recetaMeta: {
-    fontSize: 10,
+    fontSize: 8.5,
     color: COLORS.muted,
     textAlign: "right",
+    marginTop: 1,
+  },
+  recetaVet: {
+    fontSize: 10.5,
+    fontFamily: "Helvetica-Bold",
+    color: COLORS.ink,
+    textAlign: "right",
+  },
+  recetaCedula: {
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    color: COLORS.indigo,
+    textAlign: "right",
+    marginTop: 1.5,
   },
 
   // Sections
   section: {
-    marginBottom: 14,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
-    padding: 12,
+    padding: 9,
     backgroundColor: COLORS.white,
   },
   sectionAccent: {
-    marginBottom: 14,
+    marginBottom: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 8,
-    padding: 12,
+    padding: 9,
     backgroundColor: COLORS.soft,
   },
   sectionTitle: {
-    fontSize: 9,
+    fontSize: 8,
     fontFamily: "Helvetica-Bold",
     color: COLORS.indigo,
     textTransform: "uppercase",
-    letterSpacing: 1.2,
-    marginBottom: 8,
+    letterSpacing: 1.1,
+    marginBottom: 5,
   },
 
   // Two-column grid for data rows
@@ -171,77 +186,78 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
   },
   gridItem: {
-    width: "50%",
-    paddingRight: 8,
-    marginBottom: 6,
+    width: "25%",
+    paddingRight: 7,
+    marginBottom: 4,
   },
   gridItemFull: {
     width: "100%",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   fieldLabel: {
-    fontSize: 8,
+    fontSize: 7,
     color: COLORS.muted,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
-    marginBottom: 2,
+    letterSpacing: 0.5,
+    marginBottom: 1.5,
   },
   fieldValue: {
-    fontSize: 11,
+    fontSize: 9.5,
     color: COLORS.ink,
     fontFamily: "Helvetica-Bold",
   },
 
   // Body / paragraph text inside boxes
   paragraph: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.text,
-    lineHeight: 1.5,
+    lineHeight: 1.4,
   },
 
   // Medications list
   medItem: {
     flexDirection: "row",
-    marginBottom: 6,
+    marginBottom: 4,
   },
   medNumber: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: 17,
+    height: 17,
+    borderRadius: 9,
     backgroundColor: COLORS.pink,
     color: COLORS.white,
-    fontSize: 10,
+    fontSize: 8.5,
     fontFamily: "Helvetica-Bold",
     textAlign: "center",
-    paddingTop: 5,
-    marginRight: 8,
+    paddingTop: 3.5,
+    marginRight: 7,
   },
   medText: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.text,
-    paddingTop: 4,
-    lineHeight: 1.4,
+    paddingTop: 2.5,
+    lineHeight: 1.35,
   },
 
   // Signature
   signatureBlock: {
-    marginTop: 22,
+    marginTop: "auto",
+    paddingTop: 16,
     alignItems: "center",
   },
   signatureLine: {
-    width: 220,
+    width: 200,
     height: 1,
     backgroundColor: COLORS.ink,
-    marginBottom: 6,
+    marginBottom: 5,
   },
   signatureName: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontFamily: "Helvetica-Bold",
     color: COLORS.ink,
   },
   signatureRole: {
-    fontSize: 9,
+    fontSize: 8.5,
     color: COLORS.muted,
     marginTop: 2,
   },
@@ -249,19 +265,19 @@ const styles = StyleSheet.create({
   // Footer
   footer: {
     position: "absolute",
-    bottom: 24,
-    left: 40,
-    right: 40,
+    bottom: 14,
+    left: 36,
+    right: 36,
     textAlign: "center",
-    fontSize: 9,
+    fontSize: 8,
     color: COLORS.muted,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingTop: 10,
+    paddingTop: 7,
   },
 
   emptyText: {
-    fontSize: 11,
+    fontSize: 10,
     color: COLORS.muted,
     fontStyle: "italic",
   },
@@ -292,7 +308,7 @@ function shortId(id: string) {
 // Simple stylized paw mark using SVG paths (no emoji).
 function PawMark() {
   return (
-    <Svg width={28} height={28} viewBox="0 0 64 64">
+    <Svg width={22} height={22} viewBox="0 0 64 64">
       {/* Toe pads */}
       <Path d="M16 22 a6 7 0 1 0 0.001 0 z" fill={COLORS.pink} />
       <Path d="M28 14 a6 7 0 1 0 0.001 0 z" fill={COLORS.indigo} />
@@ -373,18 +389,23 @@ export function RecetaPDF({
         <View style={styles.recetaLabelRow}>
           <Text style={styles.recetaTitle}>Receta médica</Text>
           <View>
-            <Text style={styles.recetaMeta}>Folio · {shortId(data.id)}</Text>
+            <Text style={styles.recetaVet}>MVZ {data.vet.user.name}</Text>
+            {data.vet.licenseNumber ? (
+              <Text style={styles.recetaCedula}>
+                Céd. Prof. {data.vet.licenseNumber}
+              </Text>
+            ) : null}
             <Text style={styles.recetaMeta}>
               Emitida el {formatLongDate(issuedAt)}
             </Text>
           </View>
         </View>
 
-        {/* Datos del paciente */}
+        {/* Paciente · propietario · consulta — todo en un solo bloque */}
         <View style={styles.sectionAccent}>
           <Text style={styles.sectionTitle}>Datos del paciente</Text>
           <View style={styles.grid}>
-            <Field label="Nombre" value={data.pet.name} />
+            <Field label="Paciente" value={data.pet.name} />
             <Field label="Especie" value={speciesLabel} />
             <Field label="Raza" value={data.pet.breed} />
             <Field label="Edad" value={age} />
@@ -394,31 +415,13 @@ export function RecetaPDF({
             {data.pet.microchipId ? (
               <Field label="Microchip" value={data.pet.microchipId} />
             ) : null}
-          </View>
-        </View>
-
-        {/* Datos del propietario */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Datos del propietario</Text>
-          <View style={styles.grid}>
-            <Field label="Nombre" value={data.client.name} />
+            <Field label="Propietario" value={data.client.name} />
             <Field label="Teléfono" value={data.client.phone ?? null} />
-          </View>
-        </View>
-
-        {/* Atendido por */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Atendido por</Text>
-          <View style={styles.grid}>
-            <Field label="Veterinario" value={data.vet.user.name} />
             <Field label="Servicio" value={data.service.name} />
             <Field
               label="Fecha de consulta"
               value={`${formatLongDate(data.scheduledAt)} · ${formatTime(data.scheduledAt)}`}
             />
-            {data.vet.user.email ? (
-              <Field label="Contacto" value={data.vet.user.email} />
-            ) : null}
           </View>
         </View>
 
@@ -443,7 +446,7 @@ export function RecetaPDF({
         </View>
 
         {/* Medicamentos */}
-        <View style={styles.section} wrap={false}>
+        <View style={styles.section}>
           <Text style={styles.sectionTitle}>Medicamentos</Text>
           {meds.length > 0 ? (
             meds.map((m, i) => (
@@ -460,15 +463,19 @@ export function RecetaPDF({
         {/* Signature */}
         <View style={styles.signatureBlock} wrap={false}>
           <View style={styles.signatureLine} />
-          <Text style={styles.signatureName}>{data.vet.user.name}</Text>
-          <Text style={styles.signatureRole}>Médico veterinario</Text>
+          <Text style={styles.signatureName}>MVZ {data.vet.user.name}</Text>
+          <Text style={styles.signatureRole}>
+            {data.vet.licenseNumber
+              ? `Médico Veterinario Zootecnista · Céd. Prof. ${data.vet.licenseNumber}`
+              : "Médico Veterinario Zootecnista"}
+          </Text>
         </View>
 
         {/* Footer */}
         <Text
           style={styles.footer}
           render={() =>
-            `Receta digital · Vetsfriend · ${formatLongDate(issuedAt)}`
+            `Receta digital · Folio ${shortId(data.id)} · Vetsfriend · ${formatLongDate(issuedAt)}`
           }
           fixed
         />

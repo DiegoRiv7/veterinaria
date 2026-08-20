@@ -24,6 +24,7 @@ type UserData = {
 type VetData = {
   id: string;
   bio: string | null;
+  licenseNumber: string | null;
   photoUrl: string | null;
 };
 
@@ -63,7 +64,12 @@ export function VetProfileEditor({ user, vet }: Props) {
         <PhotoSection vetId={vet.id} defaultPhotoUrl={vet.photoUrl} name={user.name} />
       )}
 
-      <AccountSection user={user} bio={vet?.bio ?? ""} hasVetProfile={!!vet} />
+      <AccountSection
+        user={user}
+        bio={vet?.bio ?? ""}
+        licenseNumber={vet?.licenseNumber ?? ""}
+        hasVetProfile={!!vet}
+      />
 
       <PasswordSection />
 
@@ -205,10 +211,12 @@ function PhotoSection({
 function AccountSection({
   user,
   bio,
+  licenseNumber,
   hasVetProfile,
 }: {
   user: UserData;
   bio: string;
+  licenseNumber: string;
   hasVetProfile: boolean;
 }) {
   const [state, formAction, pending] = useActionState(updateVetAccountAction, {
@@ -274,20 +282,41 @@ function AccountSection({
           />
         </div>
         {hasVetProfile && (
-          <div>
-            <label htmlFor="bio" className={labelClass} style={labelStyle}>
-              Bio / especialidad
-            </label>
-            <textarea
-              id="bio"
-              name="bio"
-              defaultValue={bio}
-              rows={3}
-              placeholder="Ej. Medicina interna y dermatología veterinaria."
-              className="w-full px-4 py-3 rounded-[12px] border outline-none text-[15px] font-semibold focus:border-[var(--vet-green)] transition-colors resize-y"
-              style={fieldStyle}
-            />
-          </div>
+          <>
+            <div>
+              <label htmlFor="license" className={labelClass} style={labelStyle}>
+                Cédula profesional
+              </label>
+              <input
+                id="license"
+                name="license"
+                defaultValue={licenseNumber}
+                placeholder="Ej. 12345678"
+                className={fieldClass}
+                style={fieldStyle}
+              />
+              <p
+                className="text-[11.5px] font-semibold mt-1.5"
+                style={{ color: "var(--vet-text-3)" }}
+              >
+                Aparece en la receta médica junto a tu nombre (MVZ).
+              </p>
+            </div>
+            <div>
+              <label htmlFor="bio" className={labelClass} style={labelStyle}>
+                Bio / especialidad
+              </label>
+              <textarea
+                id="bio"
+                name="bio"
+                defaultValue={bio}
+                rows={3}
+                placeholder="Ej. Medicina interna y dermatología veterinaria."
+                className="w-full px-4 py-3 rounded-[12px] border outline-none text-[15px] font-semibold focus:border-[var(--vet-green)] transition-colors resize-y"
+                style={fieldStyle}
+              />
+            </div>
+          </>
         )}
         <div>
           <label className={labelClass} style={labelStyle}>

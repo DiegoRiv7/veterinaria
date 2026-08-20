@@ -7,6 +7,7 @@ import { VetIcon } from "@/components/vet/VetIcon";
 import { PetGallery } from "@/components/PetGallery";
 import { PetFichaCard } from "@/components/vet/PetFichaCard";
 import { BackLink } from "@/components/BackLink";
+import { PetPhotoEdit } from "@/components/PetPhotoEdit";
 import {
   SPECIES_LABEL,
   SPECIES_EMOJI,
@@ -91,21 +92,16 @@ export default async function VetPatientDetailPage({
           borderRadius: 22,
         }}
       >
-        <div
-          className="w-20 h-20 rounded-full flex items-center justify-center text-5xl border-2 flex-shrink-0 self-center sm:self-start"
+        <PetPhotoEdit
+          petId={pet.id}
+          photoUrl={pet.photoUrl}
+          alt={pet.name}
+          fallback={
+            <span className="text-5xl">{SPECIES_EMOJI[pet.species] ?? "🐾"}</span>
+          }
+          className="w-20 h-20 rounded-full border-2 flex-shrink-0 self-center sm:self-start"
           style={{ background: `${tint}33`, borderColor: `${tint}77` }}
-        >
-          {pet.photoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={pet.photoUrl}
-              alt={pet.name}
-              className="w-full h-full object-cover rounded-full"
-            />
-          ) : (
-            SPECIES_EMOJI[pet.species] ?? "🐾"
-          )}
-        </div>
+        />
         <div className="flex-1 min-w-0">
           <h1
             className="text-[26px] font-black tracking-tight"

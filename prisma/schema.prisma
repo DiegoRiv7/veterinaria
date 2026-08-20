@@ -229,12 +229,14 @@ model PetPhoto {
 }
 
 model Veterinarian {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  bio       String?
-  photoUrl  String?
-  createdAt DateTime @default(now())
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio           String?
+  photoUrl      String?
+  /// Cédula profesional (aparece en la receta médica).
+  licenseNumber String?
+  createdAt     DateTime @default(now())
 
   appointments Appointment[]
   workingHours VetWorkingHours[]

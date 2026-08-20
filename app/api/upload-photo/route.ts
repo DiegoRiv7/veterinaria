@@ -57,7 +57,12 @@ export async function POST(req: NextRequest) {
   if (petId) {
     const pet = await prisma.pet.findUnique({ where: { id: petId } });
     if (!pet) return NextResponse.json({ error: "Mascota no encontrada." }, { status: 404 });
-    if (pet.ownerId !== session.userId) {
+    // Dueño de la mascota o personal de la clínica (mismo criterio que la cartilla).
+    const isStaff =
+      session.role === "VET" ||
+      session.role === "ADMIN" ||
+      session.role === "RECEPTIONIST";
+    if (pet.ownerId !== session.userId && !isStaff) {
       return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
     }
   }

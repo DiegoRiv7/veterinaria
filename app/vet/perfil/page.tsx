@@ -38,6 +38,7 @@ export default async function VetProfilePage() {
           ? {
               id: user.vetProfile.id,
               bio: user.vetProfile.bio,
+              licenseNumber: user.vetProfile.licenseNumber,
               photoUrl: user.vetProfile.photoUrl,
             }
           : null
