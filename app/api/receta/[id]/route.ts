@@ -8,7 +8,15 @@ import {
   RecetaPDF,
   computeRecetaScale,
   type RecetaData,
+  type RecetaSection,
 } from "@/components/RecetaPDF";
+import {
+  parseFormSchema,
+  parseConsultaData,
+  isVisualOnly,
+  LEGACY_FIELD_IDS,
+  DEFAULT_CONSULTA_SCHEMA,
+} from "@/lib/form-schema";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -64,12 +72,41 @@ export async function GET(
 
   const logo = await loadBrandLogo();
 
+  // Secciones de la consulta que sí se llenaron, en el orden del formulario
+  // del servicio. Lo vacío no aparece en la receta.
+  const schema = parseFormSchema(appt.service.formSchema) ?? DEFAULT_CONSULTA_SCHEMA;
+  const values = parseConsultaData(appt.consultaData);
+  const consulta: RecetaSection[] = [];
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      if (isVisualOnly(field.type)) continue;
+      // Los medicamentos van como lista numerada aparte, no como párrafo.
+      if (field.id === LEGACY_FIELD_IDS.medications) continue;
+      const v = values[field.id];
+      let text = "";
+      if (typeof v === "string") text = v.trim();
+      else if (typeof v === "number") {
+        text = `${v}${field.unit ? ` ${field.unit}` : ""}`;
+      } else if (v === true) text = "Sí";
+      else if (Array.isArray(v)) text = v.filter(Boolean).join(" · ");
+      if (text) consulta.push({ label: field.label, value: text });
+    }
+  }
+  // Citas viejas sin consultaData: usa las columnas de texto clásicas.
+  if (consulta.length === 0) {
+    if (appt.vetNotes?.trim()) {
+      consulta.push({ label: "Diagnóstico", value: appt.vetNotes.trim() });
+    }
+    if (appt.instructions?.trim()) {
+      consulta.push({ label: "Indicaciones", value: appt.instructions.trim() });
+    }
+  }
+
   const data: RecetaData = {
     id: appt.id,
     scheduledAt: appt.scheduledAt,
-    vetNotes: appt.vetNotes,
-    instructions: appt.instructions,
     medications: appt.medications,
+    consulta,
     service: { name: appt.service.name },
     pet: {
       name: appt.pet.name,

@@ -16,12 +16,15 @@ import { formatClinicTime } from "@/lib/clinic-time";
 // Types
 // ----------------------------------------------------------------------------
 
+/** Un bloque de la consulta que sí se llenó: etiqueta + contenido. */
+export type RecetaSection = { label: string; value: string };
+
 export type RecetaData = {
   id: string;
   scheduledAt: Date;
-  vetNotes: string | null;
-  instructions: string | null;
   medications: string | null;
+  /** Campos de la consulta con contenido, en el orden del formulario. */
+  consulta: RecetaSection[];
   service: { name: string };
   pet: {
     name: string;
@@ -375,6 +378,41 @@ function parseMeds(medications: string | null): string[] {
     .map((line) => line.replace(/^\s*\d+[.)\-]\s*/, ""));
 }
 
+/** Datos del paciente que sí existen — lo vacío no se imprime. */
+function patientFields(data: RecetaData): { label: string; value: string }[] {
+  const age = ageFromBirthDate(data.pet.birthDate);
+  const out: { label: string; value: string | null }[] = [
+    { label: "Paciente", value: data.pet.name },
+    { label: "Especie", value: SPECIES_LABEL[data.pet.species] ?? data.pet.species },
+    { label: "Raza", value: data.pet.breed },
+    { label: "Edad", value: age ?? null },
+    {
+      label: "Sexo",
+      value:
+        data.pet.sex && data.pet.sex !== "UNKNOWN"
+          ? SEX_LABEL[data.pet.sex] ?? data.pet.sex
+          : null,
+    },
+    {
+      label: "Peso",
+      value: data.pet.weightKg != null ? `${data.pet.weightKg} kg` : null,
+    },
+    { label: "Color", value: data.pet.color },
+    { label: "Microchip", value: data.pet.microchipId },
+    { label: "Propietario", value: data.client.name },
+    { label: "Teléfono", value: data.client.phone },
+    { label: "Servicio", value: data.service.name },
+    {
+      label: "Fecha de consulta",
+      value: `${formatLongDate(data.scheduledAt)} · ${formatTime(data.scheduledAt)}`,
+    },
+  ];
+  return out.filter(
+    (f): f is { label: string; value: string } =>
+      typeof f.value === "string" && f.value.trim().length > 0
+  );
+}
+
 /**
  * Escala adaptativa: estima la altura del contenido a k=1 y, si no cabe en
  * la hoja, compacta (hasta 0.72). La ruta puede re-renderizar con una
@@ -382,15 +420,16 @@ function parseMeds(medications: string | null): string[] {
  */
 export function computeRecetaScale(data: RecetaData): number {
   const meds = parseMeds(data.medications);
-  const fieldCount =
-    10 + (data.pet.color ? 1 : 0) + (data.pet.microchipId ? 1 : 0);
+  const fieldCount = patientFields(data).length;
+  const textHeight = data.consulta.reduce(
+    (sum, sec) => sum + 32 + estimateLines(sec.value, 95) * 15.5,
+    0
+  );
   const estimated =
     150 + // header + barra + encabezado de receta
     (28 + Math.ceil(fieldCount / 4) * 26) + // bloque de datos
-    3 * 32 + // marco de las 3 secciones de texto
-    estimateLines(data.vetNotes, 95) * 15.5 +
-    estimateLines(data.instructions, 95) * 15.5 +
-    Math.max(1, meds.length) * 23 + // renglones de medicamentos
+    textHeight + // secciones de la consulta con contenido
+    (meds.length > 0 ? 32 + meds.length * 23 : 0) + // medicamentos
     75; // firma
   const available = 842 - 26 - 42; // A4 alto − márgenes
   return estimated <= available ? 1 : Math.max(0.72, available / estimated);
@@ -407,12 +446,7 @@ export function RecetaPDF({
   scale?: number;
 }) {
   const issuedAt = new Date();
-  const age = ageFromBirthDate(data.pet.birthDate);
-  const speciesLabel = SPECIES_LABEL[data.pet.species] ?? data.pet.species;
-  const sexLabel = SEX_LABEL[data.pet.sex] ?? data.pet.sex;
-  const weightStr =
-    data.pet.weightKg != null ? `${data.pet.weightKg.toString()} kg` : null;
-
+  const fields = patientFields(data);
   const meds = parseMeds(data.medications);
   const k = scale ?? computeRecetaScale(data);
   const styles = makeStyles(k);
@@ -462,67 +496,45 @@ export function RecetaPDF({
           </View>
         </View>
 
-        {/* Paciente · propietario · consulta — todo en un solo bloque */}
+        {/* Paciente · propietario · consulta — solo los datos que existen */}
         <View style={styles.sectionAccent}>
           <Text style={styles.sectionTitle}>Datos del paciente</Text>
           <View style={styles.grid}>
-            <Field styles={styles} label="Paciente" value={data.pet.name} />
-            <Field styles={styles} label="Especie" value={speciesLabel} />
-            <Field styles={styles} label="Raza" value={data.pet.breed} />
-            <Field styles={styles} label="Edad" value={age} />
-            <Field styles={styles} label="Sexo" value={sexLabel} />
-            <Field styles={styles} label="Peso" value={weightStr} />
-            {data.pet.color ? (
-              <Field styles={styles} label="Color" value={data.pet.color} />
-            ) : null}
-            {data.pet.microchipId ? (
-              <Field styles={styles} label="Microchip" value={data.pet.microchipId} />
-            ) : null}
-            <Field styles={styles} label="Propietario" value={data.client.name} />
-            <Field styles={styles} label="Teléfono" value={data.client.phone ?? null} />
-            <Field styles={styles} label="Servicio" value={data.service.name} />
-            <Field
-              styles={styles}
-              label="Fecha de consulta"
-              value={`${formatLongDate(data.scheduledAt)} · ${formatTime(data.scheduledAt)}`}
-            />
+            {fields.map((f) => (
+              <Field styles={styles} key={f.label} label={f.label} value={f.value} />
+            ))}
           </View>
         </View>
 
-        {/* Diagnóstico */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Diagnóstico</Text>
-          {data.vetNotes && data.vetNotes.trim().length > 0 ? (
-            <Text style={styles.paragraph}>{data.vetNotes}</Text>
-          ) : (
-            <Text style={styles.emptyText}>Sin diagnóstico registrado.</Text>
-          )}
-        </View>
+        {/* Secciones de la consulta — solo las que se llenaron */}
+        {data.consulta.map((sec, i) => (
+          <View key={i} style={styles.section}>
+            <Text style={styles.sectionTitle}>{sec.label}</Text>
+            <Text style={styles.paragraph}>{sec.value}</Text>
+          </View>
+        ))}
 
-        {/* Indicaciones */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Indicaciones</Text>
-          {data.instructions && data.instructions.trim().length > 0 ? (
-            <Text style={styles.paragraph}>{data.instructions}</Text>
-          ) : (
-            <Text style={styles.emptyText}>Sin indicaciones específicas.</Text>
-          )}
-        </View>
-
-        {/* Medicamentos */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Medicamentos</Text>
-          {meds.length > 0 ? (
-            meds.map((m, i) => (
+        {/* Medicamentos — solo si se prescribió algo */}
+        {meds.length > 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Medicamentos</Text>
+            {meds.map((m, i) => (
               <View key={i} style={styles.medItem}>
                 <Text style={styles.medNumber}>{i + 1}</Text>
                 <Text style={styles.medText}>{m}</Text>
               </View>
-            ))
-          ) : (
-            <Text style={styles.emptyText}>No se prescribieron medicamentos.</Text>
-          )}
-        </View>
+            ))}
+          </View>
+        ) : null}
+
+        {/* Receta sin contenido — una sola línea, sin cajas vacías */}
+        {data.consulta.length === 0 && meds.length === 0 ? (
+          <View style={styles.section}>
+            <Text style={styles.emptyText}>
+              Sin notas registradas en la consulta.
+            </Text>
+          </View>
+        ) : null}
 
         {/* Signature */}
         <View style={styles.signatureBlock} wrap={false}>
