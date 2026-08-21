@@ -114,3 +114,19 @@ export function clinicInstant(dateStr: string, timeStr: string): Date {
   ts = wallAsUTC - clinicOffsetMs(new Date(ts));
   return new Date(ts);
 }
+
+/**
+ * Etiqueta corta del día de una fecha en el reloj de la clínica:
+ * "hoy" | "mañana" | "22 ago". Útil para listas de próximas citas.
+ */
+export function clinicDayLabel(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  const day = clinicDateInput(d);
+  if (day === clinicDateInput(new Date())) return "hoy";
+  if (day === clinicDateInput(new Date(Date.now() + 86400000))) return "mañana";
+  return new Intl.DateTimeFormat("es-MX", {
+    timeZone: CLINIC_TIME_ZONE,
+    day: "numeric",
+    month: "short",
+  }).format(d);
+}

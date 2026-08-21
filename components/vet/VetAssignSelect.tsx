@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Check, ChevronDown, Loader2 } from "lucide-react";
@@ -30,23 +31,61 @@ export function VetAssignSelect({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [menuPos, setMenuPos] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+  } | null>(null);
   const boxRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const MENU_W = 240;
+
+  // Menú en portal con posición fija: no lo recortan los contenedores ni
+  // lo tapan las tarjetas siguientes; se alinea a la derecha del botón.
+  function openMenu() {
+    const btn = boxRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.right - MENU_W, window.innerWidth - MENU_W - 8));
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const openUp = below < 280 && above > below;
+    setMenuPos(
+      openUp
+        ? { left, bottom: window.innerHeight - r.top + 6 }
+        : { left, top: r.bottom + 6 }
+    );
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
     function onPointerDown(e: PointerEvent) {
-      if (boxRef.current && !boxRef.current.contains(e.target as Node)) {
-        setOpen(false);
-      }
+      const t = e.target as Node;
+      if (boxRef.current?.contains(t)) return;
+      if (menuRef.current?.contains(t)) return;
+      setOpen(false);
     }
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") setOpen(false);
     }
+    function onScroll(e: Event) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    function onResize() {
+      setOpen(false);
+    }
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
     return () => {
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
     };
   }, [open]);
 
@@ -79,7 +118,7 @@ export function VetAssignSelect({
     <div ref={boxRef} className="relative inline-block text-left">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => (open ? setOpen(false) : openMenu())}
         disabled={saving}
         title="Cambiar médico asignado"
         className="inline-flex items-center gap-1 text-[13px] font-extrabold cursor-pointer transition hover:opacity-80 disabled:opacity-60"
@@ -93,10 +132,20 @@ export function VetAssignSelect({
         {current?.name ?? "Sin médico"}
       </button>
 
-      {open && (
+      {open && menuPos && typeof document !== "undefined" &&
+        createPortal(
         <div
-          className="absolute right-0 top-full mt-1.5 w-[240px] rounded-[14px] border z-50 overflow-hidden py-1"
+          ref={menuRef}
+          className="vet-portal rounded-[14px] border overflow-y-auto py-1"
           style={{
+            position: "fixed",
+            left: menuPos.left,
+            top: menuPos.top,
+            bottom: menuPos.bottom,
+            width: MENU_W,
+            zIndex: 130,
+            minHeight: 0,
+            maxHeight: "min(320px, calc(100dvh - 24px))",
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
             boxShadow: "0 14px 34px -14px rgba(0,0,0,0.28)",
@@ -159,7 +208,8 @@ export function VetAssignSelect({
               </button>
             );
           })}
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

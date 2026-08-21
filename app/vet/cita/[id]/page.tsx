@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { clinicDateInput } from "@/lib/clinic-time";
 import { readSession } from "@/lib/auth";
 import { BackLink } from "@/components/BackLink";
 import { PetAvatar } from "@/components/PetAvatar";
@@ -404,6 +405,7 @@ export default async function VetAppointmentEdit({
             appointmentId={appt.id}
             disabled={isCancelled}
             completed={isCompleted}
+            defaultDate={clinicDateInput(appt.scheduledAt)}
           />
         </main>
       </div>

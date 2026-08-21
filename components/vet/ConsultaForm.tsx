@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarDays, Check, ChevronDown, ChevronLeft, ChevronRight, FileText, Loader2, RotateCcw } from "lucide-react";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Loader2, RotateCcw } from "lucide-react";
+import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
 import type {
   ConsultaData,
   ConsultaValue,
@@ -36,12 +38,15 @@ export function ConsultaForm({
   appointmentId,
   disabled = false,
   completed = false,
+  defaultDate,
 }: {
   schema: FormSchema;
   initial: ConsultaData;
   appointmentId: string;
   disabled?: boolean;
   completed?: boolean;
+  /** Fecha de la cita (YYYY-MM-DD) — default de las fechas obligatorias. */
+  defaultDate?: string;
 }) {
   const router = useRouter();
   const [, startTransition] = useTransition();
@@ -56,7 +61,7 @@ export function ConsultaForm({
   // State is keyed by field id. Initialize once from `initial` so the
   // user's edits are not stomped on every render.
   const [values, setValues] = useState<ConsultaData>(() =>
-    seedValues(dataFieldIds, schema, initial)
+    seedValues(dataFieldIds, schema, initial, defaultDate)
   );
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -332,14 +337,15 @@ function collectDataFieldIds(schema: FormSchema): string[] {
 function seedValues(
   ids: string[],
   schema: FormSchema,
-  initial: ConsultaData
+  initial: ConsultaData,
+  defaultDate?: string
 ): ConsultaData {
   const out: ConsultaData = {};
-  // Build lookup of field type by id
-  const fieldType = new Map<string, FormField["type"]>();
+  // Build lookup of field by id
+  const fieldById = new Map<string, FormField>();
   for (const section of schema.sections) {
     for (const field of section.fields) {
-      fieldType.set(field.id, field.type);
+      fieldById.set(field.id, field);
     }
   }
   for (const id of ids) {
@@ -348,10 +354,14 @@ function seedValues(
       out[id] = fromInitial;
       continue;
     }
-    const t = fieldType.get(id);
-    if (t === "checkbox") out[id] = false;
-    else if (t === "checkboxes") out[id] = [];
-    else out[id] = "";
+    const f = fieldById.get(id);
+    if (f?.type === "checkbox") out[id] = false;
+    else if (f?.type === "checkboxes") out[id] = [];
+    else if (f?.type === "date" && f.required && defaultDate) {
+      // Las fechas obligatorias ("Fecha de la cirugía", "Fecha del
+      // estudio"…) arrancan con la fecha de la cita; se pueden cambiar.
+      out[id] = defaultDate;
+    } else out[id] = "";
   }
   return out;
 }
@@ -855,113 +865,20 @@ function PrettySelect({
   disabled: boolean;
   onChange: (v: ConsultaValue) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = value || "";
-
-  useEffect(() => {
-    if (!open) return;
-    function close() {
-      setOpen(false);
-    }
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
-  }, [open]);
-
+  // Delegado al FancySelect compartido: el menú vive en un portal, así no
+  // lo recortan los contenedores ni lo tapan las secciones siguientes.
   return (
-    <div className="relative">
-      <button
-        id={id}
-        type="button"
-        disabled={disabled}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((prev) => !prev);
-        }}
-        className="h-12 w-full rounded-[12px] border px-4 pr-11 text-left text-[15px] font-bold outline-none transition focus:border-[color:var(--vet-green)] focus:ring-2 focus:ring-[color:var(--vet-green-glow)] disabled:cursor-not-allowed disabled:opacity-60"
-        style={{
-          background:
-            "linear-gradient(180deg, color-mix(in oklab, var(--vet-bg-card) 96%, white), var(--vet-bg-card))",
-          borderColor: open
-            ? "color-mix(in oklab, var(--vet-green) 46%, var(--vet-border))"
-            : "var(--vet-border)",
-          color: selected ? "var(--vet-text-1)" : "var(--vet-text-3)",
-          boxShadow: open
-            ? "0 0 0 3px var(--vet-green-glow), var(--shadow-soft-sm)"
-            : "var(--shadow-soft-sm)",
-        }}
-      >
-        <span className="block truncate">{selected || placeholder}</span>
-        <span
-          className="absolute right-3 top-1/2 inline-flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-[9px]"
-          style={{
-            background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
-            color: "var(--vet-green)",
-          }}
-        >
-          <ChevronDown
-            className={`h-4 w-4 transition ${open ? "rotate-180" : ""}`}
-            strokeWidth={2.5}
-          />
-        </span>
-      </button>
-
-      {open && !disabled && (
-        <div
-          role="listbox"
-          aria-labelledby={id}
-          onClick={(e) => e.stopPropagation()}
-          className="absolute z-30 mt-2 w-full overflow-hidden rounded-[14px] border p-1.5 shadow-[0_18px_45px_rgba(0,0,0,.16)]"
-          style={{
-            background: "var(--vet-bg-card)",
-            borderColor:
-              "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
-          }}
-        >
-          <button
-            type="button"
-            role="option"
-            aria-selected={!selected}
-            onClick={() => {
-              onChange("");
-              setOpen(false);
-            }}
-            className="w-full rounded-[10px] px-3 py-2.5 text-left text-[14px] font-bold transition hover:brightness-95"
-            style={{ color: "var(--vet-text-3)" }}
-          >
-            {placeholder}
-          </button>
-          <div className="max-h-[260px] overflow-y-auto pr-1">
-            {options.map((opt) => {
-              const active = opt === selected;
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  role="option"
-                  aria-selected={active}
-                  onClick={() => {
-                    onChange(opt);
-                    setOpen(false);
-                  }}
-                  className="mt-1 flex w-full items-center justify-between gap-3 rounded-[10px] px-3 py-2.5 text-left text-[14px] font-extrabold transition"
-                  style={{
-                    background: active
-                      ? "color-mix(in oklab, var(--vet-green) 14%, transparent)"
-                      : "transparent",
-                    color: active ? "var(--vet-green-dim)" : "var(--vet-text-1)",
-                  }}
-                >
-                  <span className="truncate">{opt}</span>
-                  {active && <Check className="h-4 w-4 shrink-0" />}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      )}
-    </div>
+    <FancySelect
+      id={id}
+      value={value}
+      onChange={(v) => onChange(v)}
+      options={options.map((o) => ({ value: o, label: o }))}
+      placeholder={placeholder}
+      disabled={disabled}
+      fontSize={15}
+      accent="var(--vet-green)"
+      tokens={VET_TOKENS}
+    />
   );
 }
 
@@ -978,15 +895,64 @@ function PrettyDatePicker({
 }) {
   const [open, setOpen] = useState(false);
   const [viewDate, setViewDate] = useState(() => parseISODate(value) ?? new Date());
+  const [panelPos, setPanelPos] = useState<{
+    left: number;
+    top?: number;
+    bottom?: number;
+    width: number;
+  } | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const selected = parseISODate(value);
+
+  // El calendario se porta a <body> con posición fija: nada lo recorta ni
+  // lo tapa, y se voltea hacia arriba si no hay espacio abajo.
+  function openPanel() {
+    const btn = btnRef.current;
+    if (!btn) return;
+    const r = btn.getBoundingClientRect();
+    const width = Math.min(r.width, 340);
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const openUp = below < 430 && above > below;
+    setPanelPos(
+      openUp
+        ? { left: r.left, bottom: window.innerHeight - r.top + 6, width }
+        : { left: r.left, top: r.bottom + 6, width }
+    );
+    if (selected) setViewDate(selected);
+    setOpen(true);
+  }
 
   useEffect(() => {
     if (!open) return;
-    function close() {
+    function onPointerDown(e: PointerEvent) {
+      const t = e.target as Node;
+      if (rootRef.current?.contains(t)) return;
+      if (panelRef.current?.contains(t)) return;
       setOpen(false);
     }
-    window.addEventListener("click", close);
-    return () => window.removeEventListener("click", close);
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    function onScroll(e: Event) {
+      if (panelRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    function onResize() {
+      setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
   }, [open]);
 
   const monthStart = new Date(viewDate.getFullYear(), viewDate.getMonth(), 1);
@@ -997,18 +963,15 @@ function PrettyDatePicker({
   const days = calendarDays(monthStart);
 
   return (
-    <div className="relative">
+    <div ref={rootRef} className="relative">
       <button
+        ref={btnRef}
         id={id}
         type="button"
         disabled={disabled}
         aria-haspopup="dialog"
         aria-expanded={open}
-        onClick={(e) => {
-          e.stopPropagation();
-          if (!open && selected) setViewDate(selected);
-          setOpen((prev) => !prev);
-        }}
+        onClick={() => (open ? setOpen(false) : openPanel())}
         className="h-12 w-full rounded-[12px] border px-4 pr-11 text-left text-[15px] font-bold outline-none transition focus:border-[color:var(--vet-green)] focus:ring-2 focus:ring-[color:var(--vet-green-glow)] disabled:cursor-not-allowed disabled:opacity-60"
         style={{
           background:
@@ -1036,18 +999,28 @@ function PrettyDatePicker({
         </span>
       </button>
 
-      {open && !disabled && (
-        <div
-          role="dialog"
-          aria-labelledby={`${id}-month`}
-          onClick={(e) => e.stopPropagation()}
-          className="absolute z-40 mt-2 w-[min(100%,340px)] rounded-[16px] border p-3 shadow-[0_18px_45px_rgba(0,0,0,.16)]"
-          style={{
-            background: "var(--vet-bg-card)",
-            borderColor:
-              "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
-          }}
-        >
+      {open && !disabled && panelPos && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={panelRef}
+            role="dialog"
+            aria-labelledby={`${id}-month`}
+            className="vet-portal overflow-y-auto rounded-[16px] border p-3"
+            style={{
+              position: "fixed",
+              left: panelPos.left,
+              top: panelPos.top,
+              bottom: panelPos.bottom,
+              width: panelPos.width,
+              zIndex: 130,
+              minHeight: 0,
+              maxHeight: "min(460px, calc(100dvh - 24px))",
+              background: "var(--vet-bg-card)",
+              borderColor:
+                "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+              boxShadow: "0 18px 45px rgba(0,0,0,.16)",
+            }}
+          >
           <div className="mb-3 flex items-center justify-between gap-2">
             <button
               type="button"
@@ -1151,8 +1124,9 @@ function PrettyDatePicker({
               Limpiar fecha
             </button>
           )}
-        </div>
-      )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

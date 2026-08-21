@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SPECIES_EMOJI } from "@/lib/utils";
-import { formatClinicTimeShort } from "@/lib/clinic-time";
+import { clinicDayLabel, formatClinicTimeShort } from "@/lib/clinic-time";
 import { StatusBadge, statusToVariant } from "./StatusBadge";
 
 type Appt = {
@@ -20,6 +20,8 @@ function formatTimeShort(d: Date | string) {
 
 export function AppointmentRow({ appt, compact }: { appt: Appt; compact?: boolean }) {
   const species = appt.pet.species as keyof typeof SPECIES_EMOJI;
+  // Si la cita no es de hoy, muestra el día para no confundirla con las de hoy.
+  const dayLabel = clinicDayLabel(appt.scheduledAt);
   return (
     <Link
       href={`/vet/cita/${appt.id}`}
@@ -39,6 +41,17 @@ export function AppointmentRow({ appt, compact }: { appt: Appt; compact?: boolea
         <div className="text-[10px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
           {appt.durationMinutes}min
         </div>
+        {dayLabel !== "hoy" && (
+          <div
+            className="text-[9px] font-extrabold uppercase tracking-wide mt-0.5 px-1 py-0.5 rounded-[5px]"
+            style={{
+              background: "var(--vet-amber-glow)",
+              color: "var(--vet-amber)",
+            }}
+          >
+            {dayLabel}
+          </div>
+        )}
       </div>
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center text-lg flex-shrink-0 border"

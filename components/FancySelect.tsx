@@ -90,6 +90,10 @@ export function FancySelect({
   const [open, setOpen] = useState(false);
   const [pos, setPos] = useState<MenuPos | null>(null);
   const [hovered, setHovered] = useState<string | null>(null);
+  // El menú se porta a <body>, fuera del scope de las variables CSS del
+  // tema vet (.vet-theme). Si el botón vive dentro de ese tema, el menú
+  // lleva la clase .vet-portal para heredar las mismas variables.
+  const [portalTheme, setPortalTheme] = useState("");
   const rootRef = useRef<HTMLDivElement>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -138,6 +142,9 @@ export function FancySelect({
   function openMenu() {
     if (disabled) return;
     setPos(computePos());
+    setPortalTheme(
+      btnRef.current?.closest(".vet-theme, .vet-portal") ? "vet-portal" : ""
+    );
     setHovered(null);
     setOpen(true);
   }
@@ -254,14 +261,15 @@ export function FancySelect({
             ref={menuRef}
             role="listbox"
             aria-labelledby={id}
-            className="overflow-hidden border p-1.5"
+            className={`${portalTheme} overflow-hidden border p-1.5`}
             style={{
               position: "fixed",
               left: pos.left,
               top: pos.top,
               bottom: pos.bottom,
               width: pos.width,
-              zIndex: 90,
+              zIndex: 130,
+              minHeight: 0,
               borderRadius: radius + 2,
               background: t.menuBg,
               borderColor: `color-mix(in oklab, ${accent} 26%, ${t.border})`,
