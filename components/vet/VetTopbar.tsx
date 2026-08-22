@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
 import { NotificationsButton } from "./NotificationsButton";
@@ -40,13 +41,39 @@ function todayChip() {
     .replace(".", "");
 }
 
+export type BusyWindow = { start: string; end: string };
+
 type Props = {
   notifications: NotifData;
   onMenuClick?: () => void;
+  /** Intervalos de citas agendadas de hoy del médico (ISO). */
+  busyWindows?: BusyWindow[];
+  /** Estado inicial calculado en el servidor (evita parpadeo). */
+  initiallyBusy?: boolean;
 };
 
-export function VetTopbar({ notifications, onMenuClick }: Props) {
+function isBusyNow(windows: BusyWindow[]): boolean {
+  const n = Date.now();
+  return windows.some(
+    (w) => n >= new Date(w.start).getTime() && n < new Date(w.end).getTime()
+  );
+}
+
+export function VetTopbar({
+  notifications,
+  onMenuClick,
+  busyWindows = [],
+  initiallyBusy = false,
+}: Props) {
   const pathname = usePathname();
+
+  // "En consulta" solo mientras hay una cita agendada en curso; si no,
+  // "Disponible". Se re-evalúa cada medio minuto.
+  const [busy, setBusy] = useState(initiallyBusy);
+  useEffect(() => {
+    const t = setInterval(() => setBusy(isBusyNow(busyWindows)), 30_000);
+    return () => clearInterval(t);
+  }, [busyWindows]);
 
   return (
     <header
@@ -88,17 +115,19 @@ export function VetTopbar({ notifications, onMenuClick }: Props) {
           {todayChip()}
         </div>
 
-        {/* Status */}
+        {/* Status: en consulta (cita en curso) o disponible */}
         <div className="hidden sm:flex items-center gap-1.5">
           <span
             className="w-2 h-2 rounded-full"
             style={{
-              background: "var(--vet-green)",
-              boxShadow: "0 0 6px var(--vet-green-glow)",
+              background: busy ? "var(--vet-red)" : "var(--vet-green)",
+              boxShadow: busy
+                ? "0 0 6px color-mix(in oklab, var(--vet-red) 45%, transparent)"
+                : "0 0 6px var(--vet-green-glow)",
             }}
           />
           <span className="text-[12px] font-bold" style={{ color: "var(--vet-text-3)" }}>
-            En consulta
+            {busy ? "En consulta" : "Disponible"}
           </span>
         </div>
       </div>

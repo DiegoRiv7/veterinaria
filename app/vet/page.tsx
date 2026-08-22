@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { clinicHourMinute } from "@/lib/clinic-time";
 import { readSession } from "@/lib/auth";
 import { StatCard } from "@/components/vet/StatCard";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
@@ -161,13 +162,18 @@ export default async function VetDashboardPage() {
   const firstName =
     session.name.split(" ").find((s) => !/^Dr/i.test(s)) ?? session.name.split(" ")[0];
 
+  // Saludo según la hora de la clínica.
+  const { h: clinicHour } = clinicHourMinute(new Date());
+  const greeting =
+    clinicHour < 12 ? "Buenos días" : clinicHour < 19 ? "Buenas tardes" : "Buenas noches";
+
   return (
     <div className="flex flex-col gap-6 lg:h-full">
       <h1
         className="text-[26px] font-black tracking-tight"
         style={{ color: "var(--vet-text-1)" }}
       >
-        Buenos días, {firstName} 👋
+        {greeting}, {firstName}
       </h1>
 
       {/* Stats — all clickable */}
@@ -210,7 +216,7 @@ export default async function VetDashboardPage() {
       <div className="grid gap-4 grid-cols-1 lg:grid-cols-[1.4fr_1fr] lg:flex-1 lg:min-h-0">
         {/* Upcoming appointments */}
         <div
-          className="border flex flex-col lg:overflow-hidden"
+          className="vet-float border flex flex-col lg:overflow-hidden"
           style={{
             background: "var(--vet-bg-card)",
             borderColor: "var(--vet-border)",
@@ -297,7 +303,7 @@ export default async function VetDashboardPage() {
           {/* Inventory alerts (visual-only demo, clickable) */}
           <Link
             href="/vet/inventario"
-            className="overflow-hidden border no-underline transition-all hover:[border-color:var(--vet-amber)]"
+            className="vet-float overflow-hidden border no-underline transition-all hover:[border-color:var(--vet-amber)]"
             style={{
               background: "var(--vet-bg-card)",
               borderColor: "var(--vet-border)",

@@ -8,6 +8,7 @@ import { VetIcon } from "./VetIcon";
 import type { NotificationsButton } from "./NotificationsButton";
 
 type NotifData = React.ComponentProps<typeof NotificationsButton>;
+type BusyWindow = { start: string; end: string };
 
 type Props = {
   vetName: string;
@@ -15,6 +16,8 @@ type Props = {
   vetPhotoUrl?: string | null;
   unreadChat: number;
   notifications: NotifData;
+  busyWindows?: BusyWindow[];
+  initiallyBusy?: boolean;
   children: React.ReactNode;
 };
 
@@ -24,6 +27,8 @@ export function VetShell({
   vetPhotoUrl,
   unreadChat,
   notifications,
+  busyWindows,
+  initiallyBusy,
   children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -87,7 +92,12 @@ export function VetShell({
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
-        <VetTopbar notifications={notifications} onMenuClick={() => setDrawerOpen(true)} />
+        <VetTopbar
+          notifications={notifications}
+          onMenuClick={() => setDrawerOpen(true)}
+          busyWindows={busyWindows}
+          initiallyBusy={initiallyBusy}
+        />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">{children}</main>
       </div>
     </div>

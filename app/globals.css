@@ -365,3 +365,11 @@ html { background-color: #fceadb; }
   width: 0;
   height: 0;
 }
+
+/* Elevación suave (estilo Apple) para tarjetas del panel veterinario:
+   una sombra de contacto muy fina + una difusa amplia y cálida. */
+.vet-theme .vet-float {
+  box-shadow:
+    0 1px 2px oklch(35% 0.06 45 / 0.05),
+    0 12px 32px -14px oklch(35% 0.06 45 / 0.2);
+}

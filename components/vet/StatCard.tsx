@@ -48,7 +48,7 @@ export function StatCard({ label, value, sub, icon, color, href }: Props) {
   );
 
   const baseClass =
-    "relative overflow-hidden flex flex-col gap-2 p-5 border transition-all";
+    "vet-float relative overflow-hidden flex flex-col gap-2 p-5 border transition-all";
   const baseStyle = {
     background: "var(--vet-bg-card)",
     borderColor: "var(--vet-border)",

@@ -42,10 +42,38 @@ export default async function VetLayout({ children }: { children: React.ReactNod
     prisma.veterinarian
       .findUnique({
         where: { userId: session.userId },
-        select: { photoUrl: true },
+        select: { id: true, photoUrl: true },
       })
       .catch(() => null),
   ]);
+
+  // Citas agendadas alrededor de ahora para el chip "En consulta /
+  // Disponible" del topbar (ventana amplia; el cliente evalúa la hora).
+  const now = new Date();
+  const busyAppts = vetProfile
+    ? await prisma.appointment
+        .findMany({
+          where: {
+            vetId: vetProfile.id,
+            status: "SCHEDULED",
+            scheduledAt: {
+              gte: new Date(now.getTime() - 12 * 3600_000),
+              lte: new Date(now.getTime() + 24 * 3600_000),
+            },
+          },
+          select: { scheduledAt: true, durationMinutes: true },
+        })
+        .catch(() => [])
+    : [];
+  const busyWindows = busyAppts.map((a) => ({
+    start: a.scheduledAt.toISOString(),
+    end: new Date(
+      a.scheduledAt.getTime() + a.durationMinutes * 60_000
+    ).toISOString(),
+  }));
+  const initiallyBusy = busyWindows.some(
+    (w) => now >= new Date(w.start) && now < new Date(w.end)
+  );
 
   // Serialize Date objects to strings for the client component
   const notifProps = {
@@ -67,6 +95,8 @@ export default async function VetLayout({ children }: { children: React.ReactNod
         vetPhotoUrl={vetProfile?.photoUrl ?? null}
         unreadChat={unread}
         notifications={notifProps}
+        busyWindows={busyWindows}
+        initiallyBusy={initiallyBusy}
       >
         {children}
       </VetShell>

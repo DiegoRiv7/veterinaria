@@ -107,7 +107,7 @@ export function MonthlySummaryCard({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-left border p-4 transition-all hover:-translate-y-0.5 hover:[border-color:var(--vet-green)] flex-1 flex flex-col cursor-pointer"
+        className="vet-float text-left border p-4 transition-all hover:-translate-y-0.5 hover:[border-color:var(--vet-green)] flex-1 flex flex-col cursor-pointer"
         style={{
           background: "var(--vet-bg-card)",
           borderColor: "var(--vet-border)",
