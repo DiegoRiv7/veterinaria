@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Loader2, RotateCcw } from "lucide-react";
+import { ChevronDown, CalendarDays, Check, ChevronLeft, ChevronRight, FileText, Loader2, RotateCcw } from "lucide-react";
 import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
+import { TEST_NAMES } from "@/lib/cartilla-sections";
+import { addAuthorizedTestAction } from "@/app/actions/health-records";
 import type {
   ConsultaData,
   ConsultaValue,
@@ -137,6 +139,24 @@ export function ConsultaForm({
     }
   }
 
+  // Registra un test autorizado directo en la cartilla del paciente.
+  const addTest = useCallback(
+    async (name: string) => {
+      const res = await addAuthorizedTestAction(appointmentId, name);
+      if (!res.ok) {
+        toast.error("No se pudo registrar el test", { description: res.error });
+        return false;
+      }
+      toast.success(
+        res.duplicated
+          ? `"${name}" ya estaba en la cartilla`
+          : `Test "${name}" registrado en la cartilla`
+      );
+      return true;
+    },
+    [appointmentId]
+  );
+
   const registerOption = useCallback(
     async (fieldId: string, name: string) => {
       const res = await addServiceSelectOptionAction(appointmentId, fieldId, name);
@@ -226,6 +246,7 @@ export function ConsultaForm({
           onChange={setFieldValue}
           readOnly={readOnly}
           onRegisterOption={registerOption}
+          onAddTest={addTest}
         />
       ))}
 
@@ -431,12 +452,14 @@ function SectionBlock({
   onChange,
   readOnly,
   onRegisterOption,
+  onAddTest,
 }: {
   section: FormSection;
   values: ConsultaData;
   onChange: (id: string, v: ConsultaValue) => void;
   readOnly: boolean;
   onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
+  onAddTest: (name: string) => Promise<boolean>;
 }) {
   return (
     <section
@@ -480,6 +503,7 @@ function SectionBlock({
               onChange={(v) => onChange(field.id, v)}
               readOnly={readOnly}
               onRegisterOption={onRegisterOption}
+              onAddTest={onAddTest}
             />
           ))
         )}
@@ -494,12 +518,14 @@ function FieldRenderer({
   onChange,
   readOnly,
   onRegisterOption,
+  onAddTest,
 }: {
   field: FormField;
   value: ConsultaValue | undefined;
   onChange: (v: ConsultaValue) => void;
   readOnly: boolean;
   onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
+  onAddTest: (name: string) => Promise<boolean>;
 }) {
   if (field.type === "heading") {
     return (
@@ -521,6 +547,7 @@ function FieldRenderer({
         onChange={onChange}
         readOnly={readOnly}
         onRegisterOption={onRegisterOption}
+        onAddTest={onAddTest}
       />
       {field.helpText && (
         <p
@@ -561,12 +588,14 @@ function FieldControl({
   onChange,
   readOnly,
   onRegisterOption,
+  onAddTest,
 }: {
   field: FormField;
   value: ConsultaValue | undefined;
   onChange: (v: ConsultaValue) => void;
   readOnly: boolean;
   onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
+  onAddTest: (name: string) => Promise<boolean>;
 }) {
   const inputStyle: React.CSSProperties = {
     background: "var(--vet-bg-card)",
@@ -710,49 +739,15 @@ function FieldControl({
       const selected: string[] = Array.isArray(value)
         ? (value as string[])
         : [];
-      const options = field.options ?? [];
       return (
-        <div className="flex flex-wrap gap-2">
-          {options.length === 0 ? (
-            <p
-              className="text-[12px] italic"
-              style={{ color: "var(--vet-text-3)" }}
-            >
-              Sin opciones configuradas.
-            </p>
-          ) : (
-            options.map((opt) => {
-              const active = selected.includes(opt);
-              return (
-                <button
-                  key={opt}
-                  type="button"
-                  disabled={readOnly}
-                  onClick={() => {
-                    if (active) {
-                      onChange(selected.filter((s) => s !== opt));
-                    } else {
-                      onChange([...selected, opt]);
-                    }
-                  }}
-                  className="px-3.5 py-2 rounded-full text-[12px] font-extrabold border transition disabled:opacity-60 disabled:cursor-not-allowed"
-                  style={{
-                    background: active
-                      ? "color-mix(in oklab, var(--vet-green) 14%, var(--vet-bg-card))"
-                      : "var(--vet-bg-card)",
-                    borderColor: active
-                      ? "color-mix(in oklab, var(--vet-green) 38%, var(--vet-border))"
-                      : "var(--vet-border)",
-                    color: active ? "var(--vet-green-dim)" : "var(--vet-text-2)",
-                  }}
-                >
-                  {active ? "✓ " : ""}
-                  {opt}
-                </button>
-              );
-            })
-          )}
-        </div>
+        <CheckboxChips
+          field={field}
+          selected={selected}
+          readOnly={readOnly}
+          onChange={onChange}
+          onRegisterOption={onRegisterOption}
+          onAddTest={onAddTest}
+        />
       );
     }
 
@@ -846,6 +841,313 @@ function SelectWithOther({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+/**
+ * Chips de un campo de casillas ("Estudios autorizados"…), con dos chips
+ * especiales:
+ * - "Test …" abre el catálogo de tests; el elegido se registra automático
+ *   en la cartilla del paciente (sección Tests).
+ * - "Otro…" pide el nombre y lo agrega permanentemente a la lista del
+ *   servicio, dejándolo seleccionado.
+ */
+function CheckboxChips({
+  field,
+  selected,
+  readOnly,
+  onChange,
+  onRegisterOption,
+  onAddTest,
+}: {
+  field: FormField;
+  selected: string[];
+  readOnly: boolean;
+  onChange: (v: ConsultaValue) => void;
+  onRegisterOption: (fieldId: string, name: string) => Promise<boolean>;
+  onAddTest: (name: string) => Promise<boolean>;
+}) {
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
+  const [savingOther, setSavingOther] = useState(false);
+  const [testMenu, setTestMenu] = useState<{
+    opt: string;
+    left: number;
+    top?: number;
+    bottom?: number;
+  } | null>(null);
+  const [customTest, setCustomTest] = useState("");
+  const [savingTest, setSavingTest] = useState<string | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  const options = field.options ?? [];
+  const isOther = (o: string) => /^otr[oa]s?\b/i.test(o.trim());
+  const isTest = (o: string) => /\btest\b/i.test(o);
+
+  useEffect(() => {
+    if (!testMenu) return;
+    function onPointerDown(e: PointerEvent) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setTestMenu(null);
+    }
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setTestMenu(null);
+    }
+    function onScroll(e: Event) {
+      if (menuRef.current?.contains(e.target as Node)) return;
+      setTestMenu(null);
+    }
+    function onResize() {
+      setTestMenu(null);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("scroll", onScroll, true);
+    window.addEventListener("resize", onResize);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("scroll", onScroll, true);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [testMenu]);
+
+  function toggle(opt: string) {
+    if (selected.includes(opt)) {
+      onChange(selected.filter((s) => s !== opt));
+    } else {
+      onChange([...selected, opt]);
+    }
+  }
+
+  function openTestMenu(opt: string, btn: HTMLElement) {
+    const r = btn.getBoundingClientRect();
+    const width = 280;
+    const left = Math.max(8, Math.min(r.left, window.innerWidth - width - 8));
+    const below = window.innerHeight - r.bottom - 12;
+    const above = r.top - 12;
+    const openUp = below < 340 && above > below;
+    setCustomTest("");
+    setTestMenu(
+      openUp
+        ? { opt, left, bottom: window.innerHeight - r.top + 6 }
+        : { opt, left, top: r.bottom + 6 }
+    );
+  }
+
+  async function chooseTest(name: string) {
+    const clean = name.trim();
+    if (!clean || savingTest) return;
+    setSavingTest(clean);
+    const ok = await onAddTest(clean);
+    setSavingTest(null);
+    if (ok) {
+      const opt = testMenu?.opt;
+      if (opt && !selected.includes(opt)) onChange([...selected, opt]);
+      setTestMenu(null);
+    }
+  }
+
+  async function commitOther() {
+    const name = otherText.trim();
+    if (!name || savingOther) return;
+    setSavingOther(true);
+    const ok = await onRegisterOption(field.id, name);
+    setSavingOther(false);
+    if (ok) {
+      onChange([...selected, name]);
+      setOtherText("");
+      setOtherOpen(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap gap-2">
+        {options.length === 0 ? (
+          <p
+            className="text-[12px] italic"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            Sin opciones configuradas.
+          </p>
+        ) : (
+          options.map((opt) => {
+            const active = selected.includes(opt);
+            const special = isTest(opt) || isOther(opt);
+            return (
+              <button
+                key={opt}
+                type="button"
+                disabled={readOnly}
+                onClick={(e) => {
+                  if (readOnly) return;
+                  if (isTest(opt)) {
+                    openTestMenu(opt, e.currentTarget);
+                    return;
+                  }
+                  if (isOther(opt)) {
+                    setOtherOpen((v) => !v);
+                    return;
+                  }
+                  toggle(opt);
+                }}
+                className="px-3.5 py-2 rounded-full text-[12px] font-extrabold border transition disabled:opacity-60 disabled:cursor-not-allowed inline-flex items-center gap-1"
+                style={{
+                  background: active
+                    ? "color-mix(in oklab, var(--vet-green) 14%, var(--vet-bg-card))"
+                    : "var(--vet-bg-card)",
+                  borderColor: active
+                    ? "color-mix(in oklab, var(--vet-green) 38%, var(--vet-border))"
+                    : "var(--vet-border)",
+                  color: active ? "var(--vet-green-dim)" : "var(--vet-text-2)",
+                }}
+              >
+                {active ? "✓ " : isOther(opt) ? "+ " : ""}
+                {opt}
+                {special && !active && isTest(opt) && (
+                  <ChevronDown className="h-3 w-3" strokeWidth={3} />
+                )}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      {/* "Otro…": alta de un estudio nuevo en el catálogo del servicio */}
+      {otherOpen && !readOnly && (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            autoFocus
+            value={otherText}
+            onChange={(e) => setOtherText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commitOther();
+              }
+            }}
+            placeholder="Nombre del estudio nuevo…"
+            className="h-11 flex-1 rounded-[12px] border px-3.5 text-[14px] font-bold outline-none transition focus:border-[color:var(--vet-green)]"
+            style={{
+              background: "var(--vet-bg-card)",
+              borderColor: "var(--vet-border)",
+              color: "var(--vet-text-1)",
+            }}
+          />
+          <button
+            type="button"
+            onClick={commitOther}
+            disabled={savingOther || !otherText.trim()}
+            className="h-11 px-4 rounded-[12px] text-[13px] font-extrabold text-white transition hover:brightness-105 disabled:opacity-60 inline-flex items-center justify-center gap-1.5 shrink-0"
+            style={{ background: "var(--vet-green)" }}
+          >
+            {savingOther ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Check className="h-4 w-4" />
+            )}
+            Agregar a la lista
+          </button>
+        </div>
+      )}
+
+      {/* Menú de tests: se registra en la cartilla del paciente */}
+      {testMenu && !readOnly && typeof document !== "undefined" &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="vet-portal rounded-[14px] border p-1.5 overflow-y-auto"
+            style={{
+              position: "fixed",
+              left: testMenu.left,
+              top: testMenu.top,
+              bottom: testMenu.bottom,
+              width: 280,
+              zIndex: 130,
+              minHeight: 0,
+              maxHeight: "min(380px, calc(100dvh - 24px))",
+              background: "var(--vet-bg-card)",
+              borderColor:
+                "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+              boxShadow: "0 18px 45px rgba(0,0,0,.16)",
+            }}
+          >
+            <p
+              className="px-2.5 pt-1.5 pb-1 text-[10px] font-extrabold uppercase tracking-wider"
+              style={{ color: "var(--vet-text-3)" }}
+            >
+              ¿Qué test se autorizó? Se registra en la cartilla
+            </p>
+            {TEST_NAMES.map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => chooseTest(t)}
+                disabled={!!savingTest}
+                className="w-full flex items-center justify-between gap-2 rounded-[10px] px-2.5 py-2 text-left text-[13px] font-bold transition hover:brightness-95 disabled:opacity-60"
+                style={{
+                  color: "var(--vet-text-1)",
+                  background: "var(--vet-bg-card)",
+                }}
+              >
+                {t}
+                {savingTest === t && (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                )}
+              </button>
+            ))}
+            <div className="flex gap-1.5 p-1 pt-1.5">
+              <input
+                type="text"
+                value={customTest}
+                onChange={(e) => setCustomTest(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    chooseTest(customTest);
+                  }
+                }}
+                placeholder="Otro test…"
+                className="h-9 flex-1 min-w-0 rounded-[10px] border px-2.5 text-[13px] font-bold outline-none"
+                style={{
+                  background: "var(--vet-bg-mid)",
+                  borderColor: "var(--vet-border)",
+                  color: "var(--vet-text-1)",
+                }}
+              />
+              <button
+                type="button"
+                onClick={() => chooseTest(customTest)}
+                disabled={!customTest.trim() || !!savingTest}
+                className="h-9 px-3 rounded-[10px] text-white text-[12px] font-extrabold transition hover:brightness-105 disabled:opacity-60 shrink-0"
+                style={{ background: "var(--vet-green)" }}
+              >
+                {savingTest && savingTest === customTest.trim() ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  "Agregar"
+                )}
+              </button>
+            </div>
+            {selected.includes(testMenu.opt) && (
+              <button
+                type="button"
+                onClick={() => {
+                  onChange(selected.filter((s) => s !== testMenu.opt));
+                  setTestMenu(null);
+                }}
+                className="w-full mt-0.5 rounded-[10px] px-2.5 py-2 text-left text-[12px] font-extrabold transition hover:brightness-95"
+                style={{ color: "var(--vet-red)", background: "var(--vet-bg-card)" }}
+              >
+                ✕ Quitar &ldquo;{testMenu.opt}&rdquo; de autorizados
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

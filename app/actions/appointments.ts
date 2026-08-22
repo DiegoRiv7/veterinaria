@@ -624,7 +624,8 @@ export async function addServiceSelectOptionAction(
   let found = false;
   for (const section of schema.sections) {
     for (const field of section.fields) {
-      if (field.id !== fid || field.type !== "select") continue;
+      if (field.id !== fid) continue;
+      if (field.type !== "select" && field.type !== "checkboxes") continue;
       found = true;
       const options = field.options ?? [];
       const exists = options.some(

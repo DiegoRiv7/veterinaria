@@ -182,7 +182,7 @@ export default async function VetAppointmentEdit({
                   color: "var(--vet-text-2)",
                 }}
               >
-                Ver expediente
+                Información general
                 <span aria-hidden>→</span>
               </Link>
               <Link
@@ -194,7 +194,7 @@ export default async function VetAppointmentEdit({
                   color: "var(--vet-text-2)",
                 }}
               >
-                Ver cartilla
+                Ver expediente
                 <span aria-hidden>→</span>
               </Link>
               <Link

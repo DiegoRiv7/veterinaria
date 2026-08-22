@@ -233,3 +233,53 @@ async function deleteRecord(
   await delegate.delete({ where: { id } });
   revalidateCartilla(record.petId);
 }
+
+/* ─── Test autorizado desde la consulta ─────────────────────────── */
+
+/**
+ * Registra en la cartilla (sección Tests) un test autorizado durante la
+ * consulta. La fecha es la de la cita y el médico el asignado. Evita
+ * duplicados si se hace doble clic.
+ */
+export async function addAuthorizedTestAction(
+  appointmentId: string,
+  testName: string
+): Promise<{ ok: true; duplicated?: boolean } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "No autorizado." };
+  }
+  const name = (testName ?? "").trim().slice(0, 80);
+  if (!name) return { ok: false, error: "Escribe el nombre del test." };
+
+  const appt = await prisma.appointment.findUnique({
+    where: { id: (appointmentId ?? "").trim() },
+    select: {
+      id: true,
+      petId: true,
+      scheduledAt: true,
+      vet: { select: { user: { select: { name: true } } } },
+    },
+  });
+  if (!appt) return { ok: false, error: "Cita no encontrada." };
+
+  const existing = await prisma.diagnosticTest.findFirst({
+    where: { petId: appt.petId, name, performedAt: appt.scheduledAt },
+    select: { id: true },
+  });
+  if (existing) return { ok: true, duplicated: true };
+
+  await prisma.diagnosticTest.create({
+    data: {
+      petId: appt.petId,
+      name,
+      performedAt: appt.scheduledAt,
+      notes: "Autorizado en consulta.",
+      vetName: appt.vet.user.name,
+      addedByUserId: session.userId,
+    },
+  });
+  revalidateCartilla(appt.petId);
+  return { ok: true };
+}
+

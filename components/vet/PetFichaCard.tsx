@@ -87,7 +87,7 @@ export function PetFichaCard({
             boxShadow: "0 4px 12px var(--vet-green-glow)",
           }}
         >
-          📋 Ver cartilla →
+          📋 Ver expediente →
         </Link>
       </div>
 
