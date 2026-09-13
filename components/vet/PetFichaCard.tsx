@@ -30,12 +30,14 @@ function formatLong(d: Date | null): string {
 export function PetFichaCard({
   pet,
   cartillaHref,
+  pasaporteHref,
 }: {
   pet: PetForFicha;
   cartillaHref: string;
+  pasaporteHref?: string;
 }) {
   const age = ageFromBirthDate(pet.birthDate) ?? "—";
-  const rows: { label: string; value: string }[] = [
+  const rows: { label: string; value: string; href?: string }[] = [
     { label: "Fecha de nacimiento", value: formatLong(pet.birthDate) },
     { label: "Edad", value: age },
     { label: "Especie", value: SPECIES_LABEL[pet.species] ?? pet.species },
@@ -54,6 +56,15 @@ export function PetFichaCard({
       label: "Microchip",
       value: pet.microchipId?.trim() || "—",
     },
+    ...(pasaporteHref
+      ? [
+          {
+            label: "Pasaporte",
+            value: "Ver pasaporte →",
+            href: pasaporteHref,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -121,12 +132,22 @@ export function PetFichaCard({
               >
                 {r.label}
               </span>
-              <span
-                className="text-[14px] font-extrabold text-right truncate"
-                style={{ color: "var(--vet-text-1)" }}
-              >
-                {r.value}
-              </span>
+              {r.href ? (
+                <Link
+                  href={r.href}
+                  className="text-[14px] font-extrabold text-right no-underline transition hover:brightness-110"
+                  style={{ color: "var(--vet-green)" }}
+                >
+                  🛂 {r.value}
+                </Link>
+              ) : (
+                <span
+                  className="text-[14px] font-extrabold text-right truncate"
+                  style={{ color: "var(--vet-text-1)" }}
+                >
+                  {r.value}
+                </span>
+              )}
             </div>
           );
         })}

@@ -29,6 +29,8 @@ type Props = {
   onRemoveFilter: (chip: FilterChip) => void;
   sortOptions: SortOption[];
   sortKey: string;
+  /** Nodo extra al final de la barra (p. ej. botón "Nuevo paciente"). */
+  trailing?: React.ReactNode;
   defaultSortKey?: string;
   onSortChange: (k: string) => void;
 };
@@ -40,6 +42,7 @@ export function FilterSortBar({
   onRemoveFilter,
   sortOptions,
   sortKey,
+  trailing,
   defaultSortKey,
   onSortChange,
 }: Props) {
@@ -301,6 +304,8 @@ export function FilterSortBar({
           </div>
         )}
       </div>
+
+      {trailing}
     </div>
   );
 }

@@ -13,7 +13,6 @@ const TITLES: Record<string, string> = {
   "/vet/hoy": "Citas de Hoy",
   "/vet/calendario": "Calendario",
   "/vet/pacientes": "Pacientes",
-  "/vet/historial": "Historial Clínico",
   "/vet/inventario": "Inventario",
   "/vet/chat": "Chat",
   "/vet/perfil": "Mi Perfil",

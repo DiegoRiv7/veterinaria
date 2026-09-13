@@ -5,6 +5,8 @@ import Link from "next/link";
 import { SPECIES_EMOJI } from "@/lib/utils";
 import { VetIcon } from "./VetIcon";
 import { FilterSortBar, type FilterChip, type FilterType, type SortOption } from "./FilterSortBar";
+import { NewPatientButton } from "./NewPatientButton";
+import type { ClientOption } from "./NewAppointmentButton";
 
 type PetRow = {
   id: string;
@@ -59,7 +61,13 @@ const SORT_OPTIONS: SortOption[] = [
   { key: "species", label: "Por especie" },
 ];
 
-export function PatientsViewClient({ pets }: { pets: PetRow[] }) {
+export function PatientsViewClient({
+  pets,
+  clients,
+}: {
+  pets: PetRow[];
+  clients: ClientOption[];
+}) {
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState<FilterChip[]>([]);
   const [sortKey, setSortKey] = useState("name");
@@ -105,16 +113,7 @@ export function PatientsViewClient({ pets }: { pets: PetRow[] }) {
   }, [filtered, sortKey]);
 
   return (
-    <div className="flex flex-col gap-5">
-      <div>
-        <h2 className="text-[22px] font-black tracking-tight" style={{ color: "var(--vet-text-1)" }}>
-          Pacientes
-        </h2>
-        <div className="text-[13px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
-          {pets.length} {pets.length === 1 ? "paciente registrado" : "pacientes registrados"}
-        </div>
-      </div>
-
+    <div className="flex flex-col gap-4">
       {/* Search */}
       <div
         className="flex items-center gap-2.5 px-4 py-2.5 border"
@@ -156,6 +155,7 @@ export function PatientsViewClient({ pets }: { pets: PetRow[] }) {
         sortKey={sortKey}
         defaultSortKey="name"
         onSortChange={setSortKey}
+        trailing={<NewPatientButton clients={clients} />}
       />
 
       {sorted.length === 0 ? (

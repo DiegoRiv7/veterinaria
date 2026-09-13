@@ -18,7 +18,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/vet/hoy",       label: "Hoy",         icon: "today" },
   { href: "/vet/calendario", label: "Calendario", icon: "calendar" },
   { href: "/vet/pacientes", label: "Pacientes",   icon: "patients" },
-  { href: "/vet/historial", label: "Historial",   icon: "records" },
   { href: "/vet/inventario", label: "Inventario", icon: "stock" },
   { href: "/vet/chat",      label: "Chat",        icon: "chat" },
 ];

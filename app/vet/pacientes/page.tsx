@@ -29,10 +29,15 @@ export default async function VetPatientsPage() {
   const vetProfile = await prisma.veterinarian.findUnique({ where: { userId: session.userId } });
 
   // Pets the vet has had appointments with (or all pets if admin/no profile)
+  // Pacientes del vet + pacientes nuevos que aún no tienen ninguna cita
+  // (recién dados de alta), para que el alta manual se vea de inmediato.
   const pets = vetProfile
     ? await prisma.pet.findMany({
         where: {
-          appointments: { some: { vetId: vetProfile.id } },
+          OR: [
+            { appointments: { some: { vetId: vetProfile.id } } },
+            { appointments: { none: {} } },
+          ],
         },
         include: {
           owner: { select: { name: true } },
@@ -85,5 +90,23 @@ export default async function VetPatientsPage() {
     };
   });
 
-  return <PatientsViewClient pets={data} />;
+  // Clientes para el alta de paciente ("Nuevo paciente")
+  const clientUsers = await prisma.user.findMany({
+    where: { role: "CLIENT" },
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      pets: { select: { id: true, name: true, species: true } },
+    },
+    orderBy: { name: "asc" },
+  });
+  const clients = clientUsers.map((c) => ({
+    id: c.id,
+    name: c.name,
+    phone: c.phone ?? "",
+    pets: c.pets,
+  }));
+
+  return <PatientsViewClient pets={data} clients={clients} />;
 }

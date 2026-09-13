@@ -197,6 +197,7 @@ export default async function VetPatientDetailPage({
           microchipId: pet.microchipId,
         }}
         cartillaHref={`/vet/pacientes/${pet.id}/cartilla`}
+        pasaporteHref={`/vet/pacientes/${pet.id}/carnet`}
       />
 
       {/* Photo gallery (read-only) — owner-uploaded photos */}
