@@ -48,9 +48,24 @@ export default async function VetPatientDetailPage({
         select: { id: true, url: true },
         orderBy: { createdAt: "desc" },
       },
+      fieldChanges: {
+        include: { changedBy: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      },
     },
   });
   if (!pet) notFound();
+
+  const fichaChanges = pet.fieldChanges.map((c) => ({
+    id: c.id,
+    field: c.field,
+    oldValue: c.oldValue,
+    newValue: c.newValue,
+    changedByName: c.changedBy.name,
+    createdAt: c.createdAt.toISOString(),
+    reverted: c.revertedAt != null,
+  }));
 
   // Appointments — vet sees only their own with this pet (admin sees all)
   const appts = await prisma.appointment.findMany({
@@ -198,6 +213,7 @@ export default async function VetPatientDetailPage({
         }}
         cartillaHref={`/vet/pacientes/${pet.id}/cartilla`}
         pasaporteHref={`/vet/pacientes/${pet.id}/carnet`}
+        changes={fichaChanges}
       />
 
       {/* Photo gallery (read-only) — owner-uploaded photos */}

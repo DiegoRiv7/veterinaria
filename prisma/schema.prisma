@@ -63,6 +63,7 @@ model User {
   diagnosticTestsAdded DiagnosticTest[] @relation("DiagnosticTestAddedBy")
   imagingStudiesAdded  ImagingStudy[]   @relation("ImagingStudyAddedBy")
   feedingRecordsAdded  FeedingRecord[]  @relation("FeedingRecordAddedBy")
+  petFieldChanges     PetFieldChange[] @relation("PetFieldChangesBy")
 }
 
 model Pet {
@@ -95,6 +96,7 @@ model Pet {
   diagnosticTests DiagnosticTest[]
   imagingStudies  ImagingStudy[]
   feedingRecords  FeedingRecord[]
+  fieldChanges    PetFieldChange[]
 }
 
 model Vaccine {
@@ -224,6 +226,27 @@ model PetPhoto {
   pet       Pet      @relation(fields: [petId], references: [id], onDelete: Cascade)
   url       String
   createdAt DateTime @default(now())
+
+  @@index([petId, createdAt])
+}
+
+/// Bitácora de cambios de la ficha del paciente (auditoría + revertir).
+model PetFieldChange {
+  id          String    @id @default(cuid())
+  petId       String
+  pet         Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  /// Campo de Pet modificado: birthDate, species, breed, weightKg, sex,
+  /// color, sterilized, microchipId.
+  field       String
+  /// Valores serializados (fecha YYYY-MM-DD, número como texto, booleano
+  /// "true"/"false", enums por su clave). null = sin valor.
+  oldValue    String?
+  newValue    String?
+  changedById String
+  changedBy   User      @relation("PetFieldChangesBy", fields: [changedById], references: [id])
+  /// Marcado cuando este cambio fue revertido después.
+  revertedAt  DateTime?
+  createdAt   DateTime  @default(now())
 
   @@index([petId, createdAt])
 }
