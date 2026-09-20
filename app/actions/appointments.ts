@@ -127,6 +127,8 @@ export async function createAppointmentByVetAction(
   const time = String(formData.get("time") ?? "").trim();
   const clientNotes = String(formData.get("clientNotes") ?? "").trim() || null;
   const vetIdOverride = String(formData.get("vetId") ?? "").trim();
+  const studyFieldId = String(formData.get("studyFieldId") ?? "").trim();
+  const studyValue = String(formData.get("studyValue") ?? "").trim().slice(0, 80);
 
   if (!serviceId) return { ok: false, error: "Selecciona un servicio." };
   if (!date || !time) return { ok: false, error: "Falta fecha u hora." };
@@ -210,6 +212,22 @@ export async function createAppointmentByVetAction(
     return { ok: false, error: "Fecha u hora inválida." };
   }
 
+  // Estudio específico elegido al agendar → se siembra en consultaData
+  // para que la consulta abra pre-llenada (y al completar se espeje al
+  // expediente automáticamente).
+  let consultaSeed: string | null = null;
+  if (studyFieldId && studyValue) {
+    const schema = parseFormSchema(service.formSchema);
+    const field = schema?.sections
+      .flatMap((sec) => sec.fields)
+      .find((f) => f.id === studyFieldId);
+    if (field) {
+      consultaSeed = JSON.stringify({
+        [studyFieldId]: field.type === "checkboxes" ? [studyValue] : studyValue,
+      });
+    }
+  }
+
   const appt = await prisma.appointment.create({
     data: {
       vetId,
@@ -220,6 +238,7 @@ export async function createAppointmentByVetAction(
       durationMinutes: service.durationMinutes,
       status: "SCHEDULED",
       priceEstimate,
+      ...(consultaSeed ? { consultaData: consultaSeed } : {}),
       clientNotes,
     },
   });
@@ -695,6 +714,66 @@ async function vetBusyAt(
  * lista). La opción se inserta antes de "Otro" para que esa salida
  * siga siendo la última, y queda disponible para futuras consultas.
  */
+/**
+ * Igual que addServiceSelectOptionAction pero por serviceId — para el
+ * selector de estudio específico de "Nueva cita", donde aún no existe
+ * una cita. La opción queda guardada permanentemente en el catálogo.
+ */
+export async function addServiceFieldOptionAction(
+  serviceId: string,
+  fieldId: string,
+  option: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role !== "VET" && session.role !== "ADMIN") {
+    return { ok: false, error: "FORBIDDEN" };
+  }
+  const sid = (serviceId ?? "").trim();
+  const fid = (fieldId ?? "").trim();
+  const name = (option ?? "").trim();
+  if (!sid || !fid) return { ok: false, error: "Datos inválidos." };
+  if (!name) return { ok: false, error: "Escribe el nombre." };
+  if (name.length > 80) return { ok: false, error: "El nombre es demasiado largo." };
+
+  const service = await prisma.service.findUnique({
+    where: { id: sid },
+    select: { id: true, formSchema: true },
+  });
+  if (!service) return { ok: false, error: "Servicio no encontrado." };
+
+  const schema = parseFormSchema(service.formSchema);
+  if (!schema) return { ok: false, error: "El servicio no tiene formulario configurado." };
+
+  let found = false;
+  for (const section of schema.sections) {
+    for (const field of section.fields) {
+      if (field.id !== fid) continue;
+      if (field.type !== "select" && field.type !== "checkboxes") continue;
+      found = true;
+      const options = field.options ?? [];
+      const exists = options.some(
+        (o) => o.trim().toLowerCase() === name.toLowerCase()
+      );
+      if (!exists) {
+        const otherIdx = options.findIndex((o) => /^otr[oa]s?\b/i.test(o.trim()));
+        if (otherIdx >= 0) options.splice(otherIdx, 0, name);
+        else options.push(name);
+        field.options = options;
+      }
+    }
+  }
+  if (!found) return { ok: false, error: "Campo no encontrado en el formulario." };
+
+  await prisma.service.update({
+    where: { id: service.id },
+    data: { formSchema: JSON.stringify(schema) },
+  });
+  revalidatePath("/vet/calendario");
+  revalidatePath("/vet/hoy");
+  revalidatePath(`/admin/servicios/${service.id}`);
+  return { ok: true };
+}
+
 export async function addServiceSelectOptionAction(
   appointmentId: string,
   fieldId: string,

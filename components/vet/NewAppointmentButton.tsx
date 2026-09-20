@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { VetIcon } from "./VetIcon";
 import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
-import { createAppointmentByVetAction } from "@/app/actions/appointments";
+import {
+  createAppointmentByVetAction,
+  addServiceFieldOptionAction,
+} from "@/app/actions/appointments";
 
 export type ClientOption = {
   id: string;
@@ -19,7 +22,16 @@ export type ServiceOption = {
   name: string;
   basePrice: number;
   durationMinutes: number;
+  /** Campo de estudio específico del formulario del servicio (si tiene). */
+  study?: {
+    fieldId: string;
+    label: string;
+    multi: boolean;
+    options: string[];
+  } | null;
 };
+
+const STUDY_OTHER = "__otro__";
 
 const SPECIES: { value: string; label: string }[] = [
   { value: "DOG", label: "Perro" },
@@ -169,12 +181,36 @@ function NewAppointmentModal({
     if (clientMode === "new") setPetMode("new");
   }, [clientMode]);
 
+  // Estudio específico (imagenología, laboratorio…)
+  const [studyValue, setStudyValue] = useState("");
+  const [studyOtherOpen, setStudyOtherOpen] = useState(false);
+  const [studyOther, setStudyOther] = useState("");
+  const [savingStudyOption, setSavingStudyOption] = useState(false);
+
   const selectedService = services.find((s) => s.id === serviceId);
 
   function handleClose() {
     if (pending) return;
     setClosing(true);
     setTimeout(onClose, 200);
+  }
+
+  async function saveStudyOption() {
+    const study = selectedService?.study;
+    const name = studyOther.trim();
+    if (!study || !name || savingStudyOption) return;
+    setSavingStudyOption(true);
+    const res = await addServiceFieldOptionAction(serviceId, study.fieldId, name);
+    setSavingStudyOption(false);
+    if (res.ok) {
+      toast.success(`"${name}" se agregó a la lista de estudios`);
+      setStudyValue(name);
+      setStudyOther("");
+      setStudyOtherOpen(false);
+      router.refresh();
+    } else {
+      toast.error(res.error);
+    }
   }
 
   function submit() {
@@ -219,6 +255,10 @@ function NewAppointmentModal({
       fd.set("serviceId", serviceId);
       fd.set("date", date);
       fd.set("time", time);
+      if (selectedService?.study && studyValue && studyValue !== STUDY_OTHER) {
+        fd.set("studyFieldId", selectedService.study.fieldId);
+        fd.set("studyValue", studyValue);
+      }
       if (clientNotes.trim()) fd.set("clientNotes", clientNotes.trim());
 
       const result = await createAppointmentByVetAction(null, fd);
@@ -541,7 +581,12 @@ function NewAppointmentModal({
               <Field label="Tipo de servicio">
                 <FancySelect
                   value={serviceId}
-                  onChange={setServiceId}
+                  onChange={(v) => {
+                    setServiceId(v);
+                    setStudyValue("");
+                    setStudyOtherOpen(false);
+                    setStudyOther("");
+                  }}
                   required
                   options={services.map((s) => ({ value: s.id, label: s.name }))}
                   height={44}
@@ -569,6 +614,64 @@ function NewAppointmentModal({
                 </div>
               )}
             </div>
+
+            {/* Estudio específico del servicio (imagenología, laboratorio…) */}
+            {selectedService?.study && (
+              <div className="mt-3 flex flex-col gap-2">
+                <Field label={selectedService.study.label}>
+                  <FancySelect
+                    value={studyValue}
+                    onChange={(v) => {
+                      if (v === STUDY_OTHER) {
+                        setStudyOtherOpen(true);
+                        return;
+                      }
+                      setStudyValue(v);
+                      setStudyOtherOpen(false);
+                    }}
+                    options={[
+                      ...selectedService.study.options.map((o) => ({
+                        value: o,
+                        label: o,
+                      })),
+                      { value: STUDY_OTHER, label: "Otro…" },
+                    ]}
+                    placeholder="Selecciona el estudio (opcional)"
+                    height={44}
+                    accent="var(--vet-green)"
+                    tokens={VET_TOKENS}
+                  />
+                </Field>
+                {studyOtherOpen && (
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      autoFocus
+                      value={studyOther}
+                      onChange={(e) => setStudyOther(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          saveStudyOption();
+                        }
+                      }}
+                      placeholder="Escribe el estudio nuevo…"
+                      className={fieldClass}
+                      style={fieldStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={saveStudyOption}
+                      disabled={savingStudyOption || !studyOther.trim()}
+                      className="h-11 px-4 rounded-[12px] text-[13px] font-extrabold text-white transition hover:brightness-105 disabled:opacity-60 shrink-0"
+                      style={{ background: "var(--vet-green)" }}
+                    >
+                      {savingStudyOption ? "Guardando…" : "Guardar en la lista"}
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </Section>
 
           {/* Fecha y hora */}

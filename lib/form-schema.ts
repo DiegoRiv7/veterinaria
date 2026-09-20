@@ -1006,6 +1006,56 @@ export function extractWeightKg(
     : null;
 }
 
+/* ─── Nueva cita: campo de estudio específico del servicio ─────── */
+
+export type StudyFieldInfo = {
+  fieldId: string;
+  label: string;
+  /** true → el campo destino es de casillas (se guarda como lista). */
+  multi: boolean;
+  options: string[];
+};
+
+/**
+ * Campo de "tipo de estudio" del formulario de un servicio (técnica de
+ * imagenología, análisis de laboratorio…). Alimenta el selector extra de
+ * "Nueva cita"; lo elegido se pre-carga en la consulta.
+ */
+export function extractStudyField(
+  schema: FormSchema | null
+): StudyFieldInfo | null {
+  if (!schema) return null;
+  const fields = schema.sections.flatMap((s) => s.fields);
+  const clean = (opts: string[] | undefined) =>
+    (opts ?? []).filter((o) => o.trim() && !/^otr[oa]s?\b/i.test(o.trim()));
+
+  const select = fields.find(
+    (f) => f.type === "select" && /t[ée]cnica|tipo de estudio/i.test(f.label)
+  );
+  if (select && clean(select.options).length > 0) {
+    return {
+      fieldId: select.id,
+      label: select.label,
+      multi: false,
+      options: clean(select.options),
+    };
+  }
+  const boxes = fields.find(
+    (f) =>
+      f.type === "checkboxes" &&
+      /an[áa]lisis|tipo de test|tipo de estudio/i.test(f.label)
+  );
+  if (boxes && clean(boxes.options).length > 0) {
+    return {
+      fieldId: boxes.id,
+      label: boxes.label,
+      multi: true,
+      options: clean(boxes.options),
+    };
+  }
+  return null;
+}
+
 /* ─── Auto-pick a template based on the service name ───────────── */
 
 export function templateKeyForServiceName(name: string): TemplateKey {

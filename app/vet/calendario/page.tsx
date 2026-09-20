@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
+import { parseFormSchema, extractStudyField } from "@/lib/form-schema";
 import { readSession } from "@/lib/auth";
 import { AppointmentRow } from "@/components/vet/AppointmentRow";
 import { VetIcon } from "@/components/vet/VetIcon";
@@ -125,6 +126,9 @@ export default async function VetCalendarPage({
     name: s.name,
     basePrice: s.basePrice,
     durationMinutes: s.durationMinutes,
+    // Campo de estudio específico (imagenología, laboratorio…) para el
+    // selector extra de "Nueva cita".
+    study: extractStudyField(parseFormSchema(s.formSchema)),
   }));
 
   // Build per-day count for the calendar dots
