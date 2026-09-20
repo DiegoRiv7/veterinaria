@@ -78,6 +78,7 @@ export default async function VetPatientsPage() {
       id: p.id,
       name: p.name,
       species: p.species,
+      photoUrl: p.photoUrl,
       breed: p.breed ?? "Sin raza",
       age: ageFromBirthDate(p.birthDate) ?? "—",
       weight: p.weightKg ? `${p.weightKg}kg` : "—",

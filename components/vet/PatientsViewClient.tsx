@@ -12,6 +12,7 @@ type PetRow = {
   id: string;
   name: string;
   species: string;
+  photoUrl?: string | null;
   breed: string;
   age: string;
   weight: string;
@@ -193,10 +194,19 @@ export function PatientsViewClient({
               >
                 <div className="flex items-center gap-3 mb-3">
                   <div
-                    className="w-12 h-12 rounded-full flex items-center justify-center text-2xl border-2"
+                    className="w-12 h-12 rounded-full overflow-hidden flex items-center justify-center text-2xl border-2 shrink-0"
                     style={{ background: `${tint}33`, borderColor: `${tint}77` }}
                   >
-                    {SPECIES_EMOJI[p.species] ?? "🐾"}
+                    {p.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={p.photoUrl}
+                        alt={p.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      SPECIES_EMOJI[p.species] ?? "🐾"
+                    )}
                   </div>
                   <div className="min-w-0">
                     <div className="font-extrabold text-[16px] truncate" style={{ color: "var(--vet-text-1)" }}>

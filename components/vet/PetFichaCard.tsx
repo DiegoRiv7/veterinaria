@@ -138,7 +138,7 @@ export function PetFichaCard({
                   className="text-[14px] font-extrabold text-right no-underline transition hover:brightness-110"
                   style={{ color: "var(--vet-green)" }}
                 >
-                  🛂 {r.value}
+                  {r.value}
                 </Link>
               ) : (
                 <span
