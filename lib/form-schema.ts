@@ -877,6 +877,135 @@ export function extractCarnetEntry(
   return { kind: "vaccine", name, appliedAt, nextAt, weightKg, notes };
 }
 
+/* ─── Expediente: estudios de la consulta al completar ─────────── */
+
+/**
+ * Al marcar una consulta como atendida, los estudios capturados se
+ * espejean automáticamente al expediente (cartilla) del paciente:
+ * - análisis clínicos marcados → Laboratorio (LabStudy)
+ * - tests marcados → Tests (DiagnosticTest)
+ * - técnica de imagenología → Imagenología (ImagingStudy)
+ * Los campos se resuelven por etiqueta (ids aleatorios por servicio),
+ * igual que extractCarnetEntry.
+ */
+export type HealthRecordDraft =
+  | { kind: "lab"; name: string; performedAt: Date | null; notes: string | null }
+  | {
+      kind: "test";
+      name: string;
+      performedAt: Date | null;
+      result: string | null;
+      notes: string | null;
+    }
+  | {
+      kind: "imaging";
+      name: string;
+      region: string | null;
+      performedAt: Date | null;
+      findings: string | null;
+    };
+
+export function extractHealthRecordEntries(
+  schema: FormSchema | null,
+  data: ConsultaData,
+  serviceName: string
+): HealthRecordDraft[] {
+  if (!schema) return [];
+  const fields = schema.sections.flatMap((s) => s.fields);
+  const byLabel = (re: RegExp, types?: FieldType[]) =>
+    fields.find((f) => re.test(f.label) && (!types || types.includes(f.type)));
+  const strOf = (f: FormField | undefined): string | null => {
+    const v = f ? data[f.id] : undefined;
+    return typeof v === "string" && v.trim() ? v.trim() : null;
+  };
+  const listOf = (f: FormField | undefined): string[] => {
+    const v = f ? data[f.id] : undefined;
+    return Array.isArray(v)
+      ? v.filter((x): x is string => typeof x === "string" && x.trim().length > 0)
+      : [];
+  };
+
+  const out: HealthRecordDraft[] = [];
+  const key = templateKeyForServiceName(serviceName);
+
+  const obsField = byLabel(/observacion/i, ["textarea", "text"]);
+  const obs =
+    strOf(obsField) ??
+    (typeof data[LEGACY_FIELD_IDS.vetNotes] === "string"
+      ? (data[LEGACY_FIELD_IDS.vetNotes] as string).trim() || null
+      : null);
+  const performedAt = parseDateValue(
+    byLabel(/fecha del estudio|fecha de (la )?(toma|muestra)/i, ["date"])
+      ? data[byLabel(/fecha del estudio|fecha de (la )?(toma|muestra)/i, ["date"])!.id]
+      : undefined
+  );
+
+  // Laboratorio y tests — en el servicio de laboratorio o en cualquier
+  // formulario que tenga estos campos de casillas.
+  const analysisField = byLabel(/an[áa]lisis/i, ["checkboxes"]);
+  const testField = byLabel(/tipo de test|\btests?\b/i, ["checkboxes"]);
+  if (key === "laboratorio" || analysisField || testField) {
+    const sample = strOf(byLabel(/muestra/i, ["select"]));
+    const labNotes =
+      [sample ? `Muestra: ${sample}` : null, obs].filter(Boolean).join("\n") || null;
+    for (const item of listOf(analysisField)) {
+      out.push({ kind: "lab", name: item, performedAt, notes: labNotes });
+    }
+    for (const item of listOf(testField)) {
+      out.push({
+        kind: "test",
+        name: item,
+        performedAt,
+        result: null,
+        notes: labNotes,
+      });
+    }
+  }
+
+  // Imagenología — técnica seleccionada + hallazgos.
+  if (key === "imagenologia") {
+    const technique =
+      strOf(byLabel(/t[ée]cnica/i, ["select", "text"])) ??
+      strOf(byLabel(/tipo de estudio/i, ["select", "text"]));
+    if (technique) {
+      const region = strOf(byLabel(/zona|regi[óo]n/i, ["select", "text"]));
+      const dxDef = strOf(byLabel(/diagn[óo]stico definitivo/i, ["text", "textarea"]));
+      const findings =
+        [obs, dxDef ? `Diagnóstico definitivo: ${dxDef}` : null]
+          .filter(Boolean)
+          .join("\n") || null;
+      out.push({
+        kind: "imaging",
+        name: technique,
+        region,
+        performedAt,
+        findings,
+      });
+    }
+  }
+
+  return out;
+}
+
+/**
+ * Peso capturado en la consulta (campo numérico con etiqueta "Peso") —
+ * al completar la cita actualiza la ficha del paciente.
+ */
+export function extractWeightKg(
+  schema: FormSchema | null,
+  data: ConsultaData
+): number | null {
+  if (!schema) return null;
+  const field = schema.sections
+    .flatMap((s) => s.fields)
+    .find((f) => f.type === "number" && /peso/i.test(f.label));
+  if (!field) return null;
+  const v = data[field.id];
+  return typeof v === "number" && Number.isFinite(v) && v > 0 && v <= 999
+    ? Math.round(v * 100) / 100
+    : null;
+}
+
 /* ─── Auto-pick a template based on the service name ───────────── */
 
 export function templateKeyForServiceName(name: string): TemplateKey {

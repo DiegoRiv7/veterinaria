@@ -262,6 +262,8 @@ export async function updateAppointmentNotesAction(formData: FormData) {
 import {
   LEGACY_FIELD_IDS,
   extractCarnetEntry,
+  extractHealthRecordEntries,
+  extractWeightKg,
   parseFormSchema,
   type ConsultaData,
 } from "@/lib/form-schema";
@@ -325,6 +327,7 @@ export async function saveConsultaDataAction(
         scheduledAt: true,
         service: { select: { name: true, formSchema: true } },
         pet: { select: { weightKg: true } },
+        vet: { select: { user: { select: { name: true } } } },
       },
     });
     if (!appt) return { ok: false, error: "Cita no encontrada." };
@@ -394,6 +397,102 @@ export async function saveConsultaDataAction(
         revalidatePath(`/vet/pacientes/${appt.petId}/cartilla`);
         revalidatePath(`/vet/pacientes/${appt.petId}/carnet`);
         revalidatePath("/salud/cartilla");
+      }
+
+      // Estudios de la consulta → expediente (laboratorio, tests e
+      // imagenología). Mismo dedupe por día para reabrir→re-completar.
+      const drafts = extractHealthRecordEntries(
+        parseFormSchema(appt.service.formSchema),
+        clean,
+        appt.service.name
+      );
+      if (drafts.length > 0) {
+        const vetName = appt.vet.user.name;
+        for (const d of drafts) {
+          const when = d.performedAt ?? appt.scheduledAt;
+          if (d.kind === "lab") {
+            const dup = await prisma.labStudy.findFirst({
+              where: { petId: appt.petId, kind: d.name, performedAt: when },
+              select: { id: true },
+            });
+            if (!dup) {
+              await prisma.labStudy.create({
+                data: {
+                  petId: appt.petId,
+                  kind: d.name,
+                  performedAt: when,
+                  notes: d.notes,
+                  vetName,
+                  addedByUserId: session.userId,
+                },
+              });
+            }
+          } else if (d.kind === "test") {
+            const dup = await prisma.diagnosticTest.findFirst({
+              where: { petId: appt.petId, name: d.name, performedAt: when },
+              select: { id: true },
+            });
+            if (!dup) {
+              await prisma.diagnosticTest.create({
+                data: {
+                  petId: appt.petId,
+                  name: d.name,
+                  performedAt: when,
+                  result: d.result,
+                  notes: d.notes,
+                  vetName,
+                  addedByUserId: session.userId,
+                },
+              });
+            }
+          } else {
+            const dup = await prisma.imagingStudy.findFirst({
+              where: { petId: appt.petId, kind: d.name, performedAt: when },
+              select: { id: true },
+            });
+            if (!dup) {
+              await prisma.imagingStudy.create({
+                data: {
+                  petId: appt.petId,
+                  kind: d.name,
+                  region: d.region,
+                  performedAt: when,
+                  findings: d.findings,
+                  vetName,
+                  addedByUserId: session.userId,
+                },
+              });
+            }
+          }
+        }
+        revalidatePath(`/vet/pacientes/${appt.petId}/cartilla`);
+        revalidatePath(`/vet/pacientes/${appt.petId}/carnet`);
+        revalidatePath("/salud/cartilla");
+      }
+
+      // Peso capturado en la consulta → ficha del paciente, con bitácora.
+      const consultaWeight = extractWeightKg(
+        parseFormSchema(appt.service.formSchema),
+        clean
+      );
+      if (consultaWeight !== null && consultaWeight !== appt.pet.weightKg) {
+        await prisma.$transaction([
+          prisma.pet.update({
+            where: { id: appt.petId },
+            data: { weightKg: consultaWeight },
+          }),
+          prisma.petFieldChange.create({
+            data: {
+              petId: appt.petId,
+              field: "weightKg",
+              oldValue: appt.pet.weightKg != null ? String(appt.pet.weightKg) : null,
+              newValue: String(consultaWeight),
+              changedById: session.userId,
+            },
+          }),
+        ]);
+        revalidatePath(`/vet/pacientes/${appt.petId}`);
+        revalidatePath("/vet/pacientes");
       }
     }
   } catch (e) {
