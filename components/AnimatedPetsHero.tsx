@@ -22,7 +22,7 @@ const FLOATERS: { emoji: string; top?: string; bottom?: string; left?: string; r
   { emoji: "🦴", bottom: "20%", left: "42%", delay: 3.6, size: 28 },
 ];
 
-export function AnimatedPetsHero() {
+export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export function AnimatedPetsHero() {
             bottom: f.bottom,
             left: f.left,
             right: f.right,
-            fontSize: f.size,
+            fontSize: Math.round(f.size * (compact ? 0.55 : 1)),
             opacity: 0.22,
             animationDelay: `${f.delay}s`,
             filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.18))",
@@ -60,15 +60,19 @@ export function AnimatedPetsHero() {
         aria-hidden
         className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
         style={{
-          width: 380,
-          height: 380,
+          width: compact ? 200 : 380,
+          height: compact ? 200 : 380,
           background:
             "radial-gradient(circle, rgba(255,237,212,0.28) 0%, transparent 70%)",
         }}
       />
 
       {/* Featured pet — crossfade carousel. Reserve bottom space for dots. */}
-      <div className="absolute inset-0 pb-20 flex items-center justify-center">
+      <div
+        className={`absolute inset-0 flex items-center justify-center ${
+          compact ? "pb-9" : "pb-20"
+        }`}
+      >
         {PETS.map((p, i) => (
           <div
             key={p.label}
@@ -83,7 +87,7 @@ export function AnimatedPetsHero() {
             <div
               className="select-none"
               style={{
-                fontSize: 200,
+                fontSize: compact ? 84 : 200,
                 filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.25))",
                 animation: "petBob 3.2s ease-in-out infinite",
               }}
@@ -91,7 +95,11 @@ export function AnimatedPetsHero() {
               {p.emoji}
             </div>
             <div
-              className="mt-3 px-5 py-1.5 rounded-full text-[14px] font-extrabold uppercase tracking-[0.18em]"
+              className={
+                compact
+                  ? "mt-1.5 px-3.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-[0.16em]"
+                  : "mt-3 px-5 py-1.5 rounded-full text-[14px] font-extrabold uppercase tracking-[0.18em]"
+              }
               style={{
                 background: "rgba(255,255,255,0.18)",
                 color: "white",
@@ -106,7 +114,11 @@ export function AnimatedPetsHero() {
       </div>
 
       {/* Progress dots — pinned to bottom with safe gap from the pill above */}
-      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
+      <div
+        className={`absolute left-0 right-0 flex justify-center gap-1.5 ${
+          compact ? "bottom-3" : "bottom-6"
+        }`}
+      >
         {PETS.map((_, i) => (
           <span
             key={i}

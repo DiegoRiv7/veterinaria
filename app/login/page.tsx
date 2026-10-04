@@ -103,6 +103,27 @@ export default function LoginPage() {
               }}
             />
 
+            {/* Hero animado — en teléfono también se ven las mascotas */}
+            <div
+              className="lg:hidden relative overflow-hidden rounded-[22px] h-[185px] shrink-0"
+              style={{
+                background:
+                  "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
+                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
+              }}
+            >
+              <div
+                aria-hidden
+                className="absolute inset-0 pointer-events-none opacity-[0.07]"
+                style={{
+                  backgroundImage:
+                    "radial-gradient(circle at 1px 1px, white 1px, transparent 1px)",
+                  backgroundSize: "22px 22px",
+                }}
+              />
+              <AnimatedPetsHero compact />
+            </div>
+
             <div
               className="border p-7 lg:p-8 rounded-[24px]"
               style={{
