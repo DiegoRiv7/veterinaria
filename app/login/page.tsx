@@ -90,8 +90,9 @@ export default function LoginPage() {
         {/* ── Right half / mobile — login form ─────────────────────────── */}
         <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14 relative">
           <div className="w-full max-w-sm lg:max-w-md flex flex-col gap-5 lg:gap-6 relative z-10">
-            {/* Mascotas flotando libres — solo en teléfono */}
-            <div className="lg:hidden relative h-[150px] shrink-0">
+            {/* Mascotas flotando libres — solo en teléfono, pegadas arriba
+                para que el formulario quede centrado */}
+            <div className="lg:hidden relative h-[160px] shrink-0 -mt-8 mb-1">
               <AnimatedPetsHero variant="bare" />
             </div>
 
@@ -104,7 +105,7 @@ export default function LoginPage() {
                 boxShadow: "0 14px 44px oklch(50% 0.04 40 / 0.10)",
               }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-3 mb-6 lg:mb-7">
                 <Image
                   src="/vetsfriend-icon.png"
                   alt="Vetsfriend"
@@ -124,12 +125,6 @@ export default function LoginPage() {
                   Iniciar sesión
                 </h2>
               </div>
-              <p
-                className="text-[13px] lg:text-[14px] font-semibold mb-6 lg:mb-7"
-                style={{ color: "var(--vet-text-3)" }}
-              >
-                Ingresa tus credenciales para continuar.
-              </p>
               <LoginForm />
             </div>
 

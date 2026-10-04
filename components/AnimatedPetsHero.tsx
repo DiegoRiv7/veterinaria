@@ -99,7 +99,7 @@ export function AnimatedPetsHero({
             <div
               className="select-none"
               style={{
-                fontSize: bare ? 72 : 200,
+                fontSize: bare ? 88 : 200,
                 filter: bare
                   ? "drop-shadow(0 10px 22px rgba(188, 78, 32, 0.22))"
                   : "drop-shadow(0 18px 40px rgba(0,0,0,0.25))",
