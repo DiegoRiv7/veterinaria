@@ -90,38 +90,9 @@ export default function LoginPage() {
         {/* ── Right half / mobile — login form ─────────────────────────── */}
         <section className="min-h-dvh lg:w-1/2 flex flex-col items-center justify-center px-5 py-8 lg:py-12 lg:px-14 relative">
           <div className="w-full max-w-sm lg:max-w-md flex flex-col gap-5 lg:gap-6 relative z-10">
-            <Image
-              src="/vetsfriend-banner.png"
-              alt="Vetsfriend — Clínica & Grooming"
-              width={1200}
-              height={400}
-              priority
-              className="w-full h-auto rounded-[22px]"
-              style={{
-                border: "1px solid var(--vet-border)",
-                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
-              }}
-            />
-
-            {/* Hero animado — en teléfono también se ven las mascotas */}
-            <div
-              className="lg:hidden relative overflow-hidden rounded-[22px] h-[185px] shrink-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, var(--vet-green) 0%, var(--vet-green-dim) 60%, oklch(38% 0.12 38) 100%)",
-                boxShadow: "0 10px 28px rgba(206, 90, 45, 0.14)",
-              }}
-            >
-              <div
-                aria-hidden
-                className="absolute inset-0 pointer-events-none opacity-[0.07]"
-                style={{
-                  backgroundImage:
-                    "radial-gradient(circle at 1px 1px, white 1px, transparent 1px)",
-                  backgroundSize: "22px 22px",
-                }}
-              />
-              <AnimatedPetsHero compact />
+            {/* Mascotas flotando libres — solo en teléfono */}
+            <div className="lg:hidden relative h-[150px] shrink-0">
+              <AnimatedPetsHero variant="bare" />
             </div>
 
             <div
@@ -133,12 +104,26 @@ export default function LoginPage() {
                 boxShadow: "0 14px 44px oklch(50% 0.04 40 / 0.10)",
               }}
             >
-              <h2
-                className="text-[24px] lg:text-[28px] font-black tracking-tight"
-                style={{ color: "var(--vet-text-1)" }}
-              >
-                Iniciar sesión
-              </h2>
+              <div className="flex items-center gap-3">
+                <Image
+                  src="/vetsfriend-icon.png"
+                  alt="Vetsfriend"
+                  width={64}
+                  height={64}
+                  priority
+                  className="w-10 h-10 lg:w-11 lg:h-11 rounded-[12px] shrink-0"
+                  style={{
+                    border: "1px solid var(--vet-border)",
+                    boxShadow: "0 6px 16px rgba(206, 90, 45, 0.18)",
+                  }}
+                />
+                <h2
+                  className="text-[24px] lg:text-[28px] font-black tracking-tight"
+                  style={{ color: "var(--vet-text-1)" }}
+                >
+                  Iniciar sesión
+                </h2>
+              </div>
               <p
                 className="text-[13px] lg:text-[14px] font-semibold mb-6 lg:mb-7"
                 style={{ color: "var(--vet-text-3)" }}

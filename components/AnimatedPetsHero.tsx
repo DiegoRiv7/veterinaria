@@ -22,7 +22,17 @@ const FLOATERS: { emoji: string; top?: string; bottom?: string; left?: string; r
   { emoji: "🦴", bottom: "20%", left: "42%", delay: 3.6, size: 28 },
 ];
 
-export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
+export function AnimatedPetsHero({
+  variant = "panel",
+}: {
+  /**
+   * "panel": hero completo del login de escritorio (floaters, glow, dots).
+   * "bare": solo el emoji pasando con el nombre debajo, sin fondo —
+   * para flotar sobre el fondo claro del login móvil.
+   */
+  variant?: "panel" | "bare";
+}) {
+  const bare = variant === "bare";
   const [active, setActive] = useState(0);
 
   useEffect(() => {
@@ -35,7 +45,7 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
   return (
     <div className="relative w-full h-full overflow-hidden">
       {/* Decorative floaters drifting in the background */}
-      {FLOATERS.map((f, i) => (
+      {!bare && FLOATERS.map((f, i) => (
         <span
           key={i}
           aria-hidden
@@ -45,7 +55,7 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
             bottom: f.bottom,
             left: f.left,
             right: f.right,
-            fontSize: Math.round(f.size * (compact ? 0.55 : 1)),
+            fontSize: f.size,
             opacity: 0.22,
             animationDelay: `${f.delay}s`,
             filter: "drop-shadow(0 4px 14px rgba(0,0,0,0.18))",
@@ -56,21 +66,23 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
       ))}
 
       {/* Soft glow behind the featured pet */}
-      <div
-        aria-hidden
-        className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
-        style={{
-          width: compact ? 200 : 380,
-          height: compact ? 200 : 380,
-          background:
-            "radial-gradient(circle, rgba(255,237,212,0.28) 0%, transparent 70%)",
-        }}
-      />
+      {!bare && (
+        <div
+          aria-hidden
+          className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full pointer-events-none"
+          style={{
+            width: 380,
+            height: 380,
+            background:
+              "radial-gradient(circle, rgba(255,237,212,0.28) 0%, transparent 70%)",
+          }}
+        />
+      )}
 
       {/* Featured pet — crossfade carousel. Reserve bottom space for dots. */}
       <div
         className={`absolute inset-0 flex items-center justify-center ${
-          compact ? "pb-9" : "pb-20"
+          bare ? "pb-1" : "pb-20"
         }`}
       >
         {PETS.map((p, i) => (
@@ -87,8 +99,10 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
             <div
               className="select-none"
               style={{
-                fontSize: compact ? 84 : 200,
-                filter: "drop-shadow(0 18px 40px rgba(0,0,0,0.25))",
+                fontSize: bare ? 72 : 200,
+                filter: bare
+                  ? "drop-shadow(0 10px 22px rgba(188, 78, 32, 0.22))"
+                  : "drop-shadow(0 18px 40px rgba(0,0,0,0.25))",
                 animation: "petBob 3.2s ease-in-out infinite",
               }}
             >
@@ -96,16 +110,26 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
             </div>
             <div
               className={
-                compact
-                  ? "mt-1.5 px-3.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-[0.16em]"
+                bare
+                  ? "mt-1.5 px-3.5 py-1 rounded-full text-[10.5px] font-extrabold uppercase tracking-[0.16em]"
                   : "mt-3 px-5 py-1.5 rounded-full text-[14px] font-extrabold uppercase tracking-[0.18em]"
               }
-              style={{
-                background: "rgba(255,255,255,0.18)",
-                color: "white",
-                backdropFilter: "blur(6px)",
-                border: "1px solid rgba(255,255,255,0.28)",
-              }}
+              style={
+                bare
+                  ? {
+                      background:
+                        "color-mix(in oklab, var(--vet-green) 10%, transparent)",
+                      color: "var(--vet-green-dim)",
+                      border:
+                        "1px solid color-mix(in oklab, var(--vet-green) 26%, transparent)",
+                    }
+                  : {
+                      background: "rgba(255,255,255,0.18)",
+                      color: "white",
+                      backdropFilter: "blur(6px)",
+                      border: "1px solid rgba(255,255,255,0.28)",
+                    }
+              }
             >
               {p.label}
             </div>
@@ -114,11 +138,8 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
       </div>
 
       {/* Progress dots — pinned to bottom with safe gap from the pill above */}
-      <div
-        className={`absolute left-0 right-0 flex justify-center gap-1.5 ${
-          compact ? "bottom-3" : "bottom-6"
-        }`}
-      >
+      {!bare && (
+      <div className="absolute bottom-6 left-0 right-0 flex justify-center gap-1.5">
         {PETS.map((_, i) => (
           <span
             key={i}
@@ -133,6 +154,7 @@ export function AnimatedPetsHero({ compact = false }: { compact?: boolean }) {
           />
         ))}
       </div>
+      )}
 
       <style>{`
         @keyframes floaty {
