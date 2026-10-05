@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
 import { NotificationsButton } from "./NotificationsButton";
+import { TopbarSearch } from "./TopbarSearch";
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-time";
 
 type NotifData = React.ComponentProps<typeof NotificationsButton>;
@@ -83,7 +84,7 @@ export function VetTopbar({
         borderBottomColor: "var(--vet-border)",
       }}
     >
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 flex-1 min-w-0 mr-3">
         {/* Mobile menu button */}
         <button
           type="button"
@@ -94,12 +95,23 @@ export function VetTopbar({
         >
           <VetIcon name="menu" size={22} />
         </button>
-        <div className="font-extrabold text-[17px] truncate" style={{ color: "var(--vet-text-1)" }}>
+        {/* Móvil: título + lupa compacta. Desktop: la barra de búsqueda
+            global ocupa el lugar del título. */}
+        <div
+          className="lg:hidden font-extrabold text-[17px] truncate"
+          style={{ color: "var(--vet-text-1)" }}
+        >
           {titleFor(pathname)}
+        </div>
+        <div className="hidden lg:block flex-1 min-w-0 max-w-[560px]">
+          <TopbarSearch />
         </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3.5">
+        <div className="lg:hidden">
+          <TopbarSearch variant="icon" />
+        </div>
         <NotificationsButton {...notifications} />
 
         {/* Date chip — hidden on small mobile */}

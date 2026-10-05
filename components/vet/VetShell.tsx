@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { VetSidebar } from "./VetSidebar";
-import { SpotlightSearch } from "./SpotlightSearch";
 import { VetTopbar } from "./VetTopbar";
 import { VetIcon } from "./VetIcon";
 import type { NotificationsButton } from "./NotificationsButton";
@@ -33,20 +32,7 @@ export function VetShell({
   children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
-
-  // ⌘K / Ctrl+K abre el buscador desde cualquier parte del panel
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        setSearchOpen((v) => !v);
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, []);
 
   // Close drawer on route change
   useEffect(() => {
@@ -72,7 +58,6 @@ export function VetShell({
           vetInitials={vetInitials}
           vetPhotoUrl={vetPhotoUrl}
           unreadChat={unreadChat}
-          onOpenSearch={() => setSearchOpen(true)}
         />
       </div>
 
@@ -91,10 +76,6 @@ export function VetShell({
               vetPhotoUrl={vetPhotoUrl}
               unreadChat={unreadChat}
               onNavigate={() => setDrawerOpen(false)}
-              onOpenSearch={() => {
-                setDrawerOpen(false);
-                setSearchOpen(true);
-              }}
             />
             <button
               type="button"
@@ -108,8 +89,6 @@ export function VetShell({
           </div>
         </>
       )}
-
-      <SpotlightSearch open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
