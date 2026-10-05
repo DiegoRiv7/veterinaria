@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { VetSidebar } from "./VetSidebar";
+import { SearchOverlay } from "./SearchOverlay";
 import { VetTopbar } from "./VetTopbar";
 import { VetIcon } from "./VetIcon";
 import type { NotificationsButton } from "./NotificationsButton";
@@ -32,7 +33,20 @@ export function VetShell({
   children,
 }: Props) {
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const pathname = usePathname();
+
+  // ⌘K / Ctrl+K abre el buscador global
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setSearchOpen((v) => !v);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
 
   // Close drawer on route change
   useEffect(() => {
@@ -58,6 +72,7 @@ export function VetShell({
           vetInitials={vetInitials}
           vetPhotoUrl={vetPhotoUrl}
           unreadChat={unreadChat}
+          onOpenSearch={() => setSearchOpen(true)}
         />
       </div>
 
@@ -76,6 +91,10 @@ export function VetShell({
               vetPhotoUrl={vetPhotoUrl}
               unreadChat={unreadChat}
               onNavigate={() => setDrawerOpen(false)}
+              onOpenSearch={() => {
+                setDrawerOpen(false);
+                setSearchOpen(true);
+              }}
             />
             <button
               type="button"
@@ -90,6 +109,8 @@ export function VetShell({
         </>
       )}
 
+      <SearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
+
       {/* Main */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <VetTopbar
@@ -97,6 +118,7 @@ export function VetShell({
           onMenuClick={() => setDrawerOpen(true)}
           busyWindows={busyWindows}
           initiallyBusy={initiallyBusy}
+          onOpenSearch={() => setSearchOpen(true)}
         />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-7">{children}</main>
       </div>

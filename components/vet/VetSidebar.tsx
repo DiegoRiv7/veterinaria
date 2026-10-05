@@ -28,9 +28,11 @@ type Props = {
   vetPhotoUrl?: string | null;
   unreadChat: number;
   onNavigate?: () => void;
+  /** Abre el buscador global. */
+  onOpenSearch?: () => void;
 };
 
-export function VetSidebar({ vetName, vetInitials, vetPhotoUrl, unreadChat, onNavigate }: Props) {
+export function VetSidebar({ vetName, vetInitials, vetPhotoUrl, unreadChat, onNavigate, onOpenSearch }: Props) {
   const pathname = usePathname();
 
   return (
@@ -58,6 +60,26 @@ export function VetSidebar({ vetName, vetInitials, vetPhotoUrl, unreadChat, onNa
           }}
         />
       </div>
+
+      {/* Buscar — mismo estilo que las secciones del menú */}
+      {onOpenSearch && (
+        <div className="px-2.5 mb-1">
+          <button
+            type="button"
+            onClick={onOpenSearch}
+            className="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl transition-all"
+            style={{
+              background: "transparent",
+              color: "var(--vet-text-2)",
+              fontWeight: 600,
+              fontSize: 14,
+            }}
+          >
+            <VetIcon name="search" size={18} color="var(--vet-text-3)" />
+            <span className="flex-1 text-left">Buscar</span>
+          </button>
+        </div>
+      )}
 
       {/* Nav */}
       <nav className="flex-1 flex flex-col gap-1 px-2.5 overflow-y-auto">

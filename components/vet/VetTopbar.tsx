@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { VetIcon } from "./VetIcon";
 import { NotificationsButton } from "./NotificationsButton";
-import { TopbarSearch } from "./TopbarSearch";
+import { Search } from "lucide-react";
 import { CLINIC_TIME_ZONE } from "@/lib/clinic-time";
 
 type NotifData = React.ComponentProps<typeof NotificationsButton>;
@@ -50,6 +50,8 @@ type Props = {
   busyWindows?: BusyWindow[];
   /** Estado inicial calculado en el servidor (evita parpadeo). */
   initiallyBusy?: boolean;
+  /** Abre el buscador global (lupa móvil del topbar). */
+  onOpenSearch?: () => void;
 };
 
 function isBusyNow(windows: BusyWindow[]): boolean {
@@ -64,6 +66,7 @@ export function VetTopbar({
   onMenuClick,
   busyWindows = [],
   initiallyBusy = false,
+  onOpenSearch,
 }: Props) {
   const pathname = usePathname();
 
@@ -95,23 +98,26 @@ export function VetTopbar({
         >
           <VetIcon name="menu" size={22} />
         </button>
-        {/* Móvil: título + lupa compacta. Desktop: la barra de búsqueda
-            global ocupa el lugar del título. */}
         <div
-          className="lg:hidden font-extrabold text-[17px] truncate"
+          className="font-extrabold text-[17px] truncate"
           style={{ color: "var(--vet-text-1)" }}
         >
           {titleFor(pathname)}
         </div>
-        <div className="hidden lg:block flex-1 min-w-0 max-w-[560px]">
-          <TopbarSearch />
-        </div>
       </div>
 
       <div className="flex items-center gap-2 sm:gap-3.5">
-        <div className="lg:hidden">
-          <TopbarSearch variant="icon" />
-        </div>
+        {onOpenSearch && (
+          <button
+            type="button"
+            aria-label="Buscar"
+            onClick={onOpenSearch}
+            className="lg:hidden flex items-center justify-center w-10 h-10 rounded-lg transition-colors"
+            style={{ color: "var(--vet-text-2)" }}
+          >
+            <Search className="h-[20px] w-[20px]" />
+          </button>
+        )}
         <NotificationsButton {...notifications} />
 
         {/* Date chip — hidden on small mobile */}

@@ -381,3 +381,96 @@ export async function vetSearchAction(rawQuery: string): Promise<SearchResponse>
   const total = groups.reduce((n, g) => n + g.items.length, 0);
   return { groups, total };
 }
+
+/* ─── Sugerencias inteligentes (panel sin búsqueda) ─────────────── */
+
+function relativeBadge(d: Date, now: Date): string {
+  const diffMin = Math.round((d.getTime() - now.getTime()) / 60000);
+  if (diffMin >= 0) {
+    if (diffMin < 1) return "ahora";
+    if (diffMin < 60) return `en ${diffMin} min`;
+    if (diffMin < 360) return `en ${Math.round(diffMin / 60)} h`;
+    return `${clinicDayLabel(d)} ${formatClinicTimeShort(d)}`;
+  }
+  const ago = -diffMin;
+  if (ago < 60) return `hace ${ago} min`;
+  if (ago < 1440) return `hace ${Math.round(ago / 60)} h`;
+  return clinicDayLabel(d);
+}
+
+/**
+ * Lista inteligente para el panel de búsqueda vacío: citas que están por
+ * suceder (las más cercanas primero), citas recién atendidas, y el
+ * cliente mezcla encima lo que el usuario buscó hace poco.
+ */
+export async function vetSearchSuggestionsAction(): Promise<SearchItem[]> {
+  const session = await requireSession();
+  if (session.role === "CLIENT") return [];
+
+  const now = new Date();
+  const vetProfile = await prisma.veterinarian.findUnique({
+    where: { userId: session.userId },
+    select: { id: true },
+  });
+  const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
+
+  const [upcoming, justClosed] = await Promise.all([
+    prisma.appointment.findMany({
+      where: {
+        ...vetFilter,
+        status: "SCHEDULED",
+        scheduledAt: { gte: new Date(now.getTime() - 20 * 60000) },
+      },
+      orderBy: { scheduledAt: "asc" },
+      take: 4,
+      select: {
+        id: true,
+        scheduledAt: true,
+        pet: { select: { name: true } },
+        client: { select: { name: true } },
+        service: { select: { name: true } },
+      },
+    }),
+    prisma.appointment.findMany({
+      where: {
+        ...vetFilter,
+        status: "COMPLETED",
+        updatedAt: { gte: new Date(now.getTime() - 48 * 3600_000) },
+      },
+      orderBy: { updatedAt: "desc" },
+      take: 3,
+      select: {
+        id: true,
+        scheduledAt: true,
+        updatedAt: true,
+        pet: { select: { name: true } },
+        client: { select: { name: true } },
+        service: { select: { name: true } },
+      },
+    }),
+  ]);
+
+  const items: SearchItem[] = [];
+  for (const a of upcoming) {
+    items.push({
+      id: `sug-up-${a.id}`,
+      icon: "📅",
+      title: `${a.pet.name} · ${a.service.name}`,
+      subtitle: `Próxima cita · ${formatClinicTimeShort(a.scheduledAt)} · ${a.client.name}`,
+      href: `/vet/cita/${a.id}`,
+      badge: relativeBadge(a.scheduledAt, now),
+    });
+  }
+  for (const a of justClosed) {
+    items.push({
+      id: `sug-done-${a.id}`,
+      icon: "✅",
+      title: `${a.pet.name} · ${a.service.name}`,
+      subtitle: `Recién atendida · ${a.client.name}`,
+      href: `/vet/cita/${a.id}`,
+      badge: `atendida ${relativeBadge(a.updatedAt, now)}`,
+    });
+  }
+  return items.slice(0, 7);
+}
+
