@@ -182,15 +182,27 @@ export async function createAppointmentByVetAction(
     if (!newPetName) return { ok: false, error: "Ingresa el nombre de la mascota." };
     if (!(VALID_SPECIES_VALUES as readonly string[]).includes(newPetSpecies))
       return { ok: false, error: "Selecciona la especie." };
-    const pet = await prisma.pet.create({
-      data: {
-        ownerId: resolvedClientId,
-        name: newPetName,
-        species: newPetSpecies as Species,
-        breed: newPetBreed,
-      },
+    // Si el cliente ya tiene una mascota con ese nombre, usa esa en vez de
+    // duplicarla (causa clásica: agendar con "nueva" una mascota existente).
+    const samePets = await prisma.pet.findMany({
+      where: { ownerId: resolvedClientId },
+      select: { id: true, name: true },
     });
-    resolvedPetId = pet.id;
+    const normName = (x: string) => x.trim().toLowerCase();
+    const match = samePets.find((p) => normName(p.name) === normName(newPetName));
+    if (match) {
+      resolvedPetId = match.id;
+    } else {
+      const pet = await prisma.pet.create({
+        data: {
+          ownerId: resolvedClientId,
+          name: newPetName,
+          species: newPetSpecies as Species,
+          breed: newPetBreed,
+        },
+      });
+      resolvedPetId = pet.id;
+    }
   } else {
     // Verify ownership
     const pet = await prisma.pet.findUnique({ where: { id: resolvedPetId } });
@@ -885,6 +897,16 @@ export async function addPetAction(formData: FormData): Promise<{ id: string }> 
   if (session.role !== "CLIENT") throw new Error("FORBIDDEN");
   const data = readPetForm(formData);
   if (!data.name) throw new Error("Falta nombre.");
+  // Evita mascotas duplicadas (mismo dueño, mismo nombre) — p. ej. doble
+  // tap en el botón o re-captura de una mascota que ya existe.
+  const siblings = await prisma.pet.findMany({
+    where: { ownerId: session.userId },
+    select: { name: true },
+  });
+  const norm = (x: string) => x.trim().toLowerCase();
+  if (siblings.some((s) => norm(s.name) === norm(data.name))) {
+    throw new Error(`Ya tienes una mascota llamada "${data.name.trim()}".`);
+  }
   const created = await prisma.pet.create({
     data: {
       ownerId: session.userId,

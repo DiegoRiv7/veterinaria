@@ -64,6 +64,7 @@ model User {
   imagingStudiesAdded  ImagingStudy[]   @relation("ImagingStudyAddedBy")
   feedingRecordsAdded  FeedingRecord[]  @relation("FeedingRecordAddedBy")
   petFieldChanges     PetFieldChange[] @relation("PetFieldChangesBy")
+  healthRecordChanges HealthRecordChange[] @relation("HealthRecordChangesBy")
 }
 
 model Pet {
@@ -97,6 +98,7 @@ model Pet {
   imagingStudies  ImagingStudy[]
   feedingRecords  FeedingRecord[]
   fieldChanges    PetFieldChange[]
+  recordChanges   HealthRecordChange[]
 }
 
 model Vaccine {
@@ -248,6 +250,28 @@ model PetFieldChange {
   revertedAt  DateTime?
   createdAt   DateTime  @default(now())
 
+  @@index([petId, createdAt])
+}
+
+/// Bitácora de cambios de los registros del expediente (vacunas,
+/// desparasitaciones, cirugías, laboratorio, tests, imagenología,
+/// alimentación) — auditoría por registro + revertir.
+model HealthRecordChange {
+  id          String    @id @default(cuid())
+  petId       String
+  pet         Pet       @relation(fields: [petId], references: [id], onDelete: Cascade)
+  /// vaccine | deworming | surgery | lab | test | imaging | feeding
+  recordType  String
+  recordId    String
+  field       String
+  oldValue    String?
+  newValue    String?
+  changedById String
+  changedBy   User      @relation("HealthRecordChangesBy", fields: [changedById], references: [id])
+  revertedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([recordType, recordId, createdAt])
   @@index([petId, createdAt])
 }
 

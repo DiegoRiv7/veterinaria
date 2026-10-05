@@ -9,6 +9,18 @@ import {
   type AddResult,
 } from "@/app/actions/cartilla";
 import { FancySelect } from "@/components/FancySelect";
+import { updateHealthRecordAction } from "@/app/actions/record-edits";
+import { RecordHistoryEye, type RecordChange } from "@/components/RecordHistoryEye";
+import { clinicDateInput } from "@/lib/clinic-time";
+
+const DEWORM_FIELD_LABELS: Record<string, string> = {
+  product: "Producto",
+  kind: "Tipo",
+  appliedAt: "Aplicada",
+  nextAt: "Próxima",
+  notes: "Notas",
+  vetName: "Médico",
+};
 
 export type DewormingEntry = {
   id: string;
@@ -34,26 +46,62 @@ export function PetDewormingsTab({
   readonly = false,
   dark = false,
   accent = "var(--color-brand)",
+  changesByRecord = {},
 }: {
   petId: string;
   items: DewormingEntry[];
   readonly?: boolean;
   dark?: boolean;
   accent?: string;
+  changesByRecord?: Record<string, RecordChange[]>;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<DewormingEntry | null>(null);
   const [kind, setKind] = useState("Interna");
   const [pendingDelete, startDelete] = useTransition();
+
+  function closeForm() {
+    setAdding(false);
+    setEditing(null);
+  }
+
+  function startEdit(d: DewormingEntry) {
+    if (readonly || d.id.startsWith("appt-")) return;
+    setKind(d.kind ?? "Interna");
+    setEditing(d);
+    setAdding(false);
+  }
   const [state, formAction, pending] = useActionState<
     AddResult | { ok: false; error: undefined } | null,
     FormData
   >(async (_prev, fd) => {
+    if (editing) {
+      const result = await updateHealthRecordAction({
+        type: "deworming",
+        id: editing.id,
+        values: {
+          product: String(fd.get("product") ?? ""),
+          kind: String(fd.get("kind") ?? ""),
+          appliedAt: String(fd.get("appliedAt") ?? ""),
+          nextAt: String(fd.get("nextAt") ?? ""),
+          notes: String(fd.get("notes") ?? ""),
+        },
+      });
+      if (result.ok) {
+        toast.success("Desparasitación actualizada.");
+        closeForm();
+        router.refresh();
+        return { ok: true, id: editing.id } as never;
+      }
+      toast.error(result.error);
+      return result as never;
+    }
     fd.set("petId", petId);
     const result = await addDewormingAction(_prev, fd);
     if (result.ok) {
       toast.success("Desparasitación registrada.");
-      setAdding(false);
+      closeForm();
       router.refresh();
     } else {
       toast.error(result.error);
@@ -100,11 +148,12 @@ export function PetDewormingsTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {!readonly && !adding && (
+      {!readonly && !adding && !editing && (
         <button
           type="button"
           onClick={() => {
             setKind("Interna");
+            setEditing(null);
             setAdding(true);
           }}
           className="w-full py-3 rounded-[14px] flex items-center justify-center gap-2 text-[14px] font-extrabold transition"
@@ -118,8 +167,9 @@ export function PetDewormingsTab({
         </button>
       )}
 
-      {!readonly && adding && (
+      {!readonly && (adding || editing) && (
         <form
+          key={editing?.id ?? "new"}
           action={formAction}
           className="rounded-[20px] p-5 flex flex-col gap-4"
           style={{
@@ -131,12 +181,12 @@ export function PetDewormingsTab({
             <div className="flex items-center gap-2">
               <span className="text-[20px]">💊</span>
               <p className="text-[15px] font-black" style={{ color: t.text }}>
-                Nueva desparasitación
+                {editing ? `Editar — ${editing.product}` : "Nueva desparasitación"}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               aria-label="Cancelar"
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: t.cardBgLight, color: t.textMuted }}
@@ -150,6 +200,7 @@ export function PetDewormingsTab({
               name="product"
               type="text"
               required
+              defaultValue={editing?.product}
               placeholder="Drontal Plus, Frontline…"
               className="w-full px-4 rounded-[12px] border text-[14px] outline-none transition appearance-none"
               style={{
@@ -185,6 +236,7 @@ export function PetDewormingsTab({
                   name="appliedAt"
                   type="date"
                   required
+                  defaultValue={editing ? clinicDateInput(editing.appliedAt) : undefined}
                   className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
                   style={{
                     height: 48,
@@ -201,6 +253,9 @@ export function PetDewormingsTab({
                 <input
                   name="nextAt"
                   type="date"
+                  defaultValue={
+                    editing?.nextAt ? clinicDateInput(editing.nextAt) : undefined
+                  }
                   className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
                   style={{
                     height: 48,
@@ -218,6 +273,7 @@ export function PetDewormingsTab({
             <textarea
               name="notes"
               rows={2}
+              defaultValue={editing?.notes ?? undefined}
               placeholder="Observaciones, dosis, marca…"
               className="w-full px-4 py-3 rounded-[12px] border text-[14px] outline-none resize-none"
               style={{
@@ -243,7 +299,7 @@ export function PetDewormingsTab({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               className="flex-1 py-3 rounded-[14px] text-[14px] font-bold"
               style={{
                 background: t.cardBgLight,
@@ -261,13 +317,13 @@ export function PetDewormingsTab({
                 background: `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 70%, oklch(45% 0.12 38)))`,
               }}
             >
-              {pending ? "Guardando…" : "Guardar"}
+              {pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar"}
             </button>
           </div>
         </form>
       )}
 
-      {items.length === 0 && !adding && (
+      {items.length === 0 && !adding && !editing && (
         <div
           className="rounded-[18px] py-12 px-6 text-center"
           style={{
@@ -290,19 +346,33 @@ export function PetDewormingsTab({
         </div>
       )}
 
-      {items.map((d) => (
+      {items.map((d) => {
+        const editable = !readonly && !d.id.startsWith("appt-");
+        return (
         <div
           key={d.id}
-          className="rounded-[16px] p-4 lg:p-5"
+          onClick={() => editable && startEdit(d)}
+          title={editable ? "Clic para editar" : undefined}
+          className={`rounded-[16px] p-4 lg:p-5 transition ${
+            editable ? "cursor-pointer hover:brightness-[0.985]" : ""
+          }`}
           style={{
             background: t.cardBg,
-            border: `1px solid ${t.border}`,
+            border: `1px solid ${editing?.id === d.id ? accent : t.border}`,
           }}
         >
           <div className="flex items-start justify-between gap-3 mb-3">
-            <p className="text-[14px] font-black" style={{ color: t.text }}>
-              {d.product}
-            </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-[14px] font-black" style={{ color: t.text }}>
+                {d.product}
+              </p>
+              <RecordHistoryEye
+                changes={changesByRecord[d.id] ?? []}
+                title={d.product}
+                fieldLabels={DEWORM_FIELD_LABELS}
+                dark={dark}
+              />
+            </div>
             <div className="flex items-center gap-2 shrink-0">
               {d.kind && (
                 <span
@@ -319,7 +389,10 @@ export function PetDewormingsTab({
               {!readonly && (
                 <button
                   type="button"
-                  onClick={() => remove(d.id)}
+                  onClick={(ev) => {
+                    ev.stopPropagation();
+                    remove(d.id);
+                  }}
                   disabled={pendingDelete}
                   aria-label="Quitar"
                   className="w-7 h-7 rounded-full flex items-center justify-center"
@@ -372,7 +445,8 @@ export function PetDewormingsTab({
             Registrado por {d.addedByName}
           </p>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   formatDate,
 } from "@/lib/utils";
 import { VetCartillaTabs } from "./vet-cartilla-tabs";
+import { clinicDateInput } from "@/lib/clinic-time";
 import { PetPhotoEdit } from "@/components/PetPhotoEdit";
 
 export const dynamic = "force-dynamic";
@@ -75,9 +76,32 @@ export default async function VetPetCartillaPage({
         },
         orderBy: { scheduledAt: "desc" },
       },
+      recordChanges: {
+        include: { changedBy: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 300,
+      },
     },
   });
   if (!pet) notFound();
+
+  // Historial de cambios por registro, agrupado por tipo → id.
+  const recordChanges: Record<string, Record<string, {
+    id: string; field: string; oldValue: string | null; newValue: string | null;
+    changedByName: string; createdAt: string; reverted: boolean;
+  }[]>> = {};
+  for (const c of pet.recordChanges) {
+    const byId = (recordChanges[c.recordType] ??= {});
+    (byId[c.recordId] ??= []).push({
+      id: c.id,
+      field: c.field,
+      oldValue: c.oldValue,
+      newValue: c.newValue,
+      changedByName: c.changedBy.name,
+      createdAt: c.createdAt.toISOString(),
+      reverted: c.revertedAt != null,
+    });
+  }
 
   const palette = paletteFor(pet);
   const age = ageFromBirthDate(pet.birthDate) ?? "—";
@@ -164,6 +188,12 @@ export default async function VetPetCartillaPage({
     details: l.result ? [{ label: "Resultado", value: l.result }] : [],
     notes: l.notes,
     addedByName: l.vetName ?? l.addedBy.name,
+    values: {
+      kind: l.kind,
+      performedAt: clinicDateInput(l.performedAt),
+      result: l.result ?? "",
+      notes: l.notes ?? "",
+    },
   }));
 
   const diagnosticTests = pet.diagnosticTests.map((t) => ({
@@ -184,6 +214,12 @@ export default async function VetPetCartillaPage({
     details: [],
     notes: t.notes,
     addedByName: t.vetName ?? t.addedBy.name,
+    values: {
+      name: t.name,
+      performedAt: clinicDateInput(t.performedAt),
+      result: t.result ?? "",
+      notes: t.notes ?? "",
+    },
   }));
 
   const imagingStudies = pet.imagingStudies.map((s) => ({
@@ -194,6 +230,12 @@ export default async function VetPetCartillaPage({
     details: s.region ? [{ label: "Zona", value: s.region }] : [],
     notes: s.findings,
     addedByName: s.vetName ?? s.addedBy.name,
+    values: {
+      kind: s.kind,
+      region: s.region ?? "",
+      performedAt: clinicDateInput(s.performedAt),
+      findings: s.findings ?? "",
+    },
   }));
 
   const feedingRecords = pet.feedingRecords.map((f, i) => ({
@@ -210,6 +252,15 @@ export default async function VetPetCartillaPage({
     ],
     notes: f.notes,
     addedByName: f.addedBy.name,
+    values: {
+      foodType: f.foodType,
+      brand: f.brand ?? "",
+      weightKg: f.weightKg != null ? String(f.weightKg) : "",
+      dailyGrams: f.dailyGrams != null ? String(f.dailyGrams) : "",
+      mealsPerDay: f.mealsPerDay != null ? String(f.mealsPerDay) : "",
+      recordedAt: clinicDateInput(f.recordedAt),
+      notes: f.notes ?? "",
+    },
   }));
 
   const consults = completedAppts
@@ -312,6 +363,7 @@ export default async function VetPetCartillaPage({
         diagnosticTests={diagnosticTests}
         imagingStudies={imagingStudies}
         feedingRecords={feedingRecords}
+        recordChanges={recordChanges}
       />
     </div>
   );

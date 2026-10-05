@@ -8,6 +8,17 @@ import {
   deleteVaccineAction,
   type AddVaccineResult,
 } from "@/app/actions/vaccines";
+import { updateHealthRecordAction } from "@/app/actions/record-edits";
+import { RecordHistoryEye, type RecordChange } from "@/components/RecordHistoryEye";
+import { clinicDateInput } from "@/lib/clinic-time";
+
+const VACCINE_FIELD_LABELS: Record<string, string> = {
+  name: "Nombre",
+  appliedAt: "Aplicada",
+  nextAt: "Próxima",
+  notes: "Notas",
+  vetName: "Médico",
+};
 
 export type VaccineEntry = {
   id: string;
@@ -59,25 +70,55 @@ export function PetVaccinesTab({
   readonly = false,
   dark = false,
   accent = "var(--color-brand)",
+  changesByRecord = {},
 }: {
   petId: string;
   vaccines: VaccineEntry[];
   readonly?: boolean;
   dark?: boolean;
   accent?: string;
+  changesByRecord?: Record<string, RecordChange[]>;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<VaccineEntry | null>(null);
   const [pendingDelete, startDelete] = useTransition();
+
+  function closeForm() {
+    setAdding(false);
+    setEditing(null);
+  }
+
   const [state, formAction, pending] = useActionState<
     AddVaccineResult | { ok: false; error: undefined } | null,
     FormData
   >(async (_prev, fd) => {
+    // Edición con bitácora
+    if (editing) {
+      const result = await updateHealthRecordAction({
+        type: "vaccine",
+        id: editing.id,
+        values: {
+          name: String(fd.get("name") ?? ""),
+          appliedAt: String(fd.get("appliedAt") ?? ""),
+          nextAt: String(fd.get("nextAt") ?? ""),
+          notes: String(fd.get("notes") ?? ""),
+        },
+      });
+      if (result.ok) {
+        toast.success("Vacuna actualizada.");
+        closeForm();
+        router.refresh();
+        return { ok: true, id: editing.id };
+      }
+      toast.error(result.error);
+      return result;
+    }
     fd.set("petId", petId);
     const result = await addVaccineAction(_prev, fd);
     if (result.ok) {
       toast.success("Vacuna registrada.");
-      setAdding(false);
+      closeForm();
       router.refresh();
     } else {
       toast.error(result.error);
@@ -120,7 +161,7 @@ export function PetVaccinesTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {!readonly && !adding && (
+      {!readonly && !adding && !editing && (
         <button
           type="button"
           onClick={() => setAdding(true)}
@@ -137,8 +178,9 @@ export function PetVaccinesTab({
         </button>
       )}
 
-      {!readonly && adding && (
+      {!readonly && (adding || editing) && (
         <form
+          key={editing?.id ?? "new"}
           action={formAction}
           className="rounded-[20px] p-5 flex flex-col gap-4"
           style={{
@@ -154,12 +196,12 @@ export function PetVaccinesTab({
                 className="text-[15px] font-black"
                 style={{ color: "var(--color-foreground)" }}
               >
-                Nueva vacuna
+                {editing ? `Editar — ${editing.name}` : "Nueva vacuna"}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               aria-label="Cancelar"
               className="w-8 h-8 rounded-full flex items-center justify-center transition"
               style={{
@@ -184,6 +226,7 @@ export function PetVaccinesTab({
               name="name"
               type="text"
               required
+              defaultValue={editing?.name}
               placeholder="Antirrábica, Pentavalente…"
               className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
               style={{
@@ -212,6 +255,7 @@ export function PetVaccinesTab({
                 name="appliedAt"
                 type="date"
                 required
+                defaultValue={editing ? clinicDateInput(editing.appliedAt) : undefined}
                 className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
                 style={{
                   height: 48,
@@ -236,6 +280,9 @@ export function PetVaccinesTab({
                 id="vaccine-next"
                 name="nextAt"
                 type="date"
+                defaultValue={
+                  editing?.nextAt ? clinicDateInput(editing.nextAt) : undefined
+                }
                 className="w-full px-4 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition appearance-none"
                 style={{
                   height: 48,
@@ -262,6 +309,7 @@ export function PetVaccinesTab({
               id="vaccine-notes"
               name="notes"
               rows={3}
+              defaultValue={editing?.notes ?? undefined}
               placeholder="Marca, lote, reacciones…"
               className="w-full px-4 py-3 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition resize-none"
               style={{
@@ -287,7 +335,7 @@ export function PetVaccinesTab({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               className="flex-1 py-3 rounded-[14px] text-[14px] font-bold transition"
               style={{
                 background: "var(--color-surface-2, var(--color-surface))",
@@ -308,13 +356,13 @@ export function PetVaccinesTab({
                   "0 8px 22px color-mix(in oklab, var(--color-brand) 30%, transparent)",
               }}
             >
-              {pending ? "Guardando…" : "Guardar vacuna"}
+              {pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar vacuna"}
             </button>
           </div>
         </form>
       )}
 
-      {vaccines.length === 0 && !adding && (
+      {vaccines.length === 0 && !adding && !editing && (
         <div
           className="rounded-[18px] py-12 px-6 text-center"
           style={{
@@ -342,22 +390,35 @@ export function PetVaccinesTab({
 
       {vaccines.map((v) => {
         const s = STATUS_BADGE[v.status];
+        const editable = !readonly;
         return (
           <div
             key={v.id}
-            className="rounded-[16px] p-4"
+            onClick={() => editable && setEditing(v)}
+            title={editable ? "Clic para editar" : undefined}
+            className={`rounded-[16px] p-4 transition ${
+              editable ? "cursor-pointer hover:brightness-[0.985]" : ""
+            }`}
             style={{
               background: t.cardBg,
-              border: `1px solid ${t.border}`,
+              border: `1px solid ${editing?.id === v.id ? accent : t.border}`,
             }}
           >
             <div className="flex items-start justify-between gap-3 mb-2.5">
-              <p
-                className="text-[15px] font-extrabold"
-                style={{ color: t.text }}
-              >
-                💉 {v.name}
-              </p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p
+                  className="text-[15px] font-extrabold"
+                  style={{ color: t.text }}
+                >
+                  💉 {v.name}
+                </p>
+                <RecordHistoryEye
+                  changes={changesByRecord[v.id] ?? []}
+                  title={v.name}
+                  fieldLabels={VACCINE_FIELD_LABELS}
+                  dark={dark}
+                />
+              </div>
               <div className="flex items-center gap-2 shrink-0">
                 <span
                   className="px-2 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wide whitespace-nowrap"
@@ -372,7 +433,10 @@ export function PetVaccinesTab({
                 {!readonly && (
                   <button
                     type="button"
-                    onClick={() => removeVaccine(v.id)}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      removeVaccine(v.id);
+                    }}
                     disabled={pendingDelete}
                     aria-label={`Quitar ${v.name}`}
                     className="w-7 h-7 rounded-full flex items-center justify-center"

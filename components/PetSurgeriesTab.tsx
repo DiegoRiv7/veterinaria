@@ -8,6 +8,16 @@ import {
   deleteSurgeryAction,
   type AddResult,
 } from "@/app/actions/cartilla";
+import { updateHealthRecordAction } from "@/app/actions/record-edits";
+import { RecordHistoryEye, type RecordChange } from "@/components/RecordHistoryEye";
+import { clinicDateInput } from "@/lib/clinic-time";
+
+const SURGERY_FIELD_LABELS: Record<string, string> = {
+  name: "Procedimiento",
+  performedAt: "Fecha",
+  clinic: "Clínica",
+  notes: "Notas",
+};
 
 export type SurgeryEntry = {
   id: string;
@@ -32,25 +42,54 @@ export function PetSurgeriesTab({
   readonly = false,
   dark = false,
   accent = "var(--color-brand)",
+  changesByRecord = {},
 }: {
   petId: string;
   items: SurgeryEntry[];
   readonly?: boolean;
   dark?: boolean;
   accent?: string;
+  changesByRecord?: Record<string, RecordChange[]>;
 }) {
   const router = useRouter();
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<SurgeryEntry | null>(null);
   const [pendingDelete, startDelete] = useTransition();
+
+  function closeForm() {
+    setAdding(false);
+    setEditing(null);
+  }
+
   const [state, formAction, pending] = useActionState<
     AddResult | { ok: false; error: undefined } | null,
     FormData
   >(async (_prev, fd) => {
+    if (editing) {
+      const result = await updateHealthRecordAction({
+        type: "surgery",
+        id: editing.id,
+        values: {
+          name: String(fd.get("name") ?? ""),
+          performedAt: String(fd.get("performedAt") ?? ""),
+          clinic: String(fd.get("clinic") ?? ""),
+          notes: String(fd.get("notes") ?? ""),
+        },
+      });
+      if (result.ok) {
+        toast.success("Procedimiento actualizado.");
+        closeForm();
+        router.refresh();
+        return { ok: true, id: editing.id } as never;
+      }
+      toast.error(result.error);
+      return result as never;
+    }
     fd.set("petId", petId);
     const result = await addSurgeryAction(_prev, fd);
     if (result.ok) {
       toast.success("Procedimiento registrado.");
-      setAdding(false);
+      closeForm();
       router.refresh();
     } else {
       toast.error(result.error);
@@ -94,7 +133,7 @@ export function PetSurgeriesTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {!readonly && !adding && (
+      {!readonly && !adding && !editing && (
         <button
           type="button"
           onClick={() => setAdding(true)}
@@ -109,8 +148,9 @@ export function PetSurgeriesTab({
         </button>
       )}
 
-      {!readonly && adding && (
+      {!readonly && (adding || editing) && (
         <form
+          key={editing?.id ?? "new"}
           action={formAction}
           className="rounded-[20px] p-5 flex flex-col gap-4"
           style={{
@@ -122,12 +162,12 @@ export function PetSurgeriesTab({
             <div className="flex items-center gap-2">
               <span className="text-[20px]">🔪</span>
               <p className="text-[15px] font-black" style={{ color: t.text }}>
-                Nuevo procedimiento
+                {editing ? `Editar — ${editing.name}` : "Nuevo procedimiento"}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               aria-label="Cancelar"
               className="w-8 h-8 rounded-full flex items-center justify-center"
               style={{ background: t.cardBgLight, color: t.textMuted }}
@@ -147,6 +187,7 @@ export function PetSurgeriesTab({
               name="name"
               type="text"
               required
+              defaultValue={editing?.name}
               placeholder="Esterilización, limpieza dental…"
               className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
               style={{
@@ -172,6 +213,7 @@ export function PetSurgeriesTab({
                 name="performedAt"
                 type="date"
                 required
+                defaultValue={editing ? clinicDateInput(editing.performedAt) : undefined}
                 className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
                 style={{
                   height: 48,
@@ -192,6 +234,7 @@ export function PetSurgeriesTab({
               <input
                 name="clinic"
                 type="text"
+                defaultValue={editing?.clinic ?? undefined}
                 placeholder="Vetsfriend"
                 className="w-full px-4 rounded-[12px] border text-[14px] outline-none appearance-none"
                 style={{
@@ -214,6 +257,7 @@ export function PetSurgeriesTab({
             </label>
             <textarea
               name="notes"
+              defaultValue={editing?.notes ?? undefined}
               rows={3}
               placeholder="Procedimiento, recuperación, observaciones…"
               className="w-full px-4 py-3 rounded-[12px] border text-[14px] outline-none resize-none"
@@ -240,7 +284,7 @@ export function PetSurgeriesTab({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               className="flex-1 py-3 rounded-[14px] text-[14px] font-bold"
               style={{
                 background: t.cardBgLight,
@@ -258,13 +302,13 @@ export function PetSurgeriesTab({
                 background: `linear-gradient(135deg, ${accent}, color-mix(in oklab, ${accent} 70%, oklch(45% 0.12 38)))`,
               }}
             >
-              {pending ? "Guardando…" : "Guardar"}
+              {pending ? "Guardando…" : editing ? "Guardar cambios" : "Guardar"}
             </button>
           </div>
         </form>
       )}
 
-      {items.length === 0 && !adding && (
+      {items.length === 0 && !adding && !editing && (
         <div
           className="rounded-[18px] py-12 px-6 text-center"
           style={{
@@ -279,23 +323,40 @@ export function PetSurgeriesTab({
         </div>
       )}
 
-      {items.map((s) => (
+      {items.map((s) => {
+        const editable = !readonly && !s.id.startsWith("appt-");
+        return (
         <div
           key={s.id}
-          className="rounded-[16px] p-4 lg:p-5"
+          onClick={() => editable && setEditing(s)}
+          title={editable ? "Clic para editar" : undefined}
+          className={`rounded-[16px] p-4 lg:p-5 transition ${
+            editable ? "cursor-pointer hover:brightness-[0.985]" : ""
+          }`}
           style={{
             background: t.cardBg,
-            border: `1px solid ${t.border}`,
+            border: `1px solid ${editing?.id === s.id ? accent : t.border}`,
           }}
         >
           <div className="flex items-start justify-between gap-3 mb-3">
-            <p className="text-[15px] font-black" style={{ color: t.text }}>
-              {s.name}
-            </p>
+            <div className="flex items-center gap-2 min-w-0">
+              <p className="text-[15px] font-black" style={{ color: t.text }}>
+                {s.name}
+              </p>
+              <RecordHistoryEye
+                changes={changesByRecord[s.id] ?? []}
+                title={s.name}
+                fieldLabels={SURGERY_FIELD_LABELS}
+                dark={dark}
+              />
+            </div>
             {!readonly && (
               <button
                 type="button"
-                onClick={() => remove(s.id)}
+                onClick={(ev) => {
+                  ev.stopPropagation();
+                  remove(s.id);
+                }}
                 disabled={pendingDelete}
                 aria-label="Quitar"
                 className="w-7 h-7 rounded-full flex items-center justify-center shrink-0"
@@ -371,7 +432,8 @@ export function PetSurgeriesTab({
             Registrado por {s.addedByName}
           </p>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }

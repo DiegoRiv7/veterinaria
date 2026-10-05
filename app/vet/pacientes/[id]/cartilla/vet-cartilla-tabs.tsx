@@ -13,6 +13,9 @@ import {
   type SurgeryEntry,
 } from "@/components/PetSurgeriesTab";
 import { PetRecordsTab, type RecordEntry } from "@/components/PetRecordsTab";
+import type { RecordChange } from "@/components/RecordHistoryEye";
+
+type RecordChangesMap = Record<string, Record<string, RecordChange[]>>;
 import {
   LAB_FIELDS,
   TEST_FIELDS,
@@ -62,6 +65,7 @@ export function VetCartillaTabs({
   diagnosticTests,
   imagingStudies,
   feedingRecords,
+  recordChanges = {},
 }: {
   petId: string;
   accent: string;
@@ -73,6 +77,7 @@ export function VetCartillaTabs({
   diagnosticTests: RecordEntry[];
   imagingStudies: RecordEntry[];
   feedingRecords: RecordEntry[];
+  recordChanges?: RecordChangesMap;
 }) {
   const [section, setSection] = useState<SectionId>("vaccines");
 
@@ -232,18 +237,32 @@ export function VetCartillaTabs({
         }}
       >
         {section === "vaccines" && (
-          <PetVaccinesTab petId={petId} vaccines={vaccines} />
+          <PetVaccinesTab
+            petId={petId}
+            vaccines={vaccines}
+            changesByRecord={recordChanges.vaccine ?? {}}
+          />
         )}
         {section === "deworm" && (
-          <PetDewormingsTab petId={petId} items={dewormings} />
+          <PetDewormingsTab
+            petId={petId}
+            items={dewormings}
+            changesByRecord={recordChanges.deworming ?? {}}
+          />
         )}
         {section === "surgeries" && (
-          <PetSurgeriesTab petId={petId} items={surgeries} />
+          <PetSurgeriesTab
+            petId={petId}
+            items={surgeries}
+            changesByRecord={recordChanges.surgery ?? {}}
+          />
         )}
         {section === "lab" && (
           <PetRecordsTab
             petId={petId}
             entries={labStudies}
+            recordType="lab"
+            changesByRecord={recordChanges.lab ?? {}}
             fields={LAB_FIELDS}
             emoji="🔬"
             addLabel="Agregar estudio de laboratorio"
@@ -259,6 +278,8 @@ export function VetCartillaTabs({
           <PetRecordsTab
             petId={petId}
             entries={diagnosticTests}
+            recordType="test"
+            changesByRecord={recordChanges.test ?? {}}
             fields={TEST_FIELDS}
             emoji="🧪"
             addLabel="Agregar test"
@@ -274,6 +295,8 @@ export function VetCartillaTabs({
           <PetRecordsTab
             petId={petId}
             entries={imagingStudies}
+            recordType="imaging"
+            changesByRecord={recordChanges.imaging ?? {}}
             fields={IMAGING_FIELDS}
             emoji="🩻"
             addLabel="Agregar estudio de imagenología"
@@ -289,6 +312,8 @@ export function VetCartillaTabs({
           <PetRecordsTab
             petId={petId}
             entries={feedingRecords}
+            recordType="feeding"
+            changesByRecord={recordChanges.feeding ?? {}}
             fields={FEEDING_FIELDS}
             emoji="🍖"
             addLabel="Registrar alimentación"

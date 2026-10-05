@@ -75,6 +75,19 @@ export async function createPatientByVetAction(
     }
   }
 
+  // Evita duplicados: mismo dueño + mismo nombre
+  const siblings = await prisma.pet.findMany({
+    where: { ownerId },
+    select: { name: true },
+  });
+  const norm = (x: string) => x.trim().toLowerCase();
+  if (siblings.some((s) => norm(s.name) === norm(petName))) {
+    return {
+      ok: false,
+      error: `El cliente ya tiene una mascota llamada "${petName}". Revísala en su lista o usa otro nombre.`,
+    };
+  }
+
   const pet = await prisma.pet.create({
     data: {
       ownerId,

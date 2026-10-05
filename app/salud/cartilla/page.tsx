@@ -6,6 +6,7 @@ import { paletteFor, bgEmojisFor } from "@/lib/pet-flavor";
 import { SPECIES_LABEL, ageFromBirthDate } from "@/lib/utils";
 import { CartillaTabs, type CartillaPayload } from "./cartilla-tabs";
 import { BackLink } from "@/components/BackLink";
+import { clinicDateInput } from "@/lib/clinic-time";
 
 export const dynamic = "force-dynamic";
 
@@ -75,6 +76,11 @@ export default async function CartillaPage() {
           vet: { include: { user: { select: { name: true, photoUrl: true, email: true } } } },
         },
         orderBy: { scheduledAt: "desc" },
+      },
+      recordChanges: {
+        include: { changedBy: { select: { name: true } } },
+        orderBy: { createdAt: "desc" },
+        take: 300,
       },
     },
     orderBy: { createdAt: "asc" },
@@ -196,6 +202,20 @@ export default async function CartillaPage() {
       }
     : null;
 
+  const recordChanges: NonNullable<CartillaPayload["recordChanges"]> = {};
+  for (const c of pet.recordChanges) {
+    const byId = (recordChanges[c.recordType] ??= {});
+    (byId[c.recordId] ??= []).push({
+      id: c.id,
+      field: c.field,
+      oldValue: c.oldValue,
+      newValue: c.newValue,
+      changedByName: c.changedBy.name,
+      createdAt: c.createdAt.toISOString(),
+      reverted: c.revertedAt != null,
+    });
+  }
+
   const labStudies = pet.labStudies.map((l) => ({
     id: l.id,
     title: l.kind,
@@ -204,6 +224,12 @@ export default async function CartillaPage() {
     details: l.result ? [{ label: "Resultado", value: l.result }] : [],
     notes: l.notes,
     addedByName: l.vetName ?? l.addedBy.name,
+    values: {
+      kind: l.kind,
+      performedAt: clinicDateInput(l.performedAt),
+      result: l.result ?? "",
+      notes: l.notes ?? "",
+    },
   }));
 
   const diagnosticTests = pet.diagnosticTests.map((t) => ({
@@ -224,6 +250,12 @@ export default async function CartillaPage() {
     details: [],
     notes: t.notes,
     addedByName: t.vetName ?? t.addedBy.name,
+    values: {
+      name: t.name,
+      performedAt: clinicDateInput(t.performedAt),
+      result: t.result ?? "",
+      notes: t.notes ?? "",
+    },
   }));
 
   const imagingStudies = pet.imagingStudies.map((s) => ({
@@ -234,6 +266,12 @@ export default async function CartillaPage() {
     details: s.region ? [{ label: "Zona", value: s.region }] : [],
     notes: s.findings,
     addedByName: s.vetName ?? s.addedBy.name,
+    values: {
+      kind: s.kind,
+      region: s.region ?? "",
+      performedAt: clinicDateInput(s.performedAt),
+      findings: s.findings ?? "",
+    },
   }));
 
   const feedingRecords = pet.feedingRecords.map((f, i) => ({
@@ -250,6 +288,15 @@ export default async function CartillaPage() {
     ],
     notes: f.notes,
     addedByName: f.addedBy.name,
+    values: {
+      foodType: f.foodType,
+      brand: f.brand ?? "",
+      weightKg: f.weightKg != null ? String(f.weightKg) : "",
+      dailyGrams: f.dailyGrams != null ? String(f.dailyGrams) : "",
+      mealsPerDay: f.mealsPerDay != null ? String(f.mealsPerDay) : "",
+      recordedAt: clinicDateInput(f.recordedAt),
+      notes: f.notes ?? "",
+    },
   }));
 
   const payload: CartillaPayload = {
@@ -274,6 +321,7 @@ export default async function CartillaPage() {
     diagnosticTests,
     imagingStudies,
     feedingRecords,
+    recordChanges,
     consults,
     myVet,
   };

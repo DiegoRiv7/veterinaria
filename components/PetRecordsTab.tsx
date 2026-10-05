@@ -5,6 +5,11 @@ import { toast } from "sonner";
 import { Plus, Trash2, X, Loader2 } from "lucide-react";
 import type { HealthRecordResult } from "@/app/actions/health-records";
 import { FancySelect } from "@/components/FancySelect";
+import { updateHealthRecordAction } from "@/app/actions/record-edits";
+import {
+  RecordHistoryEye,
+  type RecordChange,
+} from "@/components/RecordHistoryEye";
 
 /**
  * Sección genérica de registros de la cartilla (laboratorio, tests,
@@ -46,6 +51,8 @@ export type RecordEntry = {
   details: { label: string; value: string }[];
   notes?: string | null;
   addedByName: string;
+  /** Valores crudos por campo (para abrir el formulario pre-llenado). */
+  values?: Record<string, string>;
 };
 
 const BADGE_TONES: Record<RecordBadge["tone"], { bg: string; color: string; border: string }> = {
@@ -103,6 +110,8 @@ export function PetRecordsTab({
   readonly = false,
   dark = false,
   accent = "var(--color-brand)",
+  recordType,
+  changesByRecord = {},
 }: {
   petId: string;
   entries: RecordEntry[];
@@ -118,6 +127,10 @@ export function PetRecordsTab({
   readonly?: boolean;
   dark?: boolean;
   accent?: string;
+  /** Tipo para la edición con bitácora (lab | test | imaging | feeding). */
+  recordType?: string;
+  /** Historial de cambios por id de registro (para el ojo individual). */
+  changesByRecord?: Record<string, RecordChange[]>;
 }) {
   // Tokens de tema — claro (cartilla del vet) u oscuro (cartilla del cliente),
   // mismos valores que PetVaccinesTab.
@@ -159,7 +172,37 @@ export function PetRecordsTab({
     return m;
   };
   const [selects, setSelects] = useState<Record<string, string>>(initialSelects);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editValues, setEditValues] = useState<Record<string, string> | null>(null);
   const [pendingDelete, startDelete] = useTransition();
+
+  // Etiquetas por campo para el historial.
+  const fieldLabels: Record<string, string> = {};
+  for (const f of fields) fieldLabels[f.id] = f.label;
+
+  function startEdit(e: RecordEntry) {
+    if (!recordType || !e.values || readonly) return;
+    const sel: Record<string, string> = {};
+    for (const f of fields) {
+      if (f.type !== "select") continue;
+      const v = e.values[f.id] ?? "";
+      if (v && f.allowOther && !(f.options ?? []).includes(v)) {
+        sel[f.id] = OTHER_OPTION;
+      } else {
+        sel[f.id] = v;
+      }
+    }
+    setSelects(sel);
+    setEditValues(e.values);
+    setEditingId(e.id);
+    setAdding(false);
+  }
+
+  function closeForm() {
+    setAdding(false);
+    setEditingId(null);
+    setEditValues(null);
+  }
 
   const [state, formAction, pending] = useActionState<HealthRecordResult | null, FormData>(
     async (_prev, fd) => {
@@ -170,10 +213,33 @@ export function PetRecordsTab({
           fd.set(f.id, String(fd.get(`${f.id}Other`) ?? "").trim());
         }
       }
+      // Edición: actualiza el registro existente con bitácora.
+      if (editingId && recordType) {
+        const values: Record<string, string> = {};
+        for (const f of fields) {
+          if (f.type === "select" || f.type === "date" || f.type === "text" ||
+              f.type === "number" || f.type === "textarea") {
+            values[f.id] = String(fd.get(f.id) ?? "");
+          }
+        }
+        const result = await updateHealthRecordAction({
+          type: recordType,
+          id: editingId,
+          values,
+        });
+        if (result.ok) {
+          toast.success("Registro actualizado.");
+          closeForm();
+          router.refresh();
+          return { ok: true, id: editingId };
+        }
+        toast.error(result.error);
+        return result;
+      }
       const result = await addAction(_prev, fd);
       if (result.ok) {
         toast.success(successMessage);
-        setAdding(false);
+        closeForm();
         router.refresh();
       } else {
         toast.error(result.error);
@@ -196,6 +262,7 @@ export function PetRecordsTab({
   }
 
   function renderField(f: RecordField) {
+    const editDefault = editValues ? editValues[f.id] ?? "" : undefined;
     const label = (
       <label
         htmlFor={`rec-${f.id}`}
@@ -233,6 +300,11 @@ export function PetRecordsTab({
               name={`${f.id}Other`}
               required
               autoFocus
+              defaultValue={
+                editValues && !(f.options ?? []).includes(editValues[f.id] ?? "")
+                  ? editValues[f.id] ?? ""
+                  : undefined
+              }
               placeholder="Escribe cuál…"
               className={inputClass}
               style={inputStyle}
@@ -251,6 +323,7 @@ export function PetRecordsTab({
             name={f.id}
             rows={3}
             required={f.required}
+            defaultValue={editDefault}
             placeholder={f.placeholder}
             className="w-full px-4 py-3 rounded-[12px] border text-[14px] outline-none focus:border-[var(--color-brand)] transition resize-none"
             style={{
@@ -277,7 +350,9 @@ export function PetRecordsTab({
             min={f.type === "number" ? "0" : undefined}
             inputMode={f.type === "number" ? "decimal" : undefined}
             defaultValue={
-              f.defaultValue ?? (f.type === "date" && f.required ? todayInput() : undefined)
+              editDefault ??
+              f.defaultValue ??
+              (f.type === "date" && f.required ? todayInput() : undefined)
             }
             className={inputClass}
             style={{ ...inputStyle, paddingRight: f.suffix ? 40 : undefined }}
@@ -308,11 +383,13 @@ export function PetRecordsTab({
 
   return (
     <div className="flex flex-col gap-3">
-      {!readonly && !adding && (
+      {!readonly && !adding && !editingId && (
         <button
           type="button"
           onClick={() => {
             setSelects(initialSelects());
+            setEditValues(null);
+            setEditingId(null);
             setAdding(true);
           }}
           className="w-full py-3 rounded-[14px] flex items-center justify-center gap-2 text-[14px] font-extrabold transition"
@@ -328,8 +405,9 @@ export function PetRecordsTab({
         </button>
       )}
 
-      {!readonly && adding && (
+      {!readonly && (adding || editingId) && (
         <form
+          key={editingId ?? "new"}
           action={formAction}
           className="rounded-[20px] p-5 flex flex-col gap-4"
           style={{
@@ -342,12 +420,12 @@ export function PetRecordsTab({
             <div className="flex items-center gap-2">
               <span className="text-[20px]">{emoji}</span>
               <p className="text-[15px] font-black" style={{ color: t.text }}>
-                {formTitle}
+                {editingId ? "Editar registro" : formTitle}
               </p>
             </div>
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               aria-label="Cancelar"
               className="w-8 h-8 rounded-full flex items-center justify-center transition"
               style={{
@@ -384,7 +462,7 @@ export function PetRecordsTab({
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => setAdding(false)}
+              onClick={closeForm}
               className="flex-1 py-3 rounded-[14px] text-[14px] font-bold transition"
               style={{
                 background: t.cardBgLight,
@@ -404,13 +482,13 @@ export function PetRecordsTab({
                 boxShadow: "0 8px 22px color-mix(in oklab, var(--color-brand) 30%, transparent)",
               }}
             >
-              {pending ? "Guardando…" : "Guardar"}
+              {pending ? "Guardando…" : editingId ? "Guardar cambios" : "Guardar"}
             </button>
           </div>
         </form>
       )}
 
-      {entries.length === 0 && !adding && (
+      {entries.length === 0 && !adding && !editingId && (
         <div
           className="rounded-[18px] py-12 px-6 text-center"
           style={{
@@ -430,19 +508,34 @@ export function PetRecordsTab({
 
       {entries.map((e) => {
         const badgeTone = e.badge ? BADGE_TONES[e.badge.tone] : null;
+        const editable = !readonly && !!recordType && !!e.values;
         return (
           <div
             key={e.id}
-            className="rounded-[16px] p-4"
+            onClick={() => editable && startEdit(e)}
+            title={editable ? "Clic para editar" : undefined}
+            className={`rounded-[16px] p-4 transition ${
+              editable ? "cursor-pointer hover:brightness-[0.985]" : ""
+            }`}
             style={{
               background: t.cardBg,
-              border: `1px solid ${t.border}`,
+              border: `1px solid ${
+                editingId === e.id ? accent : t.border
+              }`,
             }}
           >
             <div className="flex items-start justify-between gap-3 mb-2.5">
-              <p className="text-[15px] font-extrabold" style={{ color: t.text }}>
-                {emoji} {e.title}
-              </p>
+              <div className="flex items-center gap-2 min-w-0">
+                <p className="text-[15px] font-extrabold" style={{ color: t.text }}>
+                  {emoji} {e.title}
+                </p>
+                <RecordHistoryEye
+                  changes={changesByRecord[e.id] ?? []}
+                  title={e.title}
+                  fieldLabels={fieldLabels}
+                  dark={dark}
+                />
+              </div>
               <div className="flex items-center gap-2 shrink-0">
                 {e.badge && badgeTone && (
                   <span
@@ -459,7 +552,10 @@ export function PetRecordsTab({
                 {!readonly && (
                   <button
                     type="button"
-                    onClick={() => removeEntry(e.id)}
+                    onClick={(ev) => {
+                      ev.stopPropagation();
+                      removeEntry(e.id);
+                    }}
                     disabled={pendingDelete}
                     aria-label={`Quitar ${e.title}`}
                     className="w-7 h-7 rounded-full flex items-center justify-center"

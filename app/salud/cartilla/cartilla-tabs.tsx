@@ -10,6 +10,7 @@ import {
   type SurgeryEntry,
 } from "@/components/PetSurgeriesTab";
 import { PetRecordsTab, type RecordEntry } from "@/components/PetRecordsTab";
+import type { RecordChange } from "@/components/RecordHistoryEye";
 import {
   LAB_FIELDS,
   TEST_FIELDS,
@@ -45,6 +46,7 @@ export type CartillaPayload = {
   vaccines: VaccineEntry[];
   dewormings: DewormingEntry[];
   surgeries: SurgeryEntry[];
+  recordChanges?: Record<string, Record<string, RecordChange[]>>;
   labStudies: RecordEntry[];
   diagnosticTests: RecordEntry[];
   imagingStudies: RecordEntry[];
@@ -152,6 +154,8 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
           <PetRecordsTab
             petId={payload.pet.id}
             entries={payload.labStudies}
+            recordType="lab"
+            changesByRecord={payload.recordChanges?.lab ?? {}}
             fields={LAB_FIELDS}
             emoji="🔬"
             addLabel="Agregar estudio de laboratorio"
@@ -169,6 +173,8 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
           <PetRecordsTab
             petId={payload.pet.id}
             entries={payload.diagnosticTests}
+            recordType="test"
+            changesByRecord={payload.recordChanges?.test ?? {}}
             fields={TEST_FIELDS}
             emoji="🧪"
             addLabel="Agregar test"
@@ -186,6 +192,8 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
           <PetRecordsTab
             petId={payload.pet.id}
             entries={payload.imagingStudies}
+            recordType="imaging"
+            changesByRecord={payload.recordChanges?.imaging ?? {}}
             fields={IMAGING_FIELDS}
             emoji="🩻"
             addLabel="Agregar estudio de imagenología"
@@ -203,6 +211,8 @@ export function CartillaTabs({ payload }: { payload: CartillaPayload }) {
           <PetRecordsTab
             petId={payload.pet.id}
             entries={payload.feedingRecords}
+            recordType="feeding"
+            changesByRecord={payload.recordChanges?.feeding ?? {}}
             fields={FEEDING_FIELDS}
             emoji="🍖"
             addLabel="Registrar alimentación"
@@ -340,6 +350,7 @@ function VaccinesSection({ payload }: { payload: CartillaPayload }) {
       vaccines={payload.vaccines}
       dark
       accent={payload.palette.accent}
+      changesByRecord={payload.recordChanges?.vaccine ?? {}}
     />
   );
 }
@@ -352,6 +363,7 @@ function DewormSection({ payload }: { payload: CartillaPayload }) {
       items={payload.dewormings}
       dark
       accent={payload.palette.accent}
+      changesByRecord={payload.recordChanges?.deworming ?? {}}
     />
   );
 }
@@ -364,6 +376,7 @@ function SurgeriesSection({ payload }: { payload: CartillaPayload }) {
       items={payload.surgeries}
       dark
       accent={payload.palette.accent}
+      changesByRecord={payload.recordChanges?.surgery ?? {}}
     />
   );
 }
