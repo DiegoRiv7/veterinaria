@@ -214,14 +214,22 @@ export function SearchOverlay({
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={onKeyDown}
             placeholder="Buscar…"
-            className="flex-1 bg-transparent border-none outline-none text-[15px] font-semibold"
-            style={{ color: "var(--vet-text-1)" }}
+            className="flex-1 bg-transparent border-none text-[15px] font-semibold"
+            style={{ color: "var(--vet-text-1)", outline: "none", boxShadow: "none" }}
             autoComplete="off"
             spellCheck={false}
           />
         </div>
 
         {/* Resultados / sugerencias */}
+        {!searching && flat.length === 0 ? (
+          <p
+            className="px-5 pb-4 pt-1 text-[12px] font-semibold"
+            style={{ color: "var(--vet-text-3)" }}
+          >
+            Escribe para buscar pacientes, clientes, citas…
+          </p>
+        ) : null}
         {flat.length > 0 || (searching && !loading) ? (
           <div className="max-h-[56vh] overflow-y-auto">
             {searching && !loading && groups.length === 0 ? (

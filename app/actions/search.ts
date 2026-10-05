@@ -412,43 +412,48 @@ export async function vetSearchSuggestionsAction(): Promise<SearchItem[]> {
     where: { userId: session.userId },
     select: { id: true },
   });
-  const vetFilter = vetProfile ? { vetId: vetProfile.id } : {};
+  const apptSelect = {
+    id: true,
+    scheduledAt: true,
+    updatedAt: true,
+    status: true,
+    pet: { select: { name: true } },
+    client: { select: { name: true } },
+    service: { select: { name: true } },
+  } as const;
 
-  const [upcoming, justClosed] = await Promise.all([
-    prisma.appointment.findMany({
-      where: {
-        ...vetFilter,
-        status: "SCHEDULED",
-        scheduledAt: { gte: new Date(now.getTime() - 20 * 60000) },
-      },
-      orderBy: { scheduledAt: "asc" },
-      take: 4,
-      select: {
-        id: true,
-        scheduledAt: true,
-        pet: { select: { name: true } },
-        client: { select: { name: true } },
-        service: { select: { name: true } },
-      },
-    }),
-    prisma.appointment.findMany({
-      where: {
-        ...vetFilter,
-        status: "COMPLETED",
-        updatedAt: { gte: new Date(now.getTime() - 48 * 3600_000) },
-      },
-      orderBy: { updatedAt: "desc" },
-      take: 3,
-      select: {
-        id: true,
-        scheduledAt: true,
-        updatedAt: true,
-        pet: { select: { name: true } },
-        client: { select: { name: true } },
-        service: { select: { name: true } },
-      },
-    }),
-  ]);
+  async function fetchWindows(vetFilter: { vetId?: string }) {
+    return Promise.all([
+      prisma.appointment.findMany({
+        where: {
+          ...vetFilter,
+          status: "SCHEDULED",
+          scheduledAt: { gte: new Date(now.getTime() - 20 * 60000) },
+        },
+        orderBy: { scheduledAt: "asc" },
+        take: 4,
+        select: apptSelect,
+      }),
+      prisma.appointment.findMany({
+        where: {
+          ...vetFilter,
+          status: "COMPLETED",
+          updatedAt: { gte: new Date(now.getTime() - 48 * 3600_000) },
+        },
+        orderBy: { updatedAt: "desc" },
+        take: 3,
+        select: apptSelect,
+      }),
+    ]);
+  }
+
+  // Primero las del médico; si no tiene, las de toda la clínica.
+  let [upcoming, justClosed] = await fetchWindows(
+    vetProfile ? { vetId: vetProfile.id } : {}
+  );
+  if (upcoming.length === 0 && justClosed.length === 0 && vetProfile) {
+    [upcoming, justClosed] = await fetchWindows({});
+  }
 
   const items: SearchItem[] = [];
   for (const a of upcoming) {
@@ -471,6 +476,49 @@ export async function vetSearchSuggestionsAction(): Promise<SearchItem[]> {
       badge: `atendida ${relativeBadge(a.updatedAt, now)}`,
     });
   }
+
+  // Último respaldo: actividad reciente de la clínica (cualquier cita y
+  // pacientes nuevos), para que el panel nunca abra vacío.
+  if (items.length === 0) {
+    const [recentAppts, recentPets] = await Promise.all([
+      prisma.appointment.findMany({
+        orderBy: { updatedAt: "desc" },
+        take: 4,
+        select: apptSelect,
+      }),
+      prisma.pet.findMany({
+        orderBy: { createdAt: "desc" },
+        take: 3,
+        select: {
+          id: true,
+          name: true,
+          species: true,
+          breed: true,
+          owner: { select: { name: true } },
+        },
+      }),
+    ]);
+    for (const a of recentAppts) {
+      items.push({
+        id: `sug-act-${a.id}`,
+        icon: "📅",
+        title: `${a.pet.name} · ${a.service.name}`,
+        subtitle: `${STATUS_LABEL[a.status] ?? a.status} · ${a.client.name}`,
+        href: `/vet/cita/${a.id}`,
+        badge: relativeBadge(a.scheduledAt, now),
+      });
+    }
+    for (const p of recentPets) {
+      items.push({
+        id: `sug-pet-${p.id}`,
+        icon: "🐾",
+        title: p.name,
+        subtitle: `Paciente reciente · ${SPECIES_LABEL[p.species] ?? p.species}${p.breed ? ` · ${p.breed}` : ""} · ${p.owner.name}`,
+        href: `/vet/pacientes/${p.id}`,
+      });
+    }
+  }
+
   return items.slice(0, 7);
 }
 
