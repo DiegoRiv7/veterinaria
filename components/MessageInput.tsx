@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { sendMessageAction } from "@/app/actions/messages";
+import { ChatAttachButton } from "./ChatAttachButton";
 import { cn } from "@/lib/utils";
 
 export function MessageInput({ appointmentId }: { appointmentId: string }) {
@@ -34,6 +35,7 @@ export function MessageInput({ appointmentId }: { appointmentId: string }) {
       className="flex items-end gap-2"
     >
       <input type="hidden" name="appointmentId" value={appointmentId} />
+      <ChatAttachButton appointmentId={appointmentId} />
       <textarea
         ref={inputRef}
         name="body"

@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { Send } from "lucide-react";
 import { sendMessageAction } from "@/app/actions/messages";
 import { cn } from "@/lib/utils";
+import { ChatAttachButton } from "./ChatAttachButton";
 
 export function VetMessageInput({ appointmentId }: { appointmentId: string }) {
   const formRef = useRef<HTMLFormElement>(null);
@@ -34,6 +35,7 @@ export function VetMessageInput({ appointmentId }: { appointmentId: string }) {
       className="flex items-end gap-2"
     >
       <input type="hidden" name="appointmentId" value={appointmentId} />
+      <ChatAttachButton appointmentId={appointmentId} />
       <textarea
         ref={inputRef}
         name="body"

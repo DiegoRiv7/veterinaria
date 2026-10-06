@@ -284,3 +284,79 @@ export async function revertPetFieldChangeAction(
   revalidatePetPages(change.petId);
   return { ok: true };
 }
+
+/* ─── Paso 2 del alta: llenado inicial de la ficha ──────────────── */
+
+/**
+ * Completa la ficha de un paciente recién creado (nacimiento, peso,
+ * género, color, esterilizado, microchip). Es captura inicial: no pasa
+ * por la bitácora de cambios (no hay valores anteriores que auditar).
+ */
+export async function completePatientFichaAction(input: {
+  petId: string;
+  birthDate?: string;
+  sex?: string;
+  weightKg?: string;
+  color?: string;
+  sterilized?: string;
+  microchipId?: string;
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await requireSession();
+  if (session.role === "CLIENT") return { ok: false, error: "No autorizado." };
+
+  const pet = await prisma.pet.findUnique({
+    where: { id: (input.petId ?? "").trim() },
+    select: { id: true },
+  });
+  if (!pet) return { ok: false, error: "Paciente no encontrado." };
+
+  const data: Record<string, unknown> = {};
+
+  const birth = (input.birthDate ?? "").trim();
+  if (birth) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(birth)) {
+      return { ok: false, error: "Fecha de nacimiento inválida." };
+    }
+    const d = new Date(`${birth}T12:00:00`);
+    if (Number.isNaN(d.getTime()) || d.getTime() > Date.now()) {
+      return { ok: false, error: "Fecha de nacimiento inválida." };
+    }
+    data.birthDate = d;
+  }
+
+  const sex = (input.sex ?? "").trim();
+  if (sex) {
+    if (!["MALE", "FEMALE", "UNKNOWN"].includes(sex)) {
+      return { ok: false, error: "Género inválido." };
+    }
+    data.sex = sex;
+  }
+
+  const weightRaw = (input.weightKg ?? "").trim();
+  if (weightRaw) {
+    const n = Number(weightRaw.replace(",", "."));
+    if (!Number.isFinite(n) || n <= 0 || n > 999) {
+      return { ok: false, error: "Peso inválido (kg)." };
+    }
+    data.weightKg = Math.round(n * 100) / 100;
+  }
+
+  const color = (input.color ?? "").trim();
+  if (color) data.color = color.slice(0, 60);
+
+  const sterilized = (input.sterilized ?? "").trim();
+  if (sterilized === "true" || sterilized === "false") {
+    data.sterilized = sterilized === "true";
+  }
+
+  const chip = (input.microchipId ?? "").trim();
+  if (chip) data.microchipId = chip.slice(0, 40);
+
+  if (Object.keys(data).length > 0) {
+    await prisma.pet.update({ where: { id: pet.id }, data });
+  }
+
+  revalidatePath(`/vet/pacientes/${pet.id}`);
+  revalidatePath("/vet/pacientes");
+  return { ok: true };
+}

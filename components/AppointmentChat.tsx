@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { MessageInput } from "./MessageInput";
+import { ChatAttachment } from "./ChatAttachment";
 
 type ChatMessage = {
   id: string;
@@ -8,6 +9,9 @@ type ChatMessage = {
   senderId: string;
   sender: { name: string; role: string; photoUrl?: string | null };
   vetPhotoUrl?: string | null;
+  attachmentUrl?: string | null;
+  attachmentName?: string | null;
+  attachmentType?: string | null;
 };
 
 function avatarInitial(name: string): string {
@@ -118,13 +122,21 @@ export function AppointmentChat({
                   )}
                   <div
                     className={cn(
-                      "px-3.5 py-2 rounded-[16px] text-[14px] leading-snug whitespace-pre-line",
+                      "px-3.5 py-2 rounded-[16px] text-[14px] leading-snug whitespace-pre-line flex flex-col gap-2",
                       own
                         ? "[background-image:var(--chat-bubble-own-bg)] text-[color:var(--chat-bubble-own-text)] rounded-br-[6px]"
                         : "bg-[var(--color-surface-2)] text-[var(--color-foreground)] rounded-bl-[6px]"
                     )}
                   >
-                    {m.body}
+                    {m.attachmentUrl && (
+                      <ChatAttachment
+                        url={m.attachmentUrl}
+                        name={m.attachmentName ?? null}
+                        type={m.attachmentType ?? null}
+                        own={own}
+                      />
+                    )}
+                    {m.body ? <span>{m.body}</span> : null}
                   </div>
                   <span className={cn("text-[10px] text-[var(--color-muted)] mt-0.5 px-1", own && "text-right")}>
                     {formatTimeAgo(m.createdAt)}

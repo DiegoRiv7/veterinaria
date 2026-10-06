@@ -5,6 +5,7 @@ import { listVetConversations } from "@/lib/chat";
 import { Card, CardBody } from "@/components/ui/card";
 import { EmptyState } from "@/components/EmptyState";
 import { ChevronRight } from "lucide-react";
+import { clinicDayLabel } from "@/lib/clinic-time";
 
 export const dynamic = "force-dynamic";
 
@@ -60,8 +61,15 @@ export default async function VetChatList() {
                 ? `${c.lastMessage.fromVet ? "Tú: " : ""}${c.lastMessage.body}`
                 : "Sin mensajes todavía. Saluda 👋";
               return (
-                <Link key={c.clientId} href={`/vet/chat/${c.clientId}`}>
-                  <Card className="hover:border-[var(--color-brand)]/30 hover:shadow-[var(--shadow-soft-md)] transition">
+                <div key={c.clientId} className="relative">
+                  {/* Toda la tarjeta abre el chat; el chip de la cita queda
+                      encima con su propio enlace. */}
+                  <Link
+                    href={`/vet/chat/${c.clientId}`}
+                    aria-label={`Abrir chat con ${c.clientName}`}
+                    className="absolute inset-0 z-0"
+                  />
+                  <Card className="hover:border-[var(--color-brand)]/30 hover:shadow-[var(--shadow-soft-md)] transition pointer-events-none">
                     <CardBody className="flex items-center gap-3 py-3.5">
                       <div
                         className="h-12 w-12 rounded-full flex items-center justify-center text-[15px] font-extrabold text-white shadow-[var(--shadow-soft-sm)]"
@@ -81,6 +89,26 @@ export default async function VetChatList() {
                             {formatRelative(c.lastMessage?.createdAt ?? null)}
                           </span>
                         </div>
+                        {c.lastAppointment && (
+                          <Link
+                            href={`/vet/cita/${c.lastAppointment.id}`}
+                            className="relative z-10 pointer-events-auto inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full border text-[10.5px] font-extrabold no-underline transition hover:brightness-95 max-w-full"
+                            style={{
+                              background:
+                                "color-mix(in oklab, var(--vet-green) 9%, transparent)",
+                              borderColor:
+                                "color-mix(in oklab, var(--vet-green) 26%, var(--vet-border))",
+                              color: "var(--vet-green-dim)",
+                            }}
+                          >
+                            <span className="truncate">
+                              📅 {c.lastAppointment.serviceName} ·{" "}
+                              {c.lastAppointment.petName} ·{" "}
+                              {clinicDayLabel(c.lastAppointment.scheduledAt)}
+                            </span>
+                            <span aria-hidden>→</span>
+                          </Link>
+                        )}
                         <div className="flex items-center justify-between gap-2 mt-0.5">
                           <p
                             className={`text-[13px] truncate ${
@@ -102,7 +130,7 @@ export default async function VetChatList() {
                       </div>
                     </CardBody>
                   </Card>
-                </Link>
+                </div>
               );
             })}
           </div>

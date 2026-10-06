@@ -370,6 +370,11 @@ model Message {
   senderId      String
   sender        User        @relation(fields: [senderId], references: [id])
   body          String
+  /// Adjunto opcional (foto o documento) como data URL.
+  attachmentUrl  String?
+  attachmentName String?
+  /// MIME del adjunto (image/jpeg, application/pdf…).
+  attachmentType String?
   createdAt     DateTime    @default(now())
   readAt        DateTime?
 

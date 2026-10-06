@@ -56,6 +56,7 @@ export function SearchOverlay({
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
   const seqRef = useRef(0);
+  const sugSeqRef = useRef(0); // contador aparte: la búsqueda no debe invalidar las sugerencias
 
   const [query, setQuery] = useState("");
   const [groups, setGroups] = useState<SearchGroup[]>([]);
@@ -88,13 +89,13 @@ export function SearchOverlay({
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => inputRef.current?.focus(), 30);
-    const seq = ++seqRef.current;
+    const seq = ++sugSeqRef.current;
     const load = setTimeout(async () => {
-      if (seqRef.current !== seq) return;
+      if (sugSeqRef.current !== seq) return;
       setRecents(readRecents());
       try {
         const items = await vetSearchSuggestionsAction();
-        if (seqRef.current === seq) {
+        if (sugSeqRef.current === seq) {
           setSuggestions(items);
           setSelected(0);
         }

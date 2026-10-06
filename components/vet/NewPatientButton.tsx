@@ -4,13 +4,26 @@ import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { FancySelect, VET_TOKENS } from "@/components/FancySelect";
-import { createPatientByVetAction } from "@/app/actions/patients";
+import {
+  createPatientByVetAction,
+  completePatientFichaAction,
+} from "@/app/actions/patients";
 import type { ClientOption } from "./NewAppointmentButton";
 
 /**
  * Alta de paciente desde la lista de pacientes, sin agendar cita:
  * mascota nueva para un cliente existente, o cliente nuevo + mascota.
  */
+
+const SEX_OPTIONS = [
+  { value: "UNKNOWN", label: "Sin especificar" },
+  { value: "MALE", label: "Macho" },
+  { value: "FEMALE", label: "Hembra" },
+];
+const BOOL_OPTIONS = [
+  { value: "false", label: "No" },
+  { value: "true", label: "Sí" },
+];
 
 const SPECIES: { value: string; label: string }[] = [
   { value: "DOG", label: "Perro" },
@@ -47,6 +60,15 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
   const [petSpecies, setPetSpecies] = useState("DOG");
   const [petBreed, setPetBreed] = useState("");
 
+  // Paso 2: llenar la ficha del paciente recién creado
+  const [created, setCreated] = useState<{ id: string; name: string } | null>(null);
+  const [fichaBirth, setFichaBirth] = useState("");
+  const [fichaSex, setFichaSex] = useState("UNKNOWN");
+  const [fichaWeight, setFichaWeight] = useState("");
+  const [fichaColor, setFichaColor] = useState("");
+  const [fichaSterilized, setFichaSterilized] = useState("false");
+  const [fichaChip, setFichaChip] = useState("");
+
   const filteredClients = useMemo(() => {
     const q = clientSearch.trim().toLowerCase();
     if (!q) return clients.slice(0, 50);
@@ -67,7 +89,41 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
     setPetName("");
     setPetSpecies("DOG");
     setPetBreed("");
+    setCreated(null);
+    setFichaBirth("");
+    setFichaSex("UNKNOWN");
+    setFichaWeight("");
+    setFichaColor("");
+    setFichaSterilized("false");
+    setFichaChip("");
     setOpen(true);
+  }
+
+  function finish(petId: string) {
+    setOpen(false);
+    router.push(`/vet/pacientes/${petId}`);
+    router.refresh();
+  }
+
+  function saveFicha() {
+    if (!created) return;
+    startTransition(async () => {
+      const res = await completePatientFichaAction({
+        petId: created.id,
+        birthDate: fichaBirth,
+        sex: fichaSex,
+        weightKg: fichaWeight,
+        color: fichaColor,
+        sterilized: fichaSterilized,
+        microchipId: fichaChip,
+      });
+      if (res.ok) {
+        toast.success(`Ficha de ${created.name} guardada.`);
+        finish(created.id);
+      } else {
+        toast.error(res.error);
+      }
+    });
   }
 
   function submit() {
@@ -97,9 +153,8 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
       const res = await createPatientByVetAction(null, fd);
       if (res.ok) {
         toast.success(`${res.petName} quedó registrado como paciente.`);
-        setOpen(false);
-        router.push(`/vet/pacientes/${res.petId}`);
-        router.refresh();
+        // Paso 2: llenar la ficha de una vez, sin salir del diálogo.
+        setCreated({ id: res.petId, name: res.petName });
       } else {
         toast.error(res.error);
       }
@@ -125,7 +180,11 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
         <div
           className="vet-portal fixed inset-0 z-[70] flex items-center justify-center p-3 sm:p-6"
           style={{ background: "rgba(30, 18, 10, 0.45)", backdropFilter: "blur(3px)" }}
-          onClick={() => !pending && setOpen(false)}
+          onClick={() => {
+            if (pending) return;
+            if (created) finish(created.id);
+            else setOpen(false);
+          }}
         >
           <div
             className="w-full max-w-[620px] max-h-[92dvh] overflow-y-auto rounded-[22px] border flex flex-col"
@@ -146,16 +205,18 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
             >
               <div>
                 <h3 className="text-[17px] font-black" style={{ color: "var(--vet-text-1)" }}>
-                  Nuevo paciente
+                  {created ? `Ficha de ${created.name}` : "Nuevo paciente"}
                 </h3>
                 <p className="text-[12px] font-semibold" style={{ color: "var(--vet-text-3)" }}>
-                  Mascota nueva para un cliente existente, o cliente y mascota nuevos
+                  {created
+                    ? "Completa los datos de la ficha de una vez (todo es opcional)"
+                    : "Mascota nueva para un cliente existente, o cliente y mascota nuevos"}
                 </p>
               </div>
               <button
                 type="button"
                 aria-label="Cerrar"
-                onClick={() => setOpen(false)}
+                onClick={() => (created ? finish(created.id) : setOpen(false))}
                 className="w-9 h-9 rounded-[10px] border flex items-center justify-center transition hover:brightness-95 shrink-0"
                 style={{
                   background: "var(--vet-bg-card)",
@@ -167,6 +228,141 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
               </button>
             </div>
 
+            {created ? (
+              <div className="flex flex-col gap-4 p-5 sm:p-6">
+                <div className="grid gap-3 grid-cols-1 sm:grid-cols-2">
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Fecha de nacimiento
+                    </label>
+                    <input
+                      type="date"
+                      value={fichaBirth}
+                      onChange={(e) => setFichaBirth(e.target.value)}
+                      className={fieldClass}
+                      style={fieldStyle}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Género
+                    </label>
+                    <FancySelect
+                      value={fichaSex}
+                      onChange={setFichaSex}
+                      required
+                      options={SEX_OPTIONS}
+                      height={44}
+                      accent="var(--vet-green)"
+                      tokens={VET_TOKENS}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Peso (kg)
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      step="0.1"
+                      min="0"
+                      value={fichaWeight}
+                      onChange={(e) => setFichaWeight(e.target.value)}
+                      placeholder="Ej. 8.5"
+                      className={fieldClass}
+                      style={fieldStyle}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Color
+                    </label>
+                    <input
+                      type="text"
+                      value={fichaColor}
+                      onChange={(e) => setFichaColor(e.target.value)}
+                      placeholder="Ej. Café con blanco"
+                      className={fieldClass}
+                      style={fieldStyle}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Esterilizado/a
+                    </label>
+                    <FancySelect
+                      value={fichaSterilized}
+                      onChange={setFichaSterilized}
+                      required
+                      options={BOOL_OPTIONS}
+                      height={44}
+                      accent="var(--vet-green)"
+                      tokens={VET_TOKENS}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      className="text-[11px] font-extrabold uppercase tracking-wider"
+                      style={{ color: "var(--vet-text-3)" }}
+                    >
+                      Microchip
+                    </label>
+                    <input
+                      type="text"
+                      value={fichaChip}
+                      onChange={(e) => setFichaChip(e.target.value)}
+                      placeholder="Número de microchip"
+                      className={fieldClass}
+                      style={fieldStyle}
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => finish(created.id)}
+                    disabled={pending}
+                    className="h-11 px-4 rounded-[12px] text-[13px] font-extrabold border transition hover:brightness-105 disabled:opacity-60"
+                    style={{
+                      background: "var(--vet-bg-card)",
+                      borderColor: "var(--vet-border)",
+                      color: "var(--vet-text-2)",
+                    }}
+                  >
+                    Omitir por ahora
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveFicha}
+                    disabled={pending}
+                    className="h-11 px-5 rounded-[12px] text-[13px] font-extrabold text-white transition hover:brightness-105 disabled:opacity-60"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, var(--vet-green), var(--vet-green-dim))",
+                      boxShadow: "0 6px 18px var(--vet-green-glow)",
+                    }}
+                  >
+                    {pending ? "Guardando…" : "Guardar ficha"}
+                  </button>
+                </div>
+              </div>
+            ) : (
             <div className="flex flex-col gap-5 p-5 sm:p-6">
               {/* Cliente */}
               <section className="flex flex-col gap-2.5">
@@ -396,6 +592,7 @@ export function NewPatientButton({ clients }: { clients: ClientOption[] }) {
                 </button>
               </div>
             </div>
+            )}
           </div>
         </div>
       )}

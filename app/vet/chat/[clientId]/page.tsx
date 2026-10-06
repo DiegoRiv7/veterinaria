@@ -6,6 +6,7 @@ import { getMostRecentAppointment, getVetClientThread } from "@/lib/chat";
 import { ChatThreadView } from "@/components/ChatThreadView";
 import { VetMessageInput } from "@/components/VetMessageInput";
 import { ChevronLeft } from "lucide-react";
+import { clinicDayLabel } from "@/lib/clinic-time";
 
 export const dynamic = "force-dynamic";
 
@@ -46,6 +47,17 @@ export default async function VetChatThreadPage({
 
   const messages = await getVetClientThread(session.userId, clientId);
 
+  // Contexto por cita para los separadores del hilo
+  const appointmentInfo: Record<string, { label: string; href: string }> = {};
+  for (const m of messages) {
+    if (!appointmentInfo[m.appointment.id]) {
+      appointmentInfo[m.appointment.id] = {
+        label: `${m.appointment.service.name} · ${m.appointment.pet.name} · ${clinicDayLabel(m.appointment.scheduledAt)}`,
+        href: `/vet/cita/${m.appointment.id}`,
+      };
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4 pb-32">
       <Link
@@ -77,9 +89,26 @@ export default async function VetChatThreadPage({
             {client.phone}
           </p>
         </div>
+        {/* Contexto: cita más reciente de esta conversación */}
+        <Link
+          href={`/vet/cita/${recent.id}`}
+          className="ml-auto hidden sm:inline-flex items-center gap-1.5 px-3 h-9 rounded-full border text-[12px] font-extrabold no-underline transition hover:brightness-95 shrink-0"
+          style={{
+            background: "color-mix(in oklab, var(--vet-green) 10%, transparent)",
+            borderColor: "color-mix(in oklab, var(--vet-green) 28%, var(--vet-border))",
+            color: "var(--vet-green-dim)",
+          }}
+        >
+          📅 {recent.service.name} · {recent.pet.name} ·{" "}
+          {clinicDayLabel(recent.scheduledAt)} →
+        </Link>
       </header>
 
-      <ChatThreadView messages={messages} currentUserId={session.userId} />
+      <ChatThreadView
+        messages={messages}
+        currentUserId={session.userId}
+        appointmentInfo={appointmentInfo}
+      />
 
       <div className="fixed bottom-3 inset-x-0 z-30 px-4 lg:left-[220px]">
         <div className="mx-auto max-w-[720px]">

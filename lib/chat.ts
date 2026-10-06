@@ -40,6 +40,14 @@ export type ConversationSummary = {
   } | null;
   unreadCount: number;
   totalAppointments: number;
+  /** Cita más reciente entre el vet y este cliente — contexto del chat. */
+  lastAppointment: {
+    id: string;
+    serviceName: string;
+    petName: string;
+    scheduledAt: Date;
+    status: string;
+  } | null;
 };
 
 /** All conversations for a vet, ordered by most recent activity. */
@@ -53,13 +61,18 @@ export async function listVetConversations(vetUserId: string): Promise<Conversat
 
   const summaries = await Promise.all(
     appts.map(async (a) => {
-      const [lastMsg, unread, totalAppts] = await Promise.all([
+      const [lastMsg, unread, totalAppts, lastAppt] = await Promise.all([
         prisma.message.findFirst({
           where: {
             appointment: { vet: { userId: vetUserId }, clientId: a.clientId },
           },
           orderBy: { createdAt: "desc" },
-          select: { body: true, createdAt: true, senderId: true },
+          select: {
+            body: true,
+            createdAt: true,
+            senderId: true,
+            attachmentType: true,
+          },
         }),
         prisma.message.count({
           where: {
@@ -71,6 +84,17 @@ export async function listVetConversations(vetUserId: string): Promise<Conversat
         prisma.appointment.count({
           where: { vet: { userId: vetUserId }, clientId: a.clientId },
         }),
+        prisma.appointment.findFirst({
+          where: { vet: { userId: vetUserId }, clientId: a.clientId },
+          orderBy: { scheduledAt: "desc" },
+          select: {
+            id: true,
+            scheduledAt: true,
+            status: true,
+            service: { select: { name: true } },
+            pet: { select: { name: true } },
+          },
+        }),
       ]);
 
       return {
@@ -79,13 +103,28 @@ export async function listVetConversations(vetUserId: string): Promise<Conversat
         clientPhone: a.client.phone,
         lastMessage: lastMsg
           ? {
-              body: lastMsg.body,
+              body:
+                lastMsg.body ||
+                (lastMsg.attachmentType?.startsWith("image/")
+                  ? "📎 Foto"
+                  : lastMsg.attachmentType
+                    ? "📎 Documento"
+                    : ""),
               createdAt: lastMsg.createdAt,
               fromVet: lastMsg.senderId === vetUserId,
             }
           : null,
         unreadCount: unread,
         totalAppointments: totalAppts,
+        lastAppointment: lastAppt
+          ? {
+              id: lastAppt.id,
+              serviceName: lastAppt.service.name,
+              petName: lastAppt.pet.name,
+              scheduledAt: lastAppt.scheduledAt,
+              status: lastAppt.status,
+            }
+          : null,
       } satisfies ConversationSummary;
     })
   );
@@ -109,6 +148,14 @@ export async function getVetClientThread(vetUserId: string, clientId: string) {
     },
     include: {
       sender: { select: { id: true, name: true, role: true } },
+      appointment: {
+        select: {
+          id: true,
+          scheduledAt: true,
+          service: { select: { name: true } },
+          pet: { select: { name: true } },
+        },
+      },
     },
     orderBy: { createdAt: "asc" },
   });
@@ -119,7 +166,13 @@ export async function getMostRecentAppointment(vetUserId: string, clientId: stri
   return prisma.appointment.findFirst({
     where: { vet: { userId: vetUserId }, clientId },
     orderBy: { scheduledAt: "desc" },
-    select: { id: true },
+    select: {
+      id: true,
+      scheduledAt: true,
+      status: true,
+      service: { select: { name: true } },
+      pet: { select: { name: true } },
+    },
   });
 }
 
